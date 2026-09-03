@@ -1,3 +1,41 @@
-import{createContext,useContext,useEffect,useState}from'react';import{onAuthStateChanged}from'firebase/auth';import{auth,firebaseConfigured}from'../lib/firebase';import*as service from'../services/authService';
-const C=createContext();const DEMO={uid:'demo-user',displayName:'Muneeb',email:'demo@hisabkitab.app',isDemo:true};
-export function AuthProvider({children}){const[user,setUser]=useState(firebaseConfigured?null:DEMO),[loading,setLoading]=useState(firebaseConfigured);useEffect(()=>{if(!auth)return;return onAuthStateChanged(auth,u=>{setUser(u);setLoading(false)})},[]);const loginDemo=()=>setUser(DEMO);return <C.Provider value={{user,loading,configured:firebaseConfigured,loginDemo,logout:firebaseConfigured?service.logout:()=>setUser(null),emailLogin:service.emailLogin,emailSignup:service.emailSignup,googleLogin:service.googleLogin}}>{children}</C.Provider>};export const useAuth=()=>useContext(C);
+import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth, firebaseConfigured } from '../lib/firebase';
+import * as authService from '../services/authService';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(firebaseConfigured);
+
+  useEffect(() => {
+    if (!firebaseConfigured || !auth) {
+      setLoading(false);
+      return undefined;
+    }
+
+    return onAuthStateChanged(auth, (nextUser) => {
+      setUser(nextUser);
+      setLoading(false);
+    });
+  }, []);
+
+  const value = useMemo(() => ({
+    user,
+    loading,
+    configured: firebaseConfigured,
+    emailLogin: authService.emailLogin,
+    emailSignup: authService.emailSignup,
+    googleLogin: authService.googleLogin,
+    resetPassword: authService.resetPassword,
+    changeDisplayName: (name) => authService.changeDisplayName(user, name),
+    logout: authService.logout,
+  }), [user, loading]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}

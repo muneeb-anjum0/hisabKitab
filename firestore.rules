@@ -1,16 +1,78 @@
 rules_version = '2';
-service cloud.firestore { match /databases/{database}/documents {
-  function signedIn(){ return request.auth != null; }
-  function isSelf(uid){ return signedIn() && request.auth.uid == uid; }
-  function membership(fid){ return get(/databases/$(database)/documents/fundMembers/$(fid+'_'+request.auth.uid)); }
-  function isMember(fid){ return signedIn() && exists(/databases/$(database)/documents/fundMembers/$(fid+'_'+request.auth.uid)); }
-  function canEdit(fid){ return isMember(fid) && membership(fid).data.role in ['owner','editor']; }
-  function isOwner(fid){ return isMember(fid) && membership(fid).data.role == 'owner'; }
-  match /users/{uid} { allow read: if signedIn(); allow create,update: if isSelf(uid) && request.resource.data.email == request.auth.token.email; allow delete: if false; }
-  match /funds/{fid} { allow read: if isMember(fid); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if canEdit(fid) && request.resource.data.ownerId == resource.data.ownerId; allow delete: if isOwner(fid); }
-  match /fundMembers/{mid} { allow read: if signedIn() && (resource.data.userId == request.auth.uid || isMember(resource.data.fundId)); allow create: if signedIn() && ((request.resource.data.userId == request.auth.uid && request.resource.data.role == 'owner' && getAfter(/databases/$(database)/documents/funds/$(request.resource.data.fundId)).data.ownerId == request.auth.uid) || isOwner(request.resource.data.fundId)); allow update,delete: if isOwner(resource.data.fundId) && resource.data.role != 'owner'; }
-  match /remittances/{id} { allow read,delete: if signedIn() && resource.data.ownerId == request.auth.uid; allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId; }
-  match /allocations/{id} { allow read: if signedIn() && isMember(resource.data.fundId); allow create: if signedIn() && canEdit(request.resource.data.fundId); allow update,delete: if signedIn() && canEdit(resource.data.fundId); }
-  match /transactions/{id} { allow read: if signedIn() && isMember(resource.data.fundId); allow create: if signedIn() && canEdit(request.resource.data.fundId) && request.resource.data.userId == request.auth.uid; allow update: if signedIn() && canEdit(resource.data.fundId) && request.resource.data.fundId == resource.data.fundId; allow delete: if signedIn() && canEdit(resource.data.fundId); }
-  match /categories/{id} { allow read: if signedIn() && resource.data.userId == request.auth.uid; allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow update,delete: if signedIn() && resource.data.userId == request.auth.uid; }
-}}
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isSelf(uid) { return signedIn() && request.auth.uid == uid; }
+    function memberPath(fid) { return /databases/$(database)/documents/fundMembers/$(fid + '_' + request.auth.uid); }
+    function isMember(fid) { return signedIn() && exists(memberPath(fid)); }
+    function membership(fid) { return get(memberPath(fid)); }
+    function canEdit(fid) { return isMember(fid) && membership(fid).data.role in ['owner', 'editor']; }
+    function isOwner(fid) { return isMember(fid) && membership(fid).data.role == 'owner'; }
+    function validExpense(data) { return data.type == 'expense' && data.amount is number && data.amount > 0; }
+    function validTransfer(data, transactionId) {
+      let pair = getAfter(/databases/$(database)/documents/transactions/$(data.counterpartyId));
+      return data.type == 'transfer' && data.amount is number && data.amount != 0
+        && data.userId == request.auth.uid && data.fundId != data.counterpartyFundId
+        && canEdit(data.fundId) && canEdit(data.counterpartyFundId)
+        && pair.data.type == 'transfer' && pair.data.counterpartyId == transactionId
+        && pair.data.linkId == data.linkId && pair.data.userId == request.auth.uid
+        && pair.data.fundId == data.counterpartyFundId
+        && pair.data.counterpartyFundId == data.fundId && pair.data.amount == -data.amount;
+    }
+
+    match /users/{uid} {
+      allow read, create, update: if isSelf(uid) && request.resource.data.email == request.auth.token.email;
+      allow delete: if false;
+    }
+    match /publicProfiles/{uid} {
+      allow read: if signedIn();
+      allow create, update: if isSelf(uid) && request.resource.data.email == request.auth.token.email;
+      allow delete: if false;
+    }
+    match /funds/{fid} {
+      allow read: if isMember(fid);
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow update: if isOwner(fid) && request.resource.data.ownerId == resource.data.ownerId;
+      allow delete: if isOwner(fid);
+    }
+    match /fundMembers/{mid} {
+      allow read: if signedIn() && (resource.data.userId == request.auth.uid || isMember(resource.data.fundId));
+      allow create: if signedIn() && ((request.resource.data.userId == request.auth.uid
+        && request.resource.data.role == 'owner'
+        && getAfter(/databases/$(database)/documents/funds/$(request.resource.data.fundId)).data.ownerId == request.auth.uid)
+        || isOwner(request.resource.data.fundId));
+      allow update: if isOwner(resource.data.fundId) && resource.data.role != 'owner'
+        && request.resource.data.role != 'owner';
+      allow delete: if isOwner(resource.data.fundId) && resource.data.role != 'owner';
+    }
+    match /remittances/{id} {
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.totalAmount is number && request.resource.data.totalAmount > 0;
+      allow update: if signedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.totalAmount is number && request.resource.data.totalAmount > 0;
+    }
+    match /allocations/{id} {
+      allow read: if isMember(resource.data.fundId);
+      allow create: if canEdit(request.resource.data.fundId)
+        && request.resource.data.amount is number && request.resource.data.amount > 0
+        && getAfter(/databases/$(database)/documents/remittances/$(request.resource.data.remittanceId)).data.ownerId == request.auth.uid;
+      allow update, delete: if canEdit(resource.data.fundId);
+    }
+    match /transactions/{id} {
+      allow read: if isMember(resource.data.fundId);
+      allow create: if request.resource.data.userId == request.auth.uid
+        && ((canEdit(request.resource.data.fundId) && validExpense(request.resource.data)) || validTransfer(request.resource.data, id));
+      allow update: if canEdit(resource.data.fundId) && canEdit(request.resource.data.fundId)
+        && resource.data.type == 'expense' && validExpense(request.resource.data)
+        && request.resource.data.userId == resource.data.userId;
+      allow delete: if canEdit(resource.data.fundId) && resource.data.type == 'expense';
+    }
+    match /categories/{id} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if signedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+  }
+}

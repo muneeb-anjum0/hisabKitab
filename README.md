@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-The placeholder `.env.local` starts an explicit in-browser development demo. Demo changes last until refresh and are never written to Firebase. Configure Firebase to use real accounts and persistent data.
+The application requires Firebase configuration and never substitutes a fake user or dummy financial data. With placeholder credentials, it shows a configuration screen instead of entering the ledger.
 
 ## Firebase setup
 
@@ -56,7 +56,7 @@ firebase deploy   # Firestore configuration + Firebase Hosting
 
 Fund balances are never stored or incremented independently. They are calculated as allocations minus expenses, plus signed adjustments and signed transfer entries. A transfer creates two linked entries and never counts as income. Any received amount not represented by allocations remains unallocated.
 
-Primary collections are `users`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. Dashboard and activity queries are deliberately capped in `src/services/dataService.js`; for a high-volume production account, add server-side monthly aggregates while keeping this ledger authoritative.
+Primary collections are `users`, `publicProfiles`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. `users` is private; `publicProfiles` contains only the minimal name/email directory needed for exact-email shared-Fund lookup. Dashboard and activity queries are deliberately capped in `src/services/dataService.js`; for a high-volume production account, add server-side monthly aggregates while keeping this ledger authoritative.
 
 ## PWA and offline behavior
 

@@ -1,9 +1,133 @@
-import{useEffect,useMemo,useRef,useState}from'react';import{useData}from'../../contexts/DataContext';import{useAuth}from'../../contexts/AuthContext';import{localISO}from'../../lib/dates';import{money}from'../../lib/currency';import{Modal,Button,Field}from'../comic/Comic';
-const positive=v=>Number(v)>0;
-export default function QuickAdd({onClose,initial='menu',edit=null}){const data=useData(),{user}=useAuth(),[mode,setMode]=useState(edit?'expense':initial),[busy,setBusy]=useState(false),[error,setError]=useState(''),amountRef=useRef();useEffect(()=>{if(mode!=='menu')setTimeout(()=>amountRef.current?.focus(),80)},[mode]);const funds=data.funds.filter(f=>!f.archived);const submit=async fn=>{setBusy(true);setError('');try{await fn();onClose()}catch(e){setError(e.message||'Could not save this change.');setBusy(false)}};if(mode==='menu')return <Modal title="WHAT HAPPENED?" onClose={onClose}><div className="quick-grid"><button onClick={()=>setMode('expense')}><b>SPENT!</b><span>Record an expense</span></button><button onClick={()=>setMode('remittance')}><b>KA-CHING!</b><span>Add money received</span></button><button onClick={()=>setMode('transfer')}><b>WHOOSH!</b><span>Move between Funds</span></button></div></Modal>;
-if(mode==='expense')return <ExpenseForm {...{data,funds,edit,amountRef,busy,error}} onBack={()=>edit?onClose():setMode('menu')} onSubmit={v=>submit(()=>edit?data.updateTransaction(edit.id,v):data.addTransaction(v))}/>;
-if(mode==='remittance')return <RemittanceForm {...{data,funds,amountRef,busy,error}} onBack={()=>setMode('menu')} onSubmit={(v,a)=>submit(()=>data.createRemittance(v,a))}/>;
-return <TransferForm {...{data,funds,amountRef,busy,error}} onBack={()=>setMode('menu')} onSubmit={v=>submit(()=>data.createTransfer(v))}/>}
-function ExpenseForm({data,funds,edit,amountRef,busy,error,onBack,onSubmit}){const[v,setV]=useState({amount:edit?.amount||'',fundId:edit?.fundId||localStorage.getItem('hk-last-fund')||funds[0]?.id||'',description:edit?.description||'',categoryId:edit?.categoryId||data.categories[0]?.id||'',date:edit?.date||localISO(),note:edit?.note||'',type:'expense'});const save=e=>{e.preventDefault();if(!positive(v.amount)||!v.fundId||!v.description.trim())return;localStorage.setItem('hk-last-fund',v.fundId);onSubmit({...v,amount:Number(v.amount),description:v.description.trim()})};return <Modal title={edit?'EDIT THE SPEND':'ADD AN EXPENSE'} onClose={onBack}><form onSubmit={save}><Field label="AMOUNT (PKR)"><input ref={amountRef} inputMode="numeric" type="number" min="1" required value={v.amount} onChange={e=>setV({...v,amount:e.target.value})} placeholder="0" className="amount-input"/></Field><div className="form-pair"><Field label="FUND"><select required value={v.fundId} onChange={e=>setV({...v,fundId:e.target.value})}>{funds.map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select></Field><Field label="DATE"><input type="date" value={v.date} onChange={e=>setV({...v,date:e.target.value})}/></Field></div><Field label="WHAT FOR?"><input required maxLength="80" value={v.description} onChange={e=>setV({...v,description:e.target.value})} placeholder="Groceries, fuel, chai…"/></Field><Field label="CATEGORY"><select value={v.categoryId} onChange={e=>setV({...v,categoryId:e.target.value})}>{data.categories.map(c=><option value={c.id} key={c.id}>{c.symbol} {c.name}</option>)}</select></Field><Field label="NOTE — OPTIONAL"><textarea value={v.note} onChange={e=>setV({...v,note:e.target.value})} rows="2"/></Field>{error&&<p className="form-error">{error}</p>}<Button disabled={busy}>{busy?'INKING IT…':edit?'SAVE CHANGES':'MARK IT SPENT!'}</Button></form></Modal>}
-function RemittanceForm({funds,amountRef,busy,error,onBack,onSubmit}){const[v,setV]=useState({sender:'',totalAmount:'',receivedAt:localISO(),note:''}),[alloc,setAlloc]=useState({});const allocated=Object.values(alloc).reduce((a,x)=>a+(Number(x)||0),0),remaining=(Number(v.totalAmount)||0)-allocated,valid=positive(v.totalAmount)&&v.sender.trim()&&remaining>=0;const save=e=>{e.preventDefault();if(valid)onSubmit({...v,totalAmount:Number(v.totalAmount),sender:v.sender.trim()},funds.map(f=>({fundId:f.id,amount:Number(alloc[f.id])||0})))};return <Modal title="MONEY CAME IN!" onClose={onBack} wide><form onSubmit={save}><div className="remit-layout"><div><Field label="FROM WHOM?"><input required value={v.sender} onChange={e=>setV({...v,sender:e.target.value})} placeholder="Dad"/></Field><Field label="TOTAL RECEIVED"><input ref={amountRef} required type="number" min="1" inputMode="numeric" className="amount-input" value={v.totalAmount} onChange={e=>setV({...v,totalAmount:e.target.value})}/></Field><Field label="DATE"><input type="date" value={v.receivedAt} onChange={e=>setV({...v,receivedAt:e.target.value})}/></Field><Field label="NOTE — OPTIONAL"><textarea rows="2" value={v.note} onChange={e=>setV({...v,note:e.target.value})}/></Field></div><div className="split-box"><h3>SPLIT THE STACK</h3>{funds.map(f=><Field key={f.id} label={f.name}><input type="number" min="0" inputMode="numeric" value={alloc[f.id]||''} onChange={e=>setAlloc({...alloc,[f.id]:e.target.value})} placeholder="0"/></Field>)}<div className={`remaining ${remaining<0?'bad':''}`}><span>UNALLOCATED</span><strong>{money(remaining)}</strong></div><small>You can assign unallocated money later.</small></div></div>{remaining<0&&<p className="form-error">Your split is {money(-remaining)} over the received amount.</p>}{error&&<p className="form-error">{error}</p>}<Button disabled={busy||!valid}>KA-CHING! SAVE IT</Button></form></Modal>}
-function TransferForm({funds,amountRef,busy,error,onBack,onSubmit}){const[v,setV]=useState({fromId:funds[0]?.id||'',toId:funds[1]?.id||'',amount:'',date:localISO(),note:'',id:crypto.randomUUID()});const valid=positive(v.amount)&&v.fromId&&v.toId&&v.fromId!==v.toId;return <Modal title="MOVE THE MONEY" onClose={onBack}><form onSubmit={e=>{e.preventDefault();if(valid)onSubmit({...v,amount:Number(v.amount)})}}><Field label="AMOUNT"><input ref={amountRef} className="amount-input" type="number" min="1" required value={v.amount} onChange={e=>setV({...v,amount:e.target.value})}/></Field><div className="form-pair"><Field label="FROM"><select value={v.fromId} onChange={e=>setV({...v,fromId:e.target.value})}>{funds.map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select></Field><Field label="TO"><select value={v.toId} onChange={e=>setV({...v,toId:e.target.value})}>{funds.map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select></Field></div><Field label="DATE"><input type="date" value={v.date} onChange={e=>setV({...v,date:e.target.value})}/></Field><Field label="NOTE — OPTIONAL"><input value={v.note} onChange={e=>setV({...v,note:e.target.value})}/></Field>{v.fromId===v.toId&&<p className="form-error">Pick two different Funds.</p>}{error&&<p className="form-error">{error}</p>}<Button disabled={busy||!valid}>WHOOSH! TRANSFER</Button></form></Modal>}
+import { useEffect, useRef, useState } from 'react';
+import { useData } from '../../contexts/DataContext';
+import { localISO } from '../../lib/dates';
+import { fundTotals } from '../../lib/calculations';
+import { money } from '../../lib/currency';
+import { Modal, Button, Field } from '../comic/Comic';
+
+const isPositive = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
+
+export default function QuickAdd({ onClose, initial = 'menu', edit = null }) {
+  const data = useData();
+  const [mode, setMode] = useState(edit ? 'expense' : initial);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const amountRef = useRef(null);
+  const funds = data.funds.filter((fund) => !fund.archived && data.memberships.some(
+    (member) => member.fundId === fund.id && ['owner', 'editor'].includes(member.role),
+  ));
+
+  useEffect(() => {
+    if (mode !== 'menu') window.setTimeout(() => amountRef.current?.focus(), 80);
+  }, [mode]);
+
+  const submit = async (operation) => {
+    if (busy) return;
+    setBusy(true); setError('');
+    try { await operation(); onClose(); }
+    catch (submitError) { setError(submitError.message || "Couldn't save that."); setBusy(false); }
+  };
+
+  if (mode === 'menu') return <Modal title="WHAT HAPPENED?" onClose={onClose}>
+    <div className="quick-grid">
+      <button onClick={() => setMode('expense')}><b>SPENT</b><span>Add an expense</span></button>
+      <button onClick={() => setMode('remittance')}><b>MONEY IN</b><span>Record money received</span></button>
+      <button onClick={() => setMode('transfer')}><b>TRANSFER</b><span>Move money between Funds</span></button>
+      <button onClick={() => setMode('fund')}><b>NEW FUND</b><span>Create a place for your money</span></button>
+    </div>
+  </Modal>;
+
+  const back = () => edit ? onClose() : setMode('menu');
+  if (mode === 'expense') return <ExpenseForm {...{ data, funds, edit, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => edit ? data.updateTransaction(edit.id, values) : data.addTransaction(values))}/>;
+  if (mode === 'remittance') return <RemittanceForm {...{ funds, amountRef, busy, error }} onBack={back} onSubmit={(values, allocations) => submit(() => data.createRemittance(values, allocations))}/>;
+  if (mode === 'transfer') return <TransferForm {...{ data, funds, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => data.createTransfer(values))}/>;
+  return <FundForm {...{ busy, error }} onBack={back} onSubmit={(values) => submit(() => data.createFund(values))}/>;
+}
+
+function ExpenseForm({ data, funds, edit, amountRef, busy, error, onBack, onSubmit }) {
+  const [values, setValues] = useState({
+    amount: edit?.amount || '', fundId: edit?.fundId || localStorage.getItem('hk-last-fund') || funds[0]?.id || '',
+    description: edit?.description || '', categoryId: edit?.categoryId || data.categories[0]?.id || '',
+    date: edit?.date || localISO(), note: edit?.note || '', type: 'expense',
+  });
+  const valid = isPositive(values.amount) && values.fundId && values.description.trim() && values.date;
+  const save = (event) => {
+    event.preventDefault();
+    if (!valid || busy) return;
+    localStorage.setItem('hk-last-fund', values.fundId);
+    onSubmit({ ...values, amount: Number(values.amount), description: values.description.trim(), note: values.note.trim() });
+  };
+  return <Modal title={edit ? 'EDIT EXPENSE' : 'ADD EXPENSE'} onClose={onBack}>
+    {!funds.length ? <NoFunds onCreate={() => onBack()}/> : <form onSubmit={save}>
+      <Field label="AMOUNT (PKR)"><input ref={amountRef} inputMode="decimal" type="number" min="1" step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })} placeholder="0" className="amount-input"/></Field>
+      <div className="form-pair"><Field label="FUND"><select required value={values.fundId} onChange={(e) => setValues({ ...values, fundId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field></div>
+      <Field label="WHAT WAS IT?"><input required maxLength="80" value={values.description} onChange={(e) => setValues({ ...values, description: e.target.value })} placeholder="Groceries, fuel, chai…"/></Field>
+      <Field label="CATEGORY"><select value={values.categoryId} onChange={(e) => setValues({ ...values, categoryId: e.target.value })}>{data.categories.map((category) => <option value={category.id} key={category.id}>{category.symbol} {category.name}</option>)}</select></Field>
+      <Field label="NOTE — OPTIONAL"><textarea maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })} rows="2"/></Field>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <Button disabled={busy || !valid}>{busy ? 'SAVING…' : edit ? 'SAVE CHANGES' : 'ADD EXPENSE'}</Button>
+    </form>}
+  </Modal>;
+}
+
+function RemittanceForm({ funds, amountRef, busy, error, onBack, onSubmit }) {
+  const [values, setValues] = useState({ sender: '', totalAmount: '', receivedAt: localISO(), note: '' });
+  const [allocationValues, setAllocationValues] = useState({});
+  const allocated = Object.values(allocationValues).reduce((total, value) => total + (Number(value) || 0), 0);
+  const remaining = (Number(values.totalAmount) || 0) - allocated;
+  const valid = isPositive(values.totalAmount) && values.sender.trim() && values.receivedAt && remaining >= 0;
+  const save = (event) => {
+    event.preventDefault(); if (!valid || busy) return;
+    onSubmit({ ...values, totalAmount: Number(values.totalAmount), sender: values.sender.trim(), note: values.note.trim() }, funds.map((fund) => ({ fundId: fund.id, amount: Number(allocationValues[fund.id]) || 0 })));
+  };
+  return <Modal title="ADD MONEY" onClose={onBack} wide><form onSubmit={save}>
+    <div className="remit-layout"><div>
+      <Field label="FROM"><input required maxLength="80" value={values.sender} onChange={(e) => setValues({ ...values, sender: e.target.value })} placeholder="Dad"/></Field>
+      <Field label="AMOUNT (PKR)"><input ref={amountRef} required type="number" min="1" step="1" inputMode="decimal" className="amount-input" value={values.totalAmount} onChange={(e) => setValues({ ...values, totalAmount: e.target.value })}/></Field>
+      <Field label="DATE"><input required type="date" value={values.receivedAt} onChange={(e) => setValues({ ...values, receivedAt: e.target.value })}/></Field>
+      <Field label="NOTE — OPTIONAL"><textarea maxLength="300" rows="2" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
+    </div><div className="split-box"><h3>SPLIT IT</h3>
+      {funds.length ? funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>) : <p>Create a Fund after saving to allocate this money later.</p>}
+      <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>ALLOCATED</span><strong>{money(allocated)}</strong></div>
+      <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>UNALLOCATED</span><strong>{money(remaining)}</strong></div>
+      <small>Partial allocation is allowed.</small>
+    </div></div>
+    {remaining < 0 && <p className="form-error">Your split is {money(-remaining)} over the amount received.</p>}
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <Button disabled={busy || !valid}>{busy ? 'SAVING…' : 'SAVE MONEY'}</Button>
+  </form></Modal>;
+}
+
+function TransferForm({ data, funds, amountRef, busy, error, onBack, onSubmit }) {
+  const [values, setValues] = useState({ fromId: funds[0]?.id || '', toId: funds[1]?.id || '', amount: '', date: localISO(), note: '' });
+  const available = values.fromId ? fundTotals(values.fromId, data.allocations, data.transactions).remaining : 0;
+  const valid = isPositive(values.amount) && values.fromId && values.toId && values.fromId !== values.toId && Number(values.amount) <= available && values.date;
+  return <Modal title="TRANSFER" onClose={onBack}>
+    {funds.length < 2 ? <NoFunds message="You need at least two active Funds to make a transfer."/> : <form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, amount: Number(values.amount), note: values.note.trim() }); }}>
+      <Field label={`AMOUNT — ${money(available)} AVAILABLE`}><input ref={amountRef} className="amount-input" type="number" min="1" max={Math.max(0, available)} step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })}/></Field>
+      <div className="form-pair"><Field label="FROM"><select value={values.fromId} onChange={(e) => setValues({ ...values, fromId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="TO"><select value={values.toId} onChange={(e) => setValues({ ...values, toId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field></div>
+      <Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field>
+      <Field label="NOTE — OPTIONAL"><input maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
+      {values.fromId === values.toId && <p className="form-error">Pick two different Funds.</p>}
+      {Number(values.amount) > available && <p className="form-error">That Fund only has {money(available)} available.</p>}
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <Button disabled={busy || !valid}>{busy ? 'TRANSFERRING…' : 'TRANSFER MONEY'}</Button>
+    </form>}
+  </Modal>;
+}
+
+function FundForm({ busy, error, onBack, onSubmit }) {
+  const [values, setValues] = useState({ name: '', type: 'personal', accent: 'blue' });
+  const valid = values.name.trim().length > 0;
+  return <Modal title="CREATE FUND" onClose={onBack}><form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, name: values.name.trim() }); }}>
+    <Field label="NAME"><input autoFocus required maxLength="35" value={values.name} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Personal, House…"/></Field>
+    <Field label="TYPE"><select value={values.type} onChange={(e) => setValues({ ...values, type: e.target.value })}><option value="personal">Personal</option><option value="shared">Shared</option></select></Field>
+    <fieldset className="swatches"><legend>ACCENT</legend>{['blue', 'red', 'green', 'purple', 'yellow'].map((accent) => <button type="button" aria-label={accent} className={`${accent} ${values.accent === accent ? 'active' : ''}`} onClick={() => setValues({ ...values, accent })} key={accent}/>)}</fieldset>
+    {error && <p className="form-error" role="alert">{error}</p>}
+    <Button disabled={busy || !valid}>{busy ? 'CREATING…' : 'CREATE FUND'}</Button>
+  </form></Modal>;
+}
+
+function NoFunds({ message = 'Create your first Fund before recording an expense.' }) {
+  return <div className="empty"><h3>NO FUNDS YET.</h3><p>{message}</p></div>;
+}
