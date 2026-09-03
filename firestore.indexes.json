@@ -1,0 +1,1 @@
+{"indexes":[{"collectionGroup":"transactions","queryScope":"COLLECTION","fields":[{"fieldPath":"fundId","order":"ASCENDING"},{"fieldPath":"date","order":"DESCENDING"}]},{"collectionGroup":"fundMembers","queryScope":"COLLECTION","fields":[{"fieldPath":"userId","order":"ASCENDING"},{"fieldPath":"createdAt","order":"DESCENDING"}]}],"fieldOverrides":[]}

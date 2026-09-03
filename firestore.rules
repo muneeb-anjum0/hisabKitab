@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore { match /databases/{database}/documents {
+  function signedIn(){ return request.auth != null; }
+  function isSelf(uid){ return signedIn() && request.auth.uid == uid; }
+  function membership(fid){ return get(/databases/$(database)/documents/fundMembers/$(fid+'_'+request.auth.uid)); }
+  function isMember(fid){ return signedIn() && exists(/databases/$(database)/documents/fundMembers/$(fid+'_'+request.auth.uid)); }
+  function canEdit(fid){ return isMember(fid) && membership(fid).data.role in ['owner','editor']; }
+  function isOwner(fid){ return isMember(fid) && membership(fid).data.role == 'owner'; }
+  match /users/{uid} { allow read: if signedIn(); allow create,update: if isSelf(uid) && request.resource.data.email == request.auth.token.email; allow delete: if false; }
+  match /funds/{fid} { allow read: if isMember(fid); allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if canEdit(fid) && request.resource.data.ownerId == resource.data.ownerId; allow delete: if isOwner(fid); }
+  match /fundMembers/{mid} { allow read: if signedIn() && (resource.data.userId == request.auth.uid || isMember(resource.data.fundId)); allow create: if signedIn() && ((request.resource.data.userId == request.auth.uid && request.resource.data.role == 'owner' && getAfter(/databases/$(database)/documents/funds/$(request.resource.data.fundId)).data.ownerId == request.auth.uid) || isOwner(request.resource.data.fundId)); allow update,delete: if isOwner(resource.data.fundId) && resource.data.role != 'owner'; }
+  match /remittances/{id} { allow read,delete: if signedIn() && resource.data.ownerId == request.auth.uid; allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid; allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId; }
+  match /allocations/{id} { allow read: if signedIn() && isMember(resource.data.fundId); allow create: if signedIn() && canEdit(request.resource.data.fundId); allow update,delete: if signedIn() && canEdit(resource.data.fundId); }
+  match /transactions/{id} { allow read: if signedIn() && isMember(resource.data.fundId); allow create: if signedIn() && canEdit(request.resource.data.fundId) && request.resource.data.userId == request.auth.uid; allow update: if signedIn() && canEdit(resource.data.fundId) && request.resource.data.fundId == resource.data.fundId; allow delete: if signedIn() && canEdit(resource.data.fundId); }
+  match /categories/{id} { allow read: if signedIn() && resource.data.userId == request.auth.uid; allow create: if signedIn() && request.resource.data.userId == request.auth.uid; allow update,delete: if signedIn() && resource.data.userId == request.auth.uid; }
+}}

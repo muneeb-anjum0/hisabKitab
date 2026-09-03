@@ -1,0 +1,3 @@
+export const localISO=(date=new Date())=>{const d=new Date(date);return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`};
+export function friendlyDate(value){const d=new Date(`${String(value).slice(0,10)}T12:00:00`),now=new Date(),today=localISO(now),yesterday=localISO(new Date(now.getFullYear(),now.getMonth(),now.getDate()-1));if(localISO(d)===today)return'Today';if(localISO(d)===yesterday)return'Yesterday';return d.toLocaleDateString('en-PK',{day:'numeric',month:'short'})}
+export const monthKey=(value)=>String(value||localISO()).slice(0,7);

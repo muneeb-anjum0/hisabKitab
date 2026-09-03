@@ -1,0 +1,1 @@
+export function money(value=0,currency='PKR'){const n=Number(value)||0;if(currency==='PKR')return`${n<0?'-':''}Rs. ${Math.abs(n).toLocaleString('en-PK',{maximumFractionDigits:0})}`;return new Intl.NumberFormat(undefined,{style:'currency',currency,maximumFractionDigits:0}).format(n)}
