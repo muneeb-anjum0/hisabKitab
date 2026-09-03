@@ -13,6 +13,18 @@ const SYSTEM_CATEGORIES = [
   ['entertainment', 'Entertainment', '♪'], ['home', 'Home', '⌂'], ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
 
+const FIRESTORE_TIMEOUT_MS = 12000;
+
+function withTimeout(operation) {
+  return Promise.race([
+    operation,
+    new Promise((_, reject) => window.setTimeout(
+      () => reject(new Error('Firestore did not respond. Confirm that the Firestore database exists and its rules are deployed.')),
+      FIRESTORE_TIMEOUT_MS,
+    )),
+  ]);
+}
+
 export function DataProvider({ children }) {
   const { user, configured } = useAuth();
   const [data, setData] = useState(EMPTY_DATA);
@@ -28,11 +40,13 @@ export function DataProvider({ children }) {
     }
     setLoading(true);
     try {
-      setData(await api.loadUserData(user.uid));
+      setData(await withTimeout(api.loadUserData(user.uid)));
       setError('');
     } catch (loadError) {
       console.error(loadError);
-      setError('Could not load your ledger. Check your connection and retry.');
+      setError(loadError.message?.includes('Firestore did not respond')
+        ? loadError.message
+        : 'Could not load your ledger. Make sure Firestore exists, deploy its rules, then retry.');
     } finally {
       setLoading(false);
     }

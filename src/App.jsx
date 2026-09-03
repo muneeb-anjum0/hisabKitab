@@ -36,7 +36,7 @@ export default function App() {
     <Nav onQuick={() => setQuickAction('menu')}/>
     <main className="content">
       {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
-      {data.error && <div className="error-banner" role="alert">{data.error}<button onClick={data.refresh}>RETRY</button></div>}
+      {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
       {data.loading ? <div className="ledger-loading"><span/><b>SYNCING YOUR BOOK…</b></div> : <Routes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
         <Route path="/funds" element={<Funds/>}/>
