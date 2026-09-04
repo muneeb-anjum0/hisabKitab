@@ -73,3 +73,6 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 
 /* Mobile quick actions: keep money-in and money-out safely separated */
 @media(max-width:800px){.dashboard-aside .direct-actions{grid-template-columns:1fr 1fr;gap:11px}.dashboard-aside .direct-actions button{min-height:56px;text-align:center;padding:8px 10px}.dashboard-aside .direct-actions button:nth-child(2){order:1;grid-column:1/-1;background:var(--red);color:#fff;font-size:18px}.dashboard-aside .direct-actions button:nth-child(3){order:2}.dashboard-aside .direct-actions button:nth-child(4){order:3}.dashboard-aside .direct-actions button:nth-child(1){order:4;grid-column:1/-1;background:var(--yellow);color:var(--ink)}}
+
+/* Keep the dashboard taskbar open, without a page-wide divider */
+.dash-header{border-bottom:0}
