@@ -72,7 +72,10 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
 }
 
 function HeroInk() {
-  return <div className="hero-ink" aria-hidden="true"/>;
+  return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true">
+    <defs><pattern id="hero-dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs>
+    <path d="M20 225 92 143l41 30 55-89 45 70 46-49 38 31 57-91 63 117 63-33 40 96Z" fill="url(#hero-dots)" opacity=".8"/>
+  </svg>;
 }
 
 function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }
