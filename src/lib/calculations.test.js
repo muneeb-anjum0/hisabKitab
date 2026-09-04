@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fundTotals, monthlyTotals, portfolioTotals, unallocatedTotal } from './calculations';
+import { buildMoneyLots, consumeMoneyLots, fundTotals, monthlyTotals, portfolioTotals, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -73,5 +73,41 @@ describe('financial ledger', () => {
     transactions = transactions.filter((item) => item.id !== 'fuel');
     expect(fundTotals('personal', allocations, transactions).remaining).toBe(13000);
     expect(portfolioTotals(funds, allocations, transactions, remittances).remaining).toBe(29000);
+  });
+
+  it('treats every historical allocation as a compatible Money Lot', () => {
+    const lots = buildMoneyLots('house', allocations, remittances, []);
+    expect(lots).toHaveLength(1);
+    expect(lots[0]).toMatchObject({ id: allocations[1].id, originalAmount: 15000, source: 'Money received' });
+  });
+
+  it('uses FIFO across multiple lots for the Baba Kitchen scenario', () => {
+    const kitchenRemittances = [
+      { id: 'k1', sender: 'Baba', totalAmount: 15000, receivedAt: '2026-09-01' },
+      { id: 'k2', sender: 'Baba', totalAmount: 15000, receivedAt: '2026-09-10' },
+    ];
+    const kitchenAllocations = [
+      { id: 'lot-1', remittanceId: 'k1', fundId: 'kitchen', amount: 15000 },
+      { id: 'lot-2', remittanceId: 'k2', fundId: 'kitchen', amount: 15000 },
+    ];
+    const earlyExpenses = [2500, 1200, 3000].map((amount, index) => ({ id: `e${index}`, fundId: 'kitchen', type: 'expense', amount, date: `2026-09-0${index + 2}` }));
+    let lots = buildMoneyLots('kitchen', kitchenAllocations.slice(0, 1), kitchenRemittances, earlyExpenses);
+    expect(lots[0].remaining).toBe(8300);
+    lots = buildMoneyLots('kitchen', kitchenAllocations, kitchenRemittances, earlyExpenses);
+    const usage = consumeMoneyLots(lots, 10000);
+    expect(usage).toEqual({ usages: [{ lotId: 'lot-1', amount: 8300 }, { lotId: 'lot-2', amount: 1700 }], uncovered: 0 });
+    const finalLots = buildMoneyLots('kitchen', kitchenAllocations, kitchenRemittances, [...earlyExpenses, { id: 'e4', fundId: 'kitchen', type: 'expense', amount: 10000, date: '2026-09-11', lotUsages: usage.usages }]);
+    expect(finalLots.map((lot) => lot.remaining)).toEqual([0, 13300]);
+    expect(fundTotals('kitchen', kitchenAllocations, [...earlyExpenses, { fundId: 'kitchen', type: 'expense', amount: 10000 }]).remaining).toBe(13300);
+  });
+
+  it('honors a manually selected lot then continues FIFO for the remainder', () => {
+    const lots = [{ id: 'old', remaining: 3000 }, { id: 'chosen', remaining: 2000 }, { id: 'next', remaining: 4000 }];
+    expect(consumeMoneyLots(lots, 4500, 'chosen')).toEqual({ usages: [{ lotId: 'chosen', amount: 2000 }, { lotId: 'old', amount: 2500 }], uncovered: 0 });
+  });
+
+  it('creates a derived destination lot for a transfer', () => {
+    const transfer = { id: 'transfer-in', linkId: 'x', fundId: 'house', sourceFundName: 'Personal', type: 'transfer', amount: 2000, date: '2026-09-12' };
+    expect(buildMoneyLots('house', [], [], [transfer])[0]).toMatchObject({ id: 'transfer:transfer-in', kind: 'transfer', source: 'Transfer from Personal', originalAmount: 2000 });
   });
 });

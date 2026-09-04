@@ -10,7 +10,7 @@ import { money } from '../lib/currency';
 export default function Activity() {
   const data = useData(); const { user } = useAuth();
   const editableFundIds = new Set(data.memberships.filter((member) => member.userId === user.uid && ['owner', 'editor'].includes(member.role)).map((member) => member.fundId));
-  const [filters, setFilters] = useState({ search: '', fund: 'all', type: 'all', month: '' });
+  const [filters, setFilters] = useState({ search: '', fund: 'all', category: 'all', type: 'all', month: '' });
   const [editing, setEditing] = useState(null); const [deleting, setDeleting] = useState(null);
   const items = useMemo(() => {
     const transactionItems = data.transactions.map((item) => ({ ...item, activityDate: item.date }));
@@ -18,6 +18,7 @@ export default function Activity() {
     return [...transactionItems, ...remittanceItems].filter((item) => {
       const text = `${item.description || ''} ${item.note || ''}`.toLowerCase();
       return (filters.fund === 'all' || item.fundId === filters.fund)
+        && (filters.category === 'all' || item.categoryId === filters.category)
         && (filters.type === 'all' || item.type === filters.type)
         && (!filters.month || item.activityDate?.startsWith(filters.month))
         && text.includes(filters.search.toLowerCase());
@@ -27,7 +28,7 @@ export default function Activity() {
   const set = (key) => (event) => setFilters({ ...filters, [key]: event.target.value });
   return <>
     <div className="page-title compact"><span className="kicker red">EVERY MOVE. NO MYSTERY.</span><h1>ACTIVITY</h1></div>
-    <section className="filter-bar"><label><span>SEARCH</span><input type="search" placeholder="Description or note…" value={filters.search} onChange={set('search')}/></label><label><span>FUND</span><select value={filters.fund} onChange={set('fund')}><option value="all">All Funds</option>{data.funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></label><label><span>TYPE</span><select value={filters.type} onChange={set('type')}><option value="all">All types</option><option value="expense">Expenses</option><option value="income">Money received</option><option value="transfer">Transfers</option></select></label><label><span>MONTH</span><input type="month" value={filters.month} onChange={set('month')}/></label></section>
+    <section className="filter-bar"><label><span>SEARCH</span><input type="search" placeholder="Description or note…" value={filters.search} onChange={set('search')}/></label><label><span>FUND</span><select value={filters.fund} onChange={set('fund')}><option value="all">All Funds</option>{data.funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></label><label><span>CATEGORY</span><select value={filters.category} onChange={set('category')}><option value="all">All categories</option>{data.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>TYPE</span><select value={filters.type} onChange={set('type')}><option value="all">All types</option><option value="expense">Expenses</option><option value="income">Money received</option><option value="transfer">Transfers</option></select></label><label><span>MONTH</span><input type="month" value={filters.month} onChange={set('month')}/></label></section>
     <section className="panel ledger-panel activity-ledger">{items.length ? items.map((item) => item.type === 'income' ? <IncomeRow key={item.id} item={item}/> : <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships} onEdit={item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null} onDelete={item.type === 'expense' && editableFundIds.has(item.fundId) ? setDeleting : null}/>) : <Empty title="NOTHING'S MOVED YET.">Real expenses, money received, and transfers will appear here.</Empty>}</section>
     {editing && <QuickAdd edit={editing} onClose={() => setEditing(null)}/>}
     {deleting && <DeleteExpense item={deleting} onClose={() => setDeleting(null)} onDelete={async () => { await data.removeTransaction(deleting.id); setDeleting(null); }}/>}

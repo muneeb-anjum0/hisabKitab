@@ -6,6 +6,7 @@ import { db } from '../lib/firebase';
 
 const withTimestamps = (values) => ({ ...values, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 const documents = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
+const localNow = () => new Date().toISOString();
 
 export async function loadUserData(uid) {
   const membershipSnapshot = await getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid)));
@@ -13,17 +14,16 @@ export async function loadUserData(uid) {
   const fundIds = memberships.map((membership) => membership.fundId);
   const funds = []; const allocations = []; const transactions = [];
 
-  for (let index = 0; index < fundIds.length; index += 10) {
-    const ids = fundIds.slice(index, index + 10);
+  const chunks = Array.from({ length: Math.ceil(fundIds.length / 10) }, (_, index) => fundIds.slice(index * 10, index * 10 + 10));
+  const chunkResults = await Promise.all(chunks.map(async (ids) => {
     const [fundSnapshot, allocationSnapshot, transactionSnapshot] = await Promise.all([
       getDocs(query(collection(db, 'funds'), where(documentId(), 'in', ids))),
       getDocs(query(collection(db, 'allocations'), where('fundId', 'in', ids), limit(300))),
       getDocs(query(collection(db, 'transactions'), where('fundId', 'in', ids), orderBy('date', 'desc'), limit(300))),
     ]);
-    funds.push(...documents(fundSnapshot));
-    allocations.push(...documents(allocationSnapshot));
-    transactions.push(...documents(transactionSnapshot));
-  }
+    return { funds: documents(fundSnapshot), allocations: documents(allocationSnapshot), transactions: documents(transactionSnapshot) };
+  }));
+  chunkResults.forEach((result) => { funds.push(...result.funds); allocations.push(...result.allocations); transactions.push(...result.transactions); });
 
   const [remittanceSnapshot, categorySnapshot] = await Promise.all([
     getDocs(query(collection(db, 'remittances'), where('ownerId', '==', uid), limit(150))),
@@ -38,36 +38,54 @@ export async function createFund(uid, values) {
   batch.set(fundRef, withTimestamps({ ...values, ownerId: uid, archived: false }));
   batch.set(doc(db, 'fundMembers', `${fundRef.id}_${uid}`), { fundId: fundRef.id, userId: uid, role: 'owner', createdAt: serverTimestamp() });
   await batch.commit();
-  return fundRef.id;
+  return {
+    fund: { id: fundRef.id, ...values, ownerId: uid, archived: false, createdAt: localNow(), updatedAt: localNow() },
+    membership: { id: `${fundRef.id}_${uid}`, fundId: fundRef.id, userId: uid, role: 'owner', createdAt: localNow() },
+  };
 }
 
-export const updateFund = (id, values) => updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() });
-export const addTransaction = (uid, values) => addDoc(collection(db, 'transactions'), withTimestamps({ ...values, userId: uid }));
-export const updateTransaction = (id, values) => updateDoc(doc(db, 'transactions', id), { ...values, updatedAt: serverTimestamp() });
-export const removeTransaction = (id) => deleteDoc(doc(db, 'transactions', id));
+export async function updateFund(id, values) { await updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() }); return { id, ...values, updatedAt: localNow() }; }
+export async function addTransaction(uid, values) {
+  const ref = await addDoc(collection(db, 'transactions'), withTimestamps({ ...values, userId: uid }));
+  return { id: ref.id, ...values, userId: uid, createdAt: localNow(), updatedAt: localNow() };
+}
+export async function updateTransaction(id, values) {
+  await updateDoc(doc(db, 'transactions', id), { ...values, updatedAt: serverTimestamp() });
+  return { id, ...values, updatedAt: localNow() };
+}
+export async function removeTransaction(id) { await deleteDoc(doc(db, 'transactions', id)); return id; }
 
-export async function createTransfer(uid, fromId, toId, amount, date, note) {
+export async function createTransfer(uid, fromId, toId, amount, date, note, lotUsages = [], sourceFundName = '') {
   const batch = writeBatch(db);
   const linkId = doc(collection(db, 'transactions')).id;
   const outRef = doc(db, 'transactions', `${linkId}_out`);
   const inRef = doc(db, 'transactions', `${linkId}_in`);
-  batch.set(outRef, withTimestamps({ fundId: fromId, counterpartyFundId: toId, counterpartyId: inRef.id, userId: uid, type: 'transfer', amount: -amount, description: 'Transfer out', date, note, linkId }));
-  batch.set(inRef, withTimestamps({ fundId: toId, counterpartyFundId: fromId, counterpartyId: outRef.id, userId: uid, type: 'transfer', amount, description: 'Transfer in', date, note, linkId }));
+  batch.set(outRef, withTimestamps({ fundId: fromId, counterpartyFundId: toId, counterpartyId: inRef.id, userId: uid, type: 'transfer', amount: -amount, description: 'Transfer out', date, note, linkId, lotUsages }));
+  batch.set(inRef, withTimestamps({ fundId: toId, counterpartyFundId: fromId, counterpartyId: outRef.id, userId: uid, type: 'transfer', amount, description: 'Transfer in', date, note, linkId, sourceFundName }));
   await batch.commit();
+  const createdAt = localNow();
+  return [
+    { id: outRef.id, fundId: fromId, counterpartyFundId: toId, counterpartyId: inRef.id, userId: uid, type: 'transfer', amount: -amount, description: 'Transfer out', date, note, linkId, lotUsages, createdAt },
+    { id: inRef.id, fundId: toId, counterpartyFundId: fromId, counterpartyId: outRef.id, userId: uid, type: 'transfer', amount, description: 'Transfer in', date, note, linkId, sourceFundName, createdAt },
+  ];
 }
 
 export async function createRemittance(uid, values, allocations) {
   const remittanceRef = doc(collection(db, 'remittances'));
   const batch = writeBatch(db);
   batch.set(remittanceRef, withTimestamps({ ...values, ownerId: uid, currency: 'PKR' }));
-  allocations.filter((item) => item.amount > 0).forEach((item) => {
-    batch.set(doc(collection(db, 'allocations')), { remittanceId: remittanceRef.id, fundId: item.fundId, amount: Number(item.amount), createdAt: serverTimestamp() });
-  });
+  const allocationRows = allocations.filter((item) => item.amount > 0).map((item) => ({ ref: doc(collection(db, 'allocations')), item }));
+  allocationRows.forEach(({ ref, item }) => batch.set(ref, { remittanceId: remittanceRef.id, fundId: item.fundId, amount: Number(item.amount), source: values.sender, receivedAt: values.receivedAt, createdAt: serverTimestamp() }));
   await batch.commit();
+  const createdAt = localNow();
+  return {
+    remittance: { id: remittanceRef.id, ...values, ownerId: uid, currency: 'PKR', createdAt },
+    allocations: allocationRows.map(({ ref, item }) => ({ id: ref.id, remittanceId: remittanceRef.id, fundId: item.fundId, amount: Number(item.amount), source: values.sender, receivedAt: values.receivedAt, createdAt })),
+  };
 }
 
-export const addAllocation = (values) => addDoc(collection(db, 'allocations'), { ...values, createdAt: serverTimestamp() });
-export const addCategory = (uid, name, symbol = '◆') => addDoc(collection(db, 'categories'), { userId: uid, name, symbol, createdAt: serverTimestamp() });
+export async function addAllocation(values) { const ref = await addDoc(collection(db, 'allocations'), { ...values, createdAt: serverTimestamp() }); return { id: ref.id, ...values, createdAt: localNow() }; }
+export async function addCategory(uid, name, symbol = '◆') { const ref = await addDoc(collection(db, 'categories'), { userId: uid, name, symbol, createdAt: serverTimestamp() }); return { id: ref.id, userId: uid, name, symbol, createdAt: localNow() }; }
 
 export async function addMember(fundId, email, role) {
   const profileSnapshot = await getDocs(query(collection(db, 'publicProfiles'), where('email', '==', email), limit(1)));

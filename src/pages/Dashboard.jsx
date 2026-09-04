@@ -1,46 +1,60 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
-import { portfolioTotals } from '../lib/calculations';
+import { fundTotals, moneyLotSummary, portfolioTotals } from '../lib/calculations';
 import { money } from '../lib/currency';
-import { monthKey } from '../lib/dates';
-import { Panel, Progress, Empty, Modal, Field, Button } from '../components/comic/Comic';
+import { friendlyDate, monthKey } from '../lib/dates';
+import { Button, Empty, Field, Modal } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
 
+const greeting = () => { const hour = new Date().getHours(); return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'; };
+const fundGlyph = (name) => { const value = name.toLowerCase(); if (/gym|fitness/.test(value)) return '🏋'; if (/travel|trip/.test(value)) return '✈'; if (/kitchen|food|house/.test(value)) return '⌂'; if (/fuel|car/.test(value)) return '⛽'; if (/university|study/.test(value)) return '▤'; if (/saving|emergency/.test(value)) return '◇'; return '▣'; };
+
 export default function Dashboard({ onAction }) {
-  const data = useData(); const { user } = useAuth();
-  const [allocating, setAllocating] = useState(false);
-  const activeFunds = data.funds.filter((fund) => !fund.archived);
-  const totals = portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances);
+  const data = useData(); const { user } = useAuth(); const navigate = useNavigate();
+  const [allocating, setAllocating] = useState(false); const [search, setSearch] = useState('');
+  const searchRef = useRef(null); const activeFunds = data.funds.filter((fund) => !fund.archived);
+  const totals = useMemo(() => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances), [activeFunds, data.allocations, data.transactions, data.remittances]);
   const currentMonth = monthKey();
   const received = data.remittances.filter((item) => monthKey(item.receivedAt) === currentMonth).reduce((total, item) => total + Number(item.totalAmount), 0);
-  const spent = data.transactions.filter((item) => monthKey(item.date) === currentMonth && item.type === 'expense').reduce((total, item) => total + Number(item.amount), 0);
-  const isEmpty = !data.funds.length && !data.remittances.length && !data.transactions.length;
+  const expenses = data.transactions.filter((item) => item.type === 'expense' && monthKey(item.date) === currentMonth);
+  const spent = expenses.reduce((total, item) => total + Number(item.amount), 0);
+  const searchResults = search.trim() ? [
+    ...activeFunds.filter((fund) => fund.name.toLowerCase().includes(search.toLowerCase())).map((fund) => ({ id: fund.id, title: fund.name, meta: 'Fund', action: () => navigate(`/funds/${fund.id}`) })),
+    ...data.transactions.filter((item) => `${item.description} ${item.note || ''}`.toLowerCase().includes(search.toLowerCase())).slice(0, 6).map((item) => ({ id: item.id, title: item.description, meta: `${money(item.amount)} · ${friendlyDate(item.date)}`, action: () => navigate('/activity') })),
+    ...data.categories.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())).slice(0, 3).map((item) => ({ id: `category-${item.id}`, title: item.name, meta: 'Category', action: () => navigate('/activity') })),
+  ].slice(0, 8) : [];
 
-  return <>
-    <header className="eyebrow"><span>HISABKITAB / {user?.displayName?.split(' ')[0]?.toUpperCase() || 'MY LEDGER'}</span><i>Ledger synced from Firestore</i></header>
-    <section className="balance-hero">
-      <div className="hero-copy"><small>{new Date().toLocaleDateString('en-US', { month: 'long' }).toUpperCase()} / MONEY CHECK</small><h1>TOTAL AVAILABLE</h1><div className="impact-number">{money(totals.remaining + totals.unallocated)}</div><p>Allocated Funds plus money waiting to be assigned.</p></div>
-      <div className="hero-stats"><div><span>RECEIVED</span><b>{money(received)}</b><small>this month</small></div><div><span>SPENT</span><b>{money(spent)}</b><small>this month</small></div><button className="unassigned" onClick={() => totals.unallocated > 0 && setAllocating(true)}><span>UNALLOCATED</span><b>{money(totals.unallocated)}</b><small>{totals.unallocated > 0 ? 'tap to assign' : 'nothing waiting'}</small></button></div>
-    </section>
+  useEffect(() => { const shortcut = (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchRef.current?.focus(); } }; document.addEventListener('keydown', shortcut); return () => document.removeEventListener('keydown', shortcut); }, []);
 
-    {isEmpty && <Panel className="onboarding"><Empty title="YOUR BOOK'S EMPTY." action={<Button onClick={() => onAction('fund')}>CREATE YOUR FIRST FUND</Button>}>Create a Fund, record money received, split it, then start adding expenses.</Empty><ol><li><b>01</b> Create a Fund</li><li><b>02</b> Add money</li><li><b>03</b> Split and spend</li></ol></Panel>}
+  return <div className="dashboard-page">
+    <header className="dash-header"><div className="dash-greeting"><small>{greeting()},</small><h1>{user?.displayName?.split(' ')[0] || 'Ledger keeper'}!</h1><span>DISCIPLINE TODAY. FREEDOM TOMORROW.</span></div><div className="global-search"><span>⌕</span><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Funds, transactions, categories…"/><kbd>Ctrl K</kbd>{search && <div className="search-results">{searchResults.length ? searchResults.map((result) => <button key={result.id} onClick={() => { result.action(); setSearch(''); }}><b>{result.title}</b><small>{result.meta}</small></button>) : <p>No matches in your ledger.</p>}</div>}</div><div className="dash-date"><b>▣</b><span>{new Date().toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span><Link to="/profile" className="header-avatar">{user?.displayName?.[0] || user?.email?.[0] || 'H'}</Link></div></header>
 
-    {!!activeFunds.length && <><div className="section-heading"><div><span className="kicker">WHERE IT LIVES</span><h2>YOUR FUNDS</h2></div><Link to="/funds">SEE ALL →</Link></div><section className="fund-scape">{totals.funds.map((fund, index) => <Link to={`/funds/${fund.id}`} key={fund.id} className={`fund-panel ${fund.accent} f${index}`}><small>{fund.type === 'shared' ? 'SHARED FUND' : 'PERSONAL FUND'}</small><h3>{fund.name}</h3><strong>{money(fund.remaining)}</strong><span>OF {money(fund.allocated)} LEFT</span><Progress value={fund.spent} max={fund.allocated} label={`${money(fund.spent)} spent`}/></Link>)}</section></>}
+    <div className="dashboard-grid">
+      <main className="dashboard-main">
+        <section className="comic-hero"><div className="hero-finance"><span className="hero-label">TOTAL AVAILABLE</span><strong>{money(totals.remaining + totals.unallocated)}</strong><div className="hero-mini"><span>TOTAL RECEIVED<b>{money(totals.received)}</b></span><span>TOTAL SPENT<b>{money(totals.spent)}</b></span><span>UNALLOCATED<b>{money(totals.unallocated)}</b></span></div></div><div className="speech">SAME MONEY.<br/>A BRIGHTER YOU.</div><HeroInk/><div className="hero-mantra">PLAN<br/>TRACK<br/>SPEND<br/><em>REPEAT</em></div></section>
 
-    <div className="section-heading"><div><span className="kicker red">LATEST RECORDS</span><h2>RECENT MOVES</h2></div><Link to="/activity">FULL STORY →</Link></div>
-    <Panel className="ledger-panel">{data.transactions.length ? data.transactions.slice(0, 5).map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty title="YOUR FIRST TRANSACTION WILL SHOW UP HERE." action={activeFunds.length ? <Button onClick={() => onAction('expense')}>ADD EXPENSE</Button> : null}>Nothing has moved yet.</Empty>}</Panel>
+        <section className="dash-section"><header><h2>YOUR FUNDS</h2><span>SEPARATE POCKETS. ONE CLEAR LIFE.</span><Link to="/funds">View all →</Link></header><div className="dashboard-funds">{totals.funds.slice(0, 4).map((fund, index) => { const count = data.transactions.filter((item) => item.fundId === fund.id).length; const left = fund.allocated ? Math.max(0, fund.remaining / fund.allocated * 100) : 0; return <Link to={`/funds/${fund.id}`} className={`dash-fund-card ${fund.accent}`} style={{ '--delay': `${index * 55}ms` }} key={fund.id}><i>{fundGlyph(fund.name)}</i><h3>{fund.name}</h3><strong>{money(fund.remaining)}</strong><small>of {money(fund.allocated)}</small><div className="fund-meter"><span style={{ width: `${Math.min(100, left)}%` }}/></div><b>{Math.round(left)}%</b><footer>{count} transaction{count !== 1 ? 's' : ''}</footer></Link>; })}<button className="new-fund-card" onClick={() => onAction('fund')}><b>＋</b><span>NEW FUND</span></button></div></section>
+
+        <section className="dashboard-lower"><div className="dash-section recent-block"><header><h2>RECENT ACTIVITY</h2><span>LATEST MOVES IN YOUR STORY.</span><Link to="/activity">View all →</Link></header><div className="compact-ledger">{data.transactions.length ? data.transactions.slice(0, 5).map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>}</div></div><div className="dash-section month-block"><header><h2>THIS MONTH</h2><span>A QUICK GLANCE.</span></header><div className="month-totals"><p><span>↗ Received</span><b className="positive">{money(received)}</b></p><p><span>↘ Spent</span><b>{money(spent)}</b></p><p><span>⊕ Remaining</span><b>{money(received - spent)}</b></p></div><div className="month-bars">{activeFunds.slice(0, 5).map((fund) => { const value = expenses.filter((item) => item.fundId === fund.id).reduce((total, item) => total + Number(item.amount), 0); const max = Math.max(...activeFunds.map((entry) => expenses.filter((item) => item.fundId === entry.id).reduce((total, item) => total + Number(item.amount), 0)), 1); return <div key={fund.id}><span>{fund.name}</span><i><b className={fund.accent} style={{ width: `${value / max * 100}%` }}/></i><strong>{money(value)}</strong></div>; })}</div></div></section>
+
+        <section className="unallocated-strip"><div className="wallet-mark">▤</div><div><small>UNALLOCATED MONEY</small><strong>{money(totals.unallocated)}</strong><p>{totals.unallocated ? `${money(totals.unallocated)} is waiting for a job.` : 'All received money has been allocated.'}</p></div>{totals.unallocated > 0 && <Button onClick={() => setAllocating(true)}>ALLOCATE IT</Button>}<div className="strip-quote">“A PLACE FOR<br/>TOMORROW'S PLANS.”</div></section>
+      </main>
+
+      <aside className="dashboard-aside"><div className="sticky-note"><b>IT ALL<br/>ADDS UP.</b></div><div className="direct-actions"><button className="primary" onClick={() => onAction('remittance')}>＋ ADD MONEY</button><button onClick={() => onAction('expense')}>＋ ADD EXPENSE</button><button onClick={() => onAction('transfer')}>⇄ TRANSFER MONEY</button><button onClick={() => onAction('fund')}>＋ CREATE FUND</button></div><Reminder totals={totals} funds={activeFunds} data={data}/><JourneyPanel/><div className="lot-watch"><small>MONEY LOT WATCH</small><b>{data.allocations.length} LOT{data.allocations.length !== 1 ? 'S' : ''} ON THE BOOKS</b><span>Oldest money is spent first unless you choose a specific lot.</span></div></aside>
+    </div>
     {allocating && <AllocateMoney data={data} onClose={() => setAllocating(false)}/>}
-  </>;
+  </div>;
 }
 
+function HeroInk() { return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true"><defs><pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs><path d="M20 225 92 143l41 30 55-89 45 70 46-49 38 31 57-91 63 117 63-33 40 96Z" fill="url(#dots)"/><path d="M190 225V142h26v83m21 0V103h31v122m18 0v-64h37v64m20 0V83h22v142m24 0v-97h42v97" fill="#111"/><circle cx="344" cy="73" r="39" fill="#111"/><path d="M302 225q-7-92 42-119 53 30 63 119Z" fill="#111"/><path d="m325 55 17-24 8 23 23-18-7 27 25 2-19 14-48-5Z" fill="#111"/><path d="M319 72q25-17 53 0l-7 13-18-4-18 5Z" fill="white" stroke="#111" strokeWidth="5"/><path d="M350 109q-9 31-33 48m58-42q17 30 37 43" fill="none" stroke="white" strokeWidth="5"/></svg>; }
+
+function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }
+function JourneyPanel() { return <div className="journey-panel"><div className="journey-copy">SAME<br/>HABITS.<br/>BIGGER<br/>FREEDOM.</div><svg viewBox="0 0 220 280" aria-hidden="true"><circle cx="154" cy="190" r="60" fill="#f2cc46"/><path d="m0 280 66-88 35 34 38-70 81 124Z" fill="#111"/><path d="M107 251q8-54 18-66m0 0-14 12m14-12 8 16" stroke="white" strokeWidth="5" fill="none"/><path d="M166 69 176 45l8 22 24-8-13 21 17 15-26-2-10 23-5-25-25-5Z" fill="#f2cc46" stroke="#111" strokeWidth="4"/></svg></div>; }
+
 function AllocateMoney({ data, onClose }) {
-  const sources = data.remittances.map((remittance) => ({ ...remittance, left: Number(remittance.totalAmount) - data.allocations.filter((allocation) => allocation.remittanceId === remittance.id).reduce((total, allocation) => total + Number(allocation.amount), 0) })).filter((item) => item.left > 0);
-  const [values, setValues] = useState({ remittanceId: sources[0]?.id || '', fundId: data.funds.find((fund) => !fund.archived)?.id || '', amount: '' });
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  const source = sources.find((item) => item.id === values.remittanceId);
-  const valid = Number(values.amount) > 0 && Number(values.amount) <= Number(source?.left) && values.fundId;
-  const submit = async (event) => { event.preventDefault(); if (!valid || busy) return; setBusy(true); setError(''); try { await data.allocate({ ...values, amount: Number(values.amount) }); onClose(); } catch (submitError) { setError(submitError.message); setBusy(false); } };
-  return <Modal title="ASSIGN THE REST" onClose={onClose}><form onSubmit={submit}><Field label="FROM REMITTANCE"><select value={values.remittanceId} onChange={(event) => setValues({ ...values, remittanceId: event.target.value })}>{sources.map((item) => <option value={item.id} key={item.id}>{item.sender} — {money(item.left)} left</option>)}</select></Field><Field label="SEND TO FUND"><select value={values.fundId} onChange={(event) => setValues({ ...values, fundId: event.target.value })}>{data.funds.filter((fund) => !fund.archived).map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="AMOUNT"><input autoFocus className="amount-input" type="number" min="1" max={source?.left} value={values.amount} onChange={(event) => setValues({ ...values, amount: event.target.value })}/></Field>{Number(values.amount) > Number(source?.left) && <p className="form-error">Only {money(source?.left)} is unallocated here.</p>}{error && <p className="form-error">{error}</p>}<Button disabled={!valid || busy}>{busy ? 'ASSIGNING…' : 'ASSIGN MONEY'}</Button></form></Modal>;
+  const sources = data.remittances.map((item) => ({ ...item, left: Number(item.totalAmount) - data.allocations.filter((allocation) => allocation.remittanceId === item.id).reduce((total, allocation) => total + Number(allocation.amount), 0) })).filter((item) => item.left > 0);
+  const [values, setValues] = useState({ remittanceId: sources[0]?.id || '', fundId: data.funds.find((fund) => !fund.archived)?.id || '', amount: '' }); const [busy, setBusy] = useState(false); const source = sources.find((item) => item.id === values.remittanceId); const valid = Number(values.amount) > 0 && Number(values.amount) <= Number(source?.left) && values.fundId;
+  return <Modal title="GIVE IT A JOB" onClose={onClose}><form onSubmit={async (event) => { event.preventDefault(); if (!valid || busy) return; setBusy(true); try { await data.allocate({ ...values, amount: Number(values.amount) }); onClose(); } catch { setBusy(false); } }}><Field label="FROM REMITTANCE"><select value={values.remittanceId} onChange={(event) => setValues({ ...values, remittanceId: event.target.value })}>{sources.map((item) => <option value={item.id} key={item.id}>{item.sender} · {money(item.left)} left</option>)}</select></Field><Field label="PURPOSE / FUND"><select value={values.fundId} onChange={(event) => setValues({ ...values, fundId: event.target.value })}>{data.funds.filter((fund) => !fund.archived).map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="AMOUNT"><input autoFocus className="amount-input" type="number" min="1" max={source?.left} value={values.amount} onChange={(event) => setValues({ ...values, amount: event.target.value })}/></Field><Button disabled={!valid || busy}>{busy ? 'STAMPING LOT…' : 'CREATE MONEY LOT'}</Button></form></Modal>;
 }

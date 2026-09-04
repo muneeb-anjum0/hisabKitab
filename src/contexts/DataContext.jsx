@@ -3,26 +3,18 @@ import { useAuth } from './AuthContext';
 import * as api from '../services/dataService';
 
 const DataContext = createContext(null);
-const EMPTY_DATA = {
-  funds: [], memberships: [], remittances: [], allocations: [], transactions: [], categories: [],
-};
+const EMPTY_DATA = { funds: [], memberships: [], remittances: [], allocations: [], transactions: [], categories: [] };
 const SYSTEM_CATEGORIES = [
-  ['food', 'Food', '●'], ['groceries', 'Groceries', '▦'], ['fuel', 'Fuel', '▲'],
-  ['bills', 'Bills', '⚡'], ['internet', 'Internet', '@'], ['shopping', 'Shopping', '★'],
-  ['university', 'University', '✎'], ['transport', 'Transport', '➜'], ['medical', 'Medical', '+'],
-  ['entertainment', 'Entertainment', '♪'], ['home', 'Home', '⌂'], ['other', 'Other', '◆'],
+  ['food', 'Food', '●'], ['groceries', 'Groceries', '▦'], ['fuel', 'Fuel', '▲'], ['bills', 'Bills', '⚡'],
+  ['internet', 'Internet', '@'], ['shopping', 'Shopping', '★'], ['university', 'University', '✎'],
+  ['transport', 'Transport', '➜'], ['medical', 'Medical', '+'], ['entertainment', 'Entertainment', '♪'],
+  ['home', 'Home', '⌂'], ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
 
-const FIRESTORE_TIMEOUT_MS = 12000;
-
 function withTimeout(operation) {
-  return Promise.race([
-    operation,
-    new Promise((_, reject) => window.setTimeout(
-      () => reject(new Error('Firestore did not respond. Confirm that the Firestore database exists and its rules are deployed.')),
-      FIRESTORE_TIMEOUT_MS,
-    )),
-  ]);
+  return Promise.race([operation, new Promise((_, reject) => window.setTimeout(
+    () => reject(new Error('Firestore did not respond. Confirm that the database exists and its rules are deployed.')), 12000,
+  ))]);
 }
 
 export function DataProvider({ children }) {
@@ -33,73 +25,58 @@ export function DataProvider({ children }) {
   const [toast, setToast] = useState(null);
 
   const refresh = useCallback(async () => {
-    if (!configured || !user) {
-      setData(EMPTY_DATA);
-      setLoading(false);
-      return;
-    }
+    if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); return; }
     setLoading(true);
-    try {
-      setData(await withTimeout(api.loadUserData(user.uid)));
-      setError('');
-    } catch (loadError) {
-      console.error(loadError);
-      setError(loadError.message?.includes('Firestore did not respond')
-        ? loadError.message
-        : 'Could not load your ledger. Make sure Firestore exists, deploy its rules, then retry.');
-    } finally {
-      setLoading(false);
-    }
+    try { setData(await withTimeout(api.loadUserData(user.uid))); setError(''); }
+    catch (loadError) { console.error(loadError); setError(loadError.message || 'Could not load your ledger.'); }
+    finally { setLoading(false); }
   }, [configured, user]);
 
   useEffect(() => { refresh(); }, [refresh]);
   useEffect(() => {
     if (!toast) return undefined;
-    const timer = window.setTimeout(() => setToast(null), 3200);
+    const timer = window.setTimeout(() => setToast(null), 2400);
     return () => window.clearTimeout(timer);
   }, [toast]);
 
-  const runWrite = async (operation, successMessage) => {
+  const write = async (operation, apply, message) => {
     setError('');
     try {
       const result = await operation();
-      await refresh();
-      setToast({ type: 'success', message: successMessage });
+      setData((current) => apply(current, result));
+      setToast({ type: 'success', message });
       return result;
     } catch (writeError) {
       console.error(writeError);
-      const message = writeError.message || "Couldn't save that. Check your connection and try again.";
-      setToast({ type: 'error', message });
+      setToast({ type: 'error', message: writeError.message || "COULDN'T SAVE THAT." });
       throw writeError;
     }
   };
 
   const categories = useMemo(() => {
-    const customIds = new Set(data.categories.map((category) => category.id));
-    return [...SYSTEM_CATEGORIES.filter((category) => !customIds.has(category.id)), ...data.categories];
+    const customIds = new Set(data.categories.map((item) => item.id));
+    return [...SYSTEM_CATEGORIES.filter((item) => !customIds.has(item.id)), ...data.categories];
   }, [data.categories]);
 
   const value = {
     ...data, categories, loading, error, toast, setToast, refresh,
-    createFund: (values) => runWrite(() => api.createFund(user.uid, values), 'FUND CREATED.'),
-    updateFund: (id, values) => runWrite(() => api.updateFund(id, values), 'CHANGES SAVED.'),
-    addTransaction: (values) => runWrite(() => api.addTransaction(user.uid, values), 'EXPENSE SAVED.'),
-    updateTransaction: (id, values) => runWrite(() => api.updateTransaction(id, values), 'CHANGES SAVED.'),
-    removeTransaction: (id) => runWrite(() => api.removeTransaction(id), 'EXPENSE DELETED.'),
-    createRemittance: (values, allocations) => runWrite(
-      () => api.createRemittance(user.uid, values, allocations), 'MONEY ADDED.',
-    ),
-    createTransfer: (values) => runWrite(
-      () => api.createTransfer(user.uid, values.fromId, values.toId, values.amount, values.date, values.note),
-      'TRANSFER COMPLETE.',
-    ),
-    allocate: (values) => runWrite(() => api.addAllocation(values), 'MONEY ALLOCATED.'),
-    addCategory: (name) => runWrite(() => api.addCategory(user.uid, name), 'CATEGORY ADDED.'),
-    addMember: (fundId, email, role) => runWrite(() => api.addMember(fundId, email, role), 'MEMBER ADDED.'),
-    updateMember: (id, role) => runWrite(() => api.updateMember(id, role), 'ROLE UPDATED.'),
-    removeMember: (id) => runWrite(() => api.removeMember(id), 'MEMBER REMOVED.'),
+    createFund: (values) => write(() => api.createFund(user.uid, values), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'),
+    updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: current.funds.map((item) => item.id === id ? { ...item, ...result } : item) }), 'CHANGES SAVED.'),
+    addTransaction: (values) => write(() => api.addTransaction(user.uid, values), (current, result) => ({ ...current, transactions: [result, ...current.transactions] }), 'SPENT. SAVED.'),
+    updateTransaction: (id, values) => write(() => api.updateTransaction(id, values), (current, result) => ({ ...current, transactions: current.transactions.map((item) => item.id === id ? { ...item, ...result } : item) }), 'CHANGES SAVED.'),
+    removeTransaction: (id) => write(() => api.removeTransaction(id), (current) => ({ ...current, transactions: current.transactions.filter((item) => item.id !== id) }), 'EXPENSE DELETED.'),
+    createRemittance: (values, allocations) => write(() => api.createRemittance(user.uid, values, allocations), (current, result) => ({ ...current, remittances: [result.remittance, ...current.remittances], allocations: [...current.allocations, ...result.allocations] }), 'KA-CHING. MONEY ADDED.'),
+    createTransfer: (values) => write(() => api.createTransfer(user.uid, values.fromId, values.toId, values.amount, values.date, values.note, values.lotUsages, values.sourceFundName), (current, result) => ({ ...current, transactions: [...result, ...current.transactions] }), 'TRANSFER COMPLETE.'),
+    allocate: (values) => {
+      const remittance = data.remittances.find((item) => item.id === values.remittanceId);
+      const enriched = { ...values, source: remittance?.sender || 'Money received', receivedAt: remittance?.receivedAt || '' };
+      return write(() => api.addAllocation(enriched), (current, result) => ({ ...current, allocations: [...current.allocations, result] }), 'MONEY LOT CREATED.');
+    },
+    addCategory: (name) => write(() => api.addCategory(user.uid, name), (current, result) => ({ ...current, categories: [...current.categories, result] }), 'CATEGORY ADDED.'),
+    addMember: async (fundId, email, role) => { await api.addMember(fundId, email, role); await refresh(); setToast({ type: 'success', message: 'MEMBER ADDED.' }); },
+    updateMember: async (id, role) => { await api.updateMember(id, role); setData((current) => ({ ...current, memberships: current.memberships.map((item) => item.id === id ? { ...item, role } : item) })); },
+    removeMember: async (id) => { await api.removeMember(id); setData((current) => ({ ...current, memberships: current.memberships.filter((item) => item.id !== id) })); },
   };
-
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }
 

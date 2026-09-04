@@ -40,7 +40,7 @@ firebase use --add
 firebase deploy --only firestore:rules,firestore:indexes
 ```
 
-The included rules use deterministic membership IDs (`fundId_userId`) and enforce owner/editor/viewer access. A user document is readable to authenticated users so a Fund owner can look up an already-registered exact email. This is the Firebase-only sharing mechanism; it does not email invitations to people who have not registered.
+The included rules use deterministic membership IDs (`fundId_userId`) and enforce owner/editor/viewer access. Private `users` documents are self-only; exact-email sharing uses the minimal authenticated `publicProfiles` directory. This Firebase-only sharing mechanism does not email people who have not registered.
 
 ## Commands
 
@@ -56,8 +56,16 @@ firebase deploy   # Firestore configuration + Firebase Hosting
 
 Fund balances are never stored or incremented independently. They are calculated as allocations minus expenses, plus signed adjustments and signed transfer entries. A transfer creates two linked entries and never counts as income. Any received amount not represented by allocations remains unallocated.
 
-Primary collections are `users`, `publicProfiles`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. `users` is private; `publicProfiles` contains only the minimal name/email directory needed for exact-email shared-Fund lookup. Dashboard and activity queries are deliberately capped in `src/services/dataService.js`; for a high-volume production account, add server-side monthly aggregates while keeping this ledger authoritative.
+### Money Lots and FIFO
+
+Every allocation is also a Money Lot: a traceable batch tied to its remittance, sender, date, Fund, and original amount. Existing allocations automatically appear as historical Money Lots; no migration or duplication is required. New expenses store a `lotUsages` breakdown on the transaction. The default allocation strategy consumes the oldest available lot first (FIFO). A user can select a specific lot; if it is insufficient, the remainder continues through available lots in FIFO order. Legacy expenses without `lotUsages` are replayed FIFO at calculation time.
+
+Transfers consume Money Lots in the source Fund and derive a destination transfer lot linked to the paired transfer entry. Money Lot balances, like Fund balances, are calculated from the ledger and are never independently mutated.
+
+Primary collections are `users`, `publicProfiles`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. `users` is private; `publicProfiles` contains only the minimal name/email directory needed for exact-email shared-Fund lookup. Dashboard and activity queries are deliberately capped in `src/services/dataService.js`; for a high-volume production account, add pagination and server-side monthly aggregates while keeping this ledger authoritative.
+
+Confirmed mutations update only their affected local collections instead of reloading every Firestore query. A full reconciliation remains available through `refresh()` for startup, retry, and membership changes.
 
 ## PWA and offline behavior
 
-The production build registers `public/sw.js` to cache the application shell. Firestore uses persistent multi-tab local cache and queues supported writes while offline. The UI shows network state. SVG artwork is used as the install icon; app stores may require exported PNG icons in additional fixed sizes.
+The production build registers `public/sw.js` to cache the application shell. Firestore uses persistent multi-tab local cache and queues supported writes while offline. The UI shows network state. The manifest includes 192px, 512px, maskable 512px, and Apple touch icons, plus standalone display, scope, theme, and safe-area metadata.

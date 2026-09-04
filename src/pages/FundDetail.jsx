@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useData } from '../contexts/DataContext';
-import { fundTotals } from '../lib/calculations';
+import { fundTotals, moneyLotSummary } from '../lib/calculations';
+import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
 import { Button, Modal, Field, Progress, Empty } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
@@ -13,16 +14,19 @@ export default function FundDetail() {
   const fund = data.funds.find((item) => item.id === id);
   if (!fund) return <Empty title="FUND NOT FOUND.">This Fund may have been archived or removed.</Empty>;
   const totals = fundTotals(id, data.allocations, data.transactions);
+  const lotSummary = moneyLotSummary(id, data.allocations, data.remittances, data.transactions);
   const transactions = data.transactions.filter((item) => item.fundId === id);
   const members = data.memberships.filter((item) => item.fundId === id);
   const currentMembership = members.find((item) => item.userId === user.uid);
   const owner = currentMembership?.role === 'owner';
   return <>
     <button className="back-link" onClick={() => navigate('/funds')}>← ALL FUNDS</button>
-    <section className={`fund-detail-hero ${fund.accent}`}><div><span>{fund.type === 'shared' ? 'SHARED FUND' : 'PERSONAL FUND'}</span><h1>{fund.name}</h1><p>{members.length} member{members.length !== 1 ? 's' : ''} · {money(totals.allocated)} allocated</p></div><div><small>CURRENTLY AVAILABLE</small><strong>{money(totals.remaining)}</strong><Progress value={totals.spent} max={totals.allocated} label={`${money(totals.spent)} spent`}/></div></section>
+    <section className={`fund-detail-hero ${fund.accent}`}><div><span>{fund.type === 'shared' ? 'SHARED FUND' : 'PERSONAL FUND'}</span><h1>{fund.name}</h1><p>{members.length} member{members.length !== 1 ? 's' : ''} · {lotSummary.lots.length} money lot{lotSummary.lots.length !== 1 ? 's' : ''}</p></div><div><small>CURRENTLY AVAILABLE</small><strong>{money(totals.remaining)}</strong><div className="fund-hero-stats"><span>RECEIVED <b>{money(totals.allocated + Math.max(0, totals.adjustments))}</b></span><span>SPENT <b>{money(totals.spent)}</b></span></div><Progress value={totals.spent} max={totals.allocated} label={`${money(totals.spent)} spent`}/></div></section>
     <div className="detail-actions">{owner && <Button onClick={() => setEditing(true)}>EDIT FUND</Button>}{fund.type === 'shared' && <Button variant="paper" onClick={() => setShowMembers(true)}>MEMBERS ({members.length})</Button>}</div>
-    <div className="section-heading"><div><span className="kicker red">MONEY TRAIL</span><h2>FUND ACTIVITY</h2></div></div>
-    <section className="panel ledger-panel">{transactions.length ? transactions.map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty>There are no transactions in this Fund yet.</Empty>}</section>
+    <div className="section-heading lot-heading"><div><span className="kicker">BATCH BY BATCH</span><h2>MONEY LOTS</h2></div></div>
+    <section className="money-lots">{lotSummary.lots.length ? [...lotSummary.lots].reverse().map((lot) => <article className="money-lot" key={lot.id}><header><span>MONEY LOT</span><b>#{String(lot.number).padStart(2, '0')}</b></header><small>{lot.kind === 'transfer' ? 'TRANSFER LOT' : `FROM ${lot.source.toUpperCase()}`}</small><strong>{money(lot.originalAmount)}</strong><div><span>RECEIVED <b>{friendlyDate(lot.receivedAt)}</b></span><span>SPENT <b>{money(lot.spent)}</b></span><span>LEFT <b>{money(lot.remaining)}</b></span></div><Progress value={lot.spent} max={lot.originalAmount} label={`${Math.round((lot.remaining / lot.originalAmount) * 100) || 0}% left`}/></article>) : <Empty title="NO MONEY LOTS YET.">When money arrives for this Fund, each allocation will land here.</Empty>}</section>
+    <div className="section-heading"><div><span className="kicker red">MONEY TRAIL</span><h2>RECENT EXPENSES</h2></div></div>
+    <section className="panel ledger-panel">{transactions.length ? transactions.map((item) => <div key={item.id} className="trace-row"><TransactionRow item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>{item.lotUsages?.length > 0 && <small className="paid-from">PAID FROM {item.lotUsages.length === 1 ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}` : `${item.lotUsages.length} MONEY LOTS`}</small>}</div>) : <Empty>There are no transactions in this Fund yet.</Empty>}</section>
     {editing && <EditFund fund={fund} onClose={() => setEditing(false)} onSave={async (values) => { await data.updateFund(fund.id, values); setEditing(false); if (values.archived) navigate('/funds'); }}/>}
     {showMembers && <Members fund={fund} members={members} data={data} isOwner={owner} onClose={() => setShowMembers(false)}/>}
   </>;

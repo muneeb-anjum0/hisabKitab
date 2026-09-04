@@ -1,16 +1,17 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useData } from './contexts/DataContext';
 import Nav from './components/navigation/Nav';
-import QuickAdd from './components/forms/QuickAdd';
 import Dashboard from './pages/Dashboard';
-import Funds from './pages/Funds';
-import FundDetail from './pages/FundDetail';
-import Activity from './pages/Activity';
-import Summary from './pages/Summary';
-import Profile from './pages/Profile';
 import Auth, { FirebaseSetup } from './pages/Auth';
+
+const QuickAdd = lazy(() => import('./components/forms/QuickAdd'));
+const Funds = lazy(() => import('./pages/Funds'));
+const FundDetail = lazy(() => import('./pages/FundDetail'));
+const Activity = lazy(() => import('./pages/Activity'));
+const Summary = lazy(() => import('./pages/Summary'));
+const Profile = lazy(() => import('./pages/Profile'));
 
 export default function App() {
   const { user, loading: authLoading, configured } = useAuth();
@@ -37,7 +38,7 @@ export default function App() {
     <main className="content">
       {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
       {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
-      {data.loading ? <div className="ledger-loading"><span/><b>SYNCING YOUR BOOK…</b></div> : <Routes>
+      {data.loading ? <div className="ledger-loading"><span/><b>SYNCING YOUR BOOK…</b></div> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><Routes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
         <Route path="/funds" element={<Funds/>}/>
         <Route path="/funds/:id" element={<FundDetail/>}/>
@@ -45,9 +46,9 @@ export default function App() {
         <Route path="/summary" element={<Summary/>}/>
         <Route path="/profile" element={<Profile/>}/>
         <Route path="*" element={<Navigate to="/" replace/>}/>
-      </Routes>}
+      </Routes></Suspense>}
     </main>
-    {quickAction && <QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/>}
+    {quickAction && <Suspense fallback={null}><QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/></Suspense>}
     {data.toast && <div className={`toast ${data.toast.type}`} role="status">{data.toast.message}</div>}
   </div>;
 }
