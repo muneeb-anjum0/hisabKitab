@@ -74,13 +74,16 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
 function HeroInk() {
   return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true">
     <defs><pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs>
-    <path d="M10 225 72 161l45 31 45-82 46 69 50-48 39 35 56-102 65 119 52-38 70 80Z" fill="url(#dots)"/>
-    <path d="M178 225v-66h25v66m18 0V119h31v106m18 0v-80h34v80m118 0v-91h32v91m18 0v-60h24v60" fill="#111"/>
-    <path d="M293 225c-3-24 1-46 13-64-25 17-55 27-90 26 39-11 65-33 81-65l12 4-9-26 20 13-2-31 20 20 8-33 14 29 19-30 5 34c14-6 28-6 41 0l31 5-17 16 22 10-26 8-22-6c-2 17 8 32 17 47 9 14 15 32 14 53h-34l-4-51-17 51h-37l5-48-20 48Z" fill="#111"/>
-    <path d="m385 105 8-19 9 18 17-12-3 22" fill="#111"/>
-    <path d="M399 111h8" stroke="#fff" strokeWidth="4" strokeLinecap="square"/>
-    <path d="m420 126 18 4-15 5m-62 13 31 16 17-9" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter"/>
-    <path d="m313 162 13-7m-18 20 13-6m53 16 12 40m-55-35-9 35" fill="none" stroke="#fff" strokeWidth="4"/>
+    <path d="M12 225 82 157l45 34 54-92 48 73 58-51 40 34 59-93 61 117 47-32 66 78Z" fill="url(#dots)" opacity=".85"/>
+    <circle cx="352" cy="116" r="91" fill="#fff" stroke="#111" strokeWidth="5"/>
+    <circle cx="352" cy="116" r="78" fill="url(#dots)" opacity=".45"/>
+    <ellipse cx="352" cy="91" rx="17" ry="23" fill="#111"/>
+    <path d="M335 111q17-18 34 0l8 56q-25 19-50 0Z" fill="#111"/>
+    <g fill="none" stroke="#111" strokeWidth="10" strokeLinecap="square" strokeLinejoin="miter">
+      <path d="m338 116-35-24-25-37m58 82-42-2-31-25m72 48-37 24-23 30"/>
+      <path d="m366 116 35-24 25-37m-58 82 42-2 31-25m-72 48 37 24 23 30"/>
+    </g>
+    <path d="M344 85q8-8 16 0" fill="none" stroke="#fff" strokeWidth="4"/>
   </svg>;
 }
 
