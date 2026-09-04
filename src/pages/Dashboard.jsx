@@ -71,7 +71,18 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
   return overlay ? <article className={`dash-fund-card fund-drag-overlay ${fund.accent}`}><div className="fund-card-link">{content}</div></article> : <Link className="fund-card-link" draggable={false} to={`/funds/${fund.id}`} onClick={(event) => rearranging && event.preventDefault()}>{content}</Link>;
 }
 
-function HeroInk() { return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true"><defs><pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs><path d="M20 225 92 143l41 30 55-89 45 70 46-49 38 31 57-91 63 117 63-33 40 96Z" fill="url(#dots)"/><path d="M190 225V142h26v83m21 0V103h31v122m18 0v-64h37v64m20 0V83h22v142m24 0v-97h42v97" fill="#111"/><circle cx="344" cy="73" r="39" fill="#111"/><path d="M302 225q-7-92 42-119 53 30 63 119Z" fill="#111"/><path d="m325 55 17-24 8 23 23-18-7 27 25 2-19 14-48-5Z" fill="#111"/><path d="M319 72q25-17 53 0l-7 13-18-4-18 5Z" fill="white" stroke="#111" strokeWidth="5"/><path d="M350 109q-9 31-33 48m58-42q17 30 37 43" fill="none" stroke="white" strokeWidth="5"/></svg>; }
+function HeroInk() {
+  return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true">
+    <defs><pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs>
+    <path d="M10 225 72 161l45 31 45-82 46 69 50-48 39 35 56-102 65 119 52-38 70 80Z" fill="url(#dots)"/>
+    <path d="M178 225v-66h25v66m18 0V119h31v106m18 0v-80h34v80m118 0v-91h32v91m18 0v-60h24v60" fill="#111"/>
+    <path d="M293 225c-3-24 1-46 13-64-25 17-55 27-90 26 39-11 65-33 81-65l12 4-9-26 20 13-2-31 20 20 8-33 14 29 19-30 5 34c14-6 28-6 41 0l31 5-17 16 22 10-26 8-22-6c-2 17 8 32 17 47 9 14 15 32 14 53h-34l-4-51-17 51h-37l5-48-20 48Z" fill="#111"/>
+    <path d="m385 105 8-19 9 18 17-12-3 22" fill="#111"/>
+    <path d="M399 111h8" stroke="#fff" strokeWidth="4" strokeLinecap="square"/>
+    <path d="m420 126 18 4-15 5m-62 13 31 16 17-9" fill="none" stroke="#fff" strokeWidth="5" strokeLinecap="square" strokeLinejoin="miter"/>
+    <path d="m313 162 13-7m-18 20 13-6m53 16 12 40m-55-35-9 35" fill="none" stroke="#fff" strokeWidth="4"/>
+  </svg>;
+}
 
 function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }
 function JourneyPanel() { return <div className="journey-panel"><div className="journey-copy">SAME<br/>HABITS.<br/>BIGGER<br/>FREEDOM.</div><svg viewBox="0 0 220 280" aria-hidden="true"><circle cx="154" cy="190" r="60" fill="#f2cc46"/><path d="m0 280 66-88 35 34 38-70 81 124Z" fill="#111"/><path d="M107 251q8-54 18-66m0 0-14 12m14-12 8 16" stroke="white" strokeWidth="5" fill="none"/><path d="M166 69 176 45l8 22 24-8-13 21 17 15-26-2-10 23-5-25-25-5Z" fill="#f2cc46" stroke="#111" strokeWidth="4"/></svg></div>; }
