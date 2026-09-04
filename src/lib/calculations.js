@@ -58,6 +58,13 @@ export function moveFund(ids, id, direction) {
   const next = [...ids]; [next[from], next[to]] = [next[to], next[from]]; return next;
 }
 
+export function placeFund(ids, draggedId, targetId) {
+  if (draggedId === targetId || !ids.includes(draggedId) || !ids.includes(targetId)) return ids;
+  const next = ids.filter((id) => id !== draggedId);
+  next.splice(next.indexOf(targetId), 0, draggedId);
+  return next;
+}
+
 export function unallocatedTotal(remittances, allocations) {
   return sum(remittances, (item) => item.totalAmount) - sum(allocations, (item) => item.amount);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, moveFund, patchFund, portfolioTotals, sortFunds, unallocatedTotal } from './calculations';
+import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, moveFund, patchFund, placeFund, portfolioTotals, sortFunds, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -146,5 +146,7 @@ describe('financial ledger', () => {
     expect(sortFunds([{ id: 'later', sortOrder: 2 }, { id: 'first', sortOrder: 0 }]).map((fund) => fund.id)).toEqual(['first', 'later']);
     expect(moveFund(['first', 'middle', 'last'], 'middle', -1)).toEqual(['middle', 'first', 'last']);
     expect(moveFund(['first', 'middle', 'last'], 'first', -1)).toEqual(['first', 'middle', 'last']);
+    expect(placeFund(['first', 'middle', 'last'], 'last', 'first')).toEqual(['last', 'first', 'middle']);
+    expect(placeFund(['first', 'middle', 'last'], 'first', 'last')).toEqual(['middle', 'first', 'last']);
   });
 });
