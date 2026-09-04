@@ -30,7 +30,7 @@ export default function App() {
   }, []);
 
   if (!configured) return <FirebaseSetup/>;
-  if (authLoading) return <div className="splash"><div className="mini-logo">HK!</div><span>OPENING THE BOOK…</span></div>;
+  if (authLoading) return <BookOpeningLoader label="OPENING THE BOOK…"/>;
   if (!user) return <Auth/>;
 
   return <div className="app-shell">
@@ -59,5 +59,9 @@ function AnimatedRoutes({ children }) {
 }
 
 function LedgerLoading() {
-  return <div className="ledger-loading original-loader" role="status" aria-live="polite"><span aria-hidden="true"/><b>SYNCING YOUR BOOK…</b></div>;
+  return <BookOpeningLoader label="SYNCING YOUR BOOK…"/>;
+}
+
+function BookOpeningLoader({ label }) {
+  return <div className="splash book-opening-loader" role="status" aria-live="polite"><div className="mini-logo" aria-hidden="true">HK!</div><span>{label}</span></div>;
 }
