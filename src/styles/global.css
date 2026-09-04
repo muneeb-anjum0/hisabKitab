@@ -76,3 +76,6 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 
 /* Keep the dashboard taskbar open, without a page-wide divider */
 .dash-header{border-bottom:0}
+
+/* Join the speech-tail cleanly into the balloon */
+.speech:after{right:24px;bottom:-12px;width:36px;height:36px;background:#fff;border:0;border-right:3px solid #111;border-bottom:3px solid #111;transform:rotate(48deg) skew(8deg);transform-origin:center;z-index:-1}
