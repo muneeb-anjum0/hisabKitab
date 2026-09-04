@@ -63,7 +63,20 @@ export function DataProvider({ children }) {
     ...data, categories, loading, error, toast, setToast, refresh,
     createFund: (values) => write(() => api.createFund(user.uid, values), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'),
     updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: patchFund(current.funds, id, result) }), 'CHANGES SAVED.'),
-    reorderFunds: (ids) => write(() => api.reorderFunds(ids), (current) => ({ ...current, funds: current.funds.map((fund) => { const sortOrder = ids.indexOf(fund.id); return sortOrder < 0 ? fund : { ...fund, sortOrder }; }) }), 'FUND ORDER SAVED.'),
+    reorderFunds: async (ids) => {
+      const previousFunds = data.funds;
+      const applyOrder = (funds) => funds.map((fund) => { const sortOrder = ids.indexOf(fund.id); return sortOrder < 0 ? fund : { ...fund, sortOrder }; });
+      setData((current) => ({ ...current, funds: applyOrder(current.funds) }));
+      try {
+        await api.reorderFunds(ids);
+        setToast({ type: 'success', message: 'FUND ORDER SAVED.' });
+      } catch (writeError) {
+        console.error(writeError);
+        setData((current) => ({ ...current, funds: previousFunds }));
+        setToast({ type: 'error', message: writeError.message || "COULDN'T SAVE THAT." });
+        throw writeError;
+      }
+    },
     removeFund: (id) => {
       if (!fundDeletionAssessment(id, data).empty) return Promise.reject(new Error('This Fund has history. Archive it instead.'));
       return write(() => api.removeEmptyFund(id, user.uid), (current) => ({ ...current, funds: current.funds.filter((item) => item.id !== id), memberships: current.memberships.filter((item) => item.fundId !== id) }), 'EMPTY FUND DELETED.');
