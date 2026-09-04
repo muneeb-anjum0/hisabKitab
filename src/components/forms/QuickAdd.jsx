@@ -37,7 +37,7 @@ export default function QuickAdd({ onClose, initial = 'menu', edit = null }) {
     </div>
   </Modal>;
 
-  const back = () => edit ? onClose() : setMode('menu');
+  const back = () => (edit || initial !== 'menu') ? onClose() : setMode('menu');
   if (mode === 'expense') return <ExpenseForm {...{ data, funds, edit, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => edit ? data.updateTransaction(edit.id, values) : data.addTransaction(values))}/>;
   if (mode === 'remittance') return <RemittanceForm {...{ funds, amountRef, busy, error }} onBack={back} onSubmit={(values, allocations) => submit(() => data.createRemittance(values, allocations))}/>;
   if (mode === 'transfer') return <TransferForm {...{ data, funds, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => data.createTransfer(values))}/>;
