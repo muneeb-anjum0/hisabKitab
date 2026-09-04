@@ -55,9 +55,11 @@ export default function App() {
 
 function LedgerLoading() {
   return <div className="ledger-loading" role="status" aria-live="polite">
-    <div className="loading-burst" aria-hidden="true">SYNC!</div>
-    <div className="comic-book-loader" aria-hidden="true"><div className="book-cover"><b>HISAB<br/>KITAB!</b><i>₹</i></div><span className="turning-page one"/><span className="turning-page two"/><span className="ink-line line-one"/><span className="ink-line line-two"/><span className="ink-line line-three"/></div>
-    <div className="loading-copy"><small>LEDGER LINK ACTIVE</small><h2>SYNCING YOUR BOOK…</h2><p>Every rupee is finding its page.</p></div>
-    <div className="sync-track" aria-hidden="true"><i/><span>FUNDS</span><span>MONEY LOTS</span><span>ACTIVITY</span></div>
+    <section className="sync-card">
+      <header><div className="sync-logo">HK!</div><div><small>SECURE LEDGER LINK</small><b>YOUR BOOK IS OPEN</b></div><span className="sync-live"><i/> LIVE</span></header>
+      <div className="sync-copy"><span className="sync-kicker">JUST A MOMENT</span><h2>SYNCING YOUR BOOK<span className="loading-dots" aria-hidden="true">…</span></h2><p>Bringing every Fund, Money Lot, and move onto the same page.</p></div>
+      <div className="ink-progress" aria-hidden="true"><i/></div>
+      <footer aria-hidden="true"><span><i>01</i> FUNDS</span><span><i>02</i> MONEY LOTS</span><span><i>03</i> ACTIVITY</span></footer>
+    </section>
   </div>;
 }
