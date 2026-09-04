@@ -60,8 +60,9 @@ export function moveFund(ids, id, direction) {
 
 export function placeFund(ids, draggedId, targetId) {
   if (draggedId === targetId || !ids.includes(draggedId) || !ids.includes(targetId)) return ids;
+  const movingForward = ids.indexOf(draggedId) < ids.indexOf(targetId);
   const next = ids.filter((id) => id !== draggedId);
-  next.splice(next.indexOf(targetId), 0, draggedId);
+  next.splice(next.indexOf(targetId) + (movingForward ? 1 : 0), 0, draggedId);
   return next;
 }
 

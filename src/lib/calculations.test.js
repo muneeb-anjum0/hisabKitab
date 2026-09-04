@@ -147,6 +147,7 @@ describe('financial ledger', () => {
     expect(moveFund(['first', 'middle', 'last'], 'middle', -1)).toEqual(['middle', 'first', 'last']);
     expect(moveFund(['first', 'middle', 'last'], 'first', -1)).toEqual(['first', 'middle', 'last']);
     expect(placeFund(['first', 'middle', 'last'], 'last', 'first')).toEqual(['last', 'first', 'middle']);
-    expect(placeFund(['first', 'middle', 'last'], 'first', 'last')).toEqual(['middle', 'first', 'last']);
+    expect(placeFund(['first', 'middle', 'last'], 'first', 'last')).toEqual(['middle', 'last', 'first']);
+    expect(placeFund(['first', 'middle', 'last'], 'first', 'middle')).toEqual(['middle', 'first', 'last']);
   });
 });

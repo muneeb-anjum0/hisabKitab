@@ -17,11 +17,11 @@ export default function Dashboard({ onAction }) {
   const [allocating, setAllocating] = useState(false); const [search, setSearch] = useState(''); const [rearranging, setRearranging] = useState(false); const [dragging, setDragging] = useState(''); const [orderIds, setOrderIds] = useState([]);
   const searchRef = useRef(null); const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
   const canRearrange = activeFunds.length > 1 && activeFunds.every((fund) => data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner'));
-  const dragIdRef = useRef(''); const orderRef = useRef([]);
+  const dragIdRef = useRef(''); const orderRef = useRef([]); const initialOrderRef = useRef([]);
   const setVisualOrder = (ids) => { orderRef.current = ids; setOrderIds(ids); };
-  const startDrag = (id) => { dragIdRef.current = id; setDragging(id); if (!orderRef.current.length) setVisualOrder(activeFunds.map((item) => item.id)); };
+  const startDrag = (id) => { dragIdRef.current = id; setDragging(id); const ids = orderRef.current.length ? orderRef.current : activeFunds.map((item) => item.id); if (!orderRef.current.length) setVisualOrder(ids); initialOrderRef.current = [...ids]; };
   const previewDrag = (targetId) => { const draggedId = dragIdRef.current; if (!draggedId || draggedId === targetId) return; setVisualOrder(placeFund(orderRef.current, draggedId, targetId)); };
-  const finishDrag = () => { const draggedId = dragIdRef.current; const ids = orderRef.current; dragIdRef.current = ''; setDragging(''); if (draggedId && ids.length) void data.reorderFunds(ids); };
+  const finishDrag = () => { const draggedId = dragIdRef.current; const ids = orderRef.current; const changed = ids.some((id, index) => id !== initialOrderRef.current[index]); dragIdRef.current = ''; setDragging(''); initialOrderRef.current = []; if (draggedId && changed) void data.reorderFunds(ids); };
   const totals = useMemo(() => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances), [activeFunds, data.allocations, data.transactions, data.remittances]);
   const displayedFunds = rearranging ? orderIds.map((id) => totals.funds.find((fund) => fund.id === id)).filter(Boolean) : totals.funds.slice(0, 4);
   const currentMonth = monthKey();
