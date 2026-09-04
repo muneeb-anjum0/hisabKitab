@@ -8,7 +8,7 @@ export default function TransactionRow({ item, funds, categories, memberships = 
   const incomingTransfer = item.type === 'transfer' && item.amount > 0;
   return <article className={`ledger-row ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}>
     <div className="ledger-symbol">{item.type === 'transfer' ? '⇄' : category?.symbol || '◆'}</div>
-    <div className="ledger-main"><strong>{item.description}</strong><span>{fund?.name || 'Unknown fund'} · {friendlyDate(item.date)}{creator?.displayName ? ` · ${creator.displayName}` : ''}</span>{item.note && <small>{item.note}</small>}</div>
+    <div className="ledger-main"><strong>{item.description}</strong><span className="ledger-meta"><b className={`ledger-fund-tag ${fund?.accent || ''}`}>{fund?.name || 'Unknown fund'}</b><span>{friendlyDate(item.date)}{creator?.displayName ? ` · ${creator.displayName}` : ''}</span></span>{item.note && <small>{item.note}</small>}</div>
     <div className={`ledger-amount ${incomingTransfer ? 'positive' : ''}`}>{item.type === 'expense' ? '-' : ''}{money(item.amount)}</div>
     {(onEdit || onDelete) && <div className="row-actions">{onEdit && <button onClick={() => onEdit(item)} aria-label={`Edit ${item.description}`}>✎</button>}{onDelete && <button onClick={() => onDelete(item)} aria-label={`Delete ${item.description}`}>×</button>}</div>}
   </article>;
