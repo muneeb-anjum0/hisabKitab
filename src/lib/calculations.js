@@ -19,6 +19,31 @@ export function fundTotals(fundId, allocations, transactions) {
   return { allocated, spent, adjustments, remaining: allocated - spent + adjustments };
 }
 
+export function fundCardState({ allocated, remaining, adjustments = 0 }) {
+  if (remaining < 0) return { kind: 'overspent', label: 'OVERSPENT', overBy: Math.abs(remaining), percentage: null };
+  if (allocated <= 0 && adjustments <= 0) return { kind: 'empty', label: 'NO MONEY YET', percentage: null };
+  const denominator = allocated + Math.max(0, adjustments);
+  if (denominator <= 0 || remaining > denominator) return { kind: 'inflow', label: 'TRANSFERRED IN', percentage: null };
+  const percentage = Math.round(Math.min(100, Math.max(0, remaining / denominator * 100)));
+  return { kind: 'normal', label: `${percentage}% LEFT`, percentage };
+}
+
+export function fundDeletionAssessment(fundId, data) {
+  const allocations = data.allocations.filter((item) => item.fundId === fundId);
+  const transactions = data.transactions.filter((item) => item.fundId === fundId || item.counterpartyFundId === fundId);
+  const memberships = data.memberships.filter((item) => item.fundId === fundId);
+  const totals = fundTotals(fundId, data.allocations, data.transactions);
+  const transferCount = transactions.filter((item) => item.type === 'transfer').length;
+  const sharedMembers = memberships.filter((item) => item.role !== 'owner').length;
+  const moneyLots = allocations.length + transactions.filter((item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0).length;
+  const empty = allocations.length === 0 && transactions.length === 0 && sharedMembers === 0 && Math.abs(totals.remaining) < 0.005;
+  return { empty, totals, allocationCount: allocations.length, transactionCount: transactions.length, transferCount, sharedMembers, moneyLots };
+}
+
+export function patchFund(funds, id, values) {
+  return funds.map((fund) => fund.id === id ? { ...fund, ...values } : fund);
+}
+
 export function unallocatedTotal(remittances, allocations) {
   return sum(remittances, (item) => item.totalAmount) - sum(allocations, (item) => item.amount);
 }

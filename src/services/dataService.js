@@ -45,6 +45,13 @@ export async function createFund(uid, values) {
 }
 
 export async function updateFund(id, values) { await updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() }); return { id, ...values, updatedAt: localNow() }; }
+export async function removeEmptyFund(id, uid) {
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'fundMembers', `${id}_${uid}`));
+  batch.delete(doc(db, 'funds', id));
+  await batch.commit();
+  return id;
+}
 export async function addTransaction(uid, values) {
   const ref = await addDoc(collection(db, 'transactions'), withTimestamps({ ...values, userId: uid }));
   return { id: ref.id, ...values, userId: uid, createdAt: localNow(), updatedAt: localNow() };

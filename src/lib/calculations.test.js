@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMoneyLots, consumeMoneyLots, fundTotals, monthlyTotals, portfolioTotals, unallocatedTotal } from './calculations';
+import { buildMoneyLots, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, patchFund, portfolioTotals, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -109,5 +109,31 @@ describe('financial ledger', () => {
   it('creates a derived destination lot for a transfer', () => {
     const transfer = { id: 'transfer-in', linkId: 'x', fundId: 'house', sourceFundName: 'Personal', type: 'transfer', amount: 2000, date: '2026-09-12' };
     expect(buildMoneyLots('house', [], [], [transfer])[0]).toMatchObject({ id: 'transfer:transfer-in', kind: 'transfer', source: 'Transfer from Personal', originalAmount: 2000 });
+  });
+
+  it('describes normal, zero-allocation, and overspent Fund cards accurately', () => {
+    expect(fundCardState({ allocated: 15000, remaining: 10000 })).toEqual({ kind: 'normal', label: '67% LEFT', percentage: 67 });
+    expect(fundCardState({ allocated: 0, remaining: 0 })).toEqual({ kind: 'empty', label: 'NO MONEY YET', percentage: null });
+    expect(fundCardState({ allocated: 0, remaining: -10340 })).toEqual({ kind: 'overspent', label: 'OVERSPENT', overBy: 10340, percentage: null });
+  });
+
+  it('excludes archived Funds from active portfolio totals', () => {
+    const result = portfolioTotals([{ id: 'active' }, { id: 'old', archived: true }], [{ fundId: 'active', amount: 10 }, { fundId: 'old', amount: 50 }], [], []);
+    expect(result.funds.map((fund) => fund.id)).toEqual(['active']); expect(result.allocated).toBe(10);
+  });
+
+  it('allows deletion only for a completely empty Fund', () => {
+    const base = { allocations: [], transactions: [], memberships: [{ fundId: 'empty', role: 'owner' }] };
+    expect(fundDeletionAssessment('empty', base).empty).toBe(true);
+    expect(fundDeletionAssessment('empty', { ...base, allocations: [{ fundId: 'empty', amount: 1 }] }).empty).toBe(false);
+    expect(fundDeletionAssessment('empty', { ...base, transactions: [{ fundId: 'empty', type: 'expense', amount: 1 }] }).empty).toBe(false);
+    expect(fundDeletionAssessment('empty', { ...base, memberships: [...base.memberships, { fundId: 'empty', role: 'viewer' }] }).empty).toBe(false);
+  });
+
+  it('updates only the edited Fund in local state', () => {
+    const original = [{ id: 'house', name: 'House', accent: 'red' }, { id: 'gym', name: 'Gym', accent: 'green' }];
+    const updated = patchFund(original, 'house', { name: 'Home', accent: 'blue' });
+    expect(updated[0]).toMatchObject({ id: 'house', name: 'Home', accent: 'blue' });
+    expect(updated[1]).toBe(original[1]);
   });
 });

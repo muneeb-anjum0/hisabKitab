@@ -33,7 +33,7 @@ service cloud.firestore {
       allow read: if isMember(fid);
       allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid;
       allow update: if isOwner(fid) && request.resource.data.ownerId == resource.data.ownerId;
-      allow delete: if isOwner(fid);
+      allow delete: if isOwner(fid) && !existsAfter(memberPath(fid));
     }
     match /fundMembers/{mid} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isMember(resource.data.fundId));
@@ -43,7 +43,8 @@ service cloud.firestore {
         || isOwner(request.resource.data.fundId));
       allow update: if isOwner(resource.data.fundId) && resource.data.role != 'owner'
         && request.resource.data.role != 'owner';
-      allow delete: if isOwner(resource.data.fundId) && resource.data.role != 'owner';
+      allow delete: if isOwner(resource.data.fundId) && (resource.data.role != 'owner'
+        || !existsAfter(/databases/$(database)/documents/funds/$(resource.data.fundId)));
     }
     match /remittances/{id} {
       allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;

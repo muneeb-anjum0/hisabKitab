@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { useAuth } from './AuthContext';
 import * as api from '../services/dataService';
+import { fundDeletionAssessment, patchFund } from '../lib/calculations';
 
 const DataContext = createContext(null);
 const EMPTY_DATA = { funds: [], memberships: [], remittances: [], allocations: [], transactions: [], categories: [] };
@@ -61,7 +62,11 @@ export function DataProvider({ children }) {
   const value = {
     ...data, categories, loading, error, toast, setToast, refresh,
     createFund: (values) => write(() => api.createFund(user.uid, values), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'),
-    updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: current.funds.map((item) => item.id === id ? { ...item, ...result } : item) }), 'CHANGES SAVED.'),
+    updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: patchFund(current.funds, id, result) }), 'CHANGES SAVED.'),
+    removeFund: (id) => {
+      if (!fundDeletionAssessment(id, data).empty) return Promise.reject(new Error('This Fund has history. Archive it instead.'));
+      return write(() => api.removeEmptyFund(id, user.uid), (current) => ({ ...current, funds: current.funds.filter((item) => item.id !== id), memberships: current.memberships.filter((item) => item.fundId !== id) }), 'EMPTY FUND DELETED.');
+    },
     addTransaction: (values) => write(() => api.addTransaction(user.uid, values), (current, result) => ({ ...current, transactions: [result, ...current.transactions] }), 'SPENT. SAVED.'),
     updateTransaction: (id, values) => write(() => api.updateTransaction(id, values), (current, result) => ({ ...current, transactions: current.transactions.map((item) => item.id === id ? { ...item, ...result } : item) }), 'CHANGES SAVED.'),
     removeTransaction: (id) => write(() => api.removeTransaction(id), (current) => ({ ...current, transactions: current.transactions.filter((item) => item.id !== id) }), 'EXPENSE DELETED.'),

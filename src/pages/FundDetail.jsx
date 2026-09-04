@@ -7,10 +7,11 @@ import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
 import { Button, Modal, Field, Progress, Empty } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
+import FundManagement from '../components/common/FundManagement';
 
 export default function FundDetail() {
   const { id } = useParams(); const navigate = useNavigate(); const data = useData(); const { user } = useAuth();
-  const [editing, setEditing] = useState(false); const [showMembers, setShowMembers] = useState(false);
+  const [showMembers, setShowMembers] = useState(false);
   const fund = data.funds.find((item) => item.id === id);
   if (!fund) return <Empty title="FUND NOT FOUND.">This Fund may have been archived or removed.</Empty>;
   const totals = fundTotals(id, data.allocations, data.transactions);
@@ -22,20 +23,13 @@ export default function FundDetail() {
   return <>
     <button className="back-link" onClick={() => navigate('/funds')}>← ALL FUNDS</button>
     <section className={`fund-detail-hero ${fund.accent}`}><div><span>{fund.type === 'shared' ? 'SHARED FUND' : 'PERSONAL FUND'}</span><h1>{fund.name}</h1><p>{members.length} member{members.length !== 1 ? 's' : ''} · {lotSummary.lots.length} money lot{lotSummary.lots.length !== 1 ? 's' : ''}</p></div><div><small>CURRENTLY AVAILABLE</small><strong>{money(totals.remaining)}</strong><div className="fund-hero-stats"><span>RECEIVED <b>{money(totals.allocated + Math.max(0, totals.adjustments))}</b></span><span>SPENT <b>{money(totals.spent)}</b></span></div><Progress value={totals.spent} max={totals.allocated} label={`${money(totals.spent)} spent`}/></div></section>
-    <div className="detail-actions">{owner && <Button onClick={() => setEditing(true)}>EDIT FUND</Button>}{fund.type === 'shared' && <Button variant="paper" onClick={() => setShowMembers(true)}>MEMBERS ({members.length})</Button>}</div>
+    <div className="detail-actions"><FundManagement fund={fund} owner={owner} detail/>{fund.type === 'shared' && <Button variant="paper" onClick={() => setShowMembers(true)}>MEMBERS ({members.length})</Button>}</div>
     <div className="section-heading lot-heading"><div><span className="kicker">BATCH BY BATCH</span><h2>MONEY LOTS</h2></div></div>
     <section className="money-lots">{lotSummary.lots.length ? [...lotSummary.lots].reverse().map((lot) => <article className="money-lot" key={lot.id}><header><span>MONEY LOT</span><b>#{String(lot.number).padStart(2, '0')}</b></header><small>{lot.kind === 'transfer' ? 'TRANSFER LOT' : `FROM ${lot.source.toUpperCase()}`}</small><strong>{money(lot.originalAmount)}</strong><div><span>RECEIVED <b>{friendlyDate(lot.receivedAt)}</b></span><span>SPENT <b>{money(lot.spent)}</b></span><span>LEFT <b>{money(lot.remaining)}</b></span></div><Progress value={lot.spent} max={lot.originalAmount} label={`${Math.round((lot.remaining / lot.originalAmount) * 100) || 0}% left`}/></article>) : <Empty title="NO MONEY LOTS YET.">When money arrives for this Fund, each allocation will land here.</Empty>}</section>
     <div className="section-heading"><div><span className="kicker red">MONEY TRAIL</span><h2>RECENT EXPENSES</h2></div></div>
     <section className="panel ledger-panel">{transactions.length ? transactions.map((item) => <div key={item.id} className="trace-row"><TransactionRow item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>{item.lotUsages?.length > 0 && <small className="paid-from">PAID FROM {item.lotUsages.length === 1 ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}` : `${item.lotUsages.length} MONEY LOTS`}</small>}</div>) : <Empty>There are no transactions in this Fund yet.</Empty>}</section>
-    {editing && <EditFund fund={fund} onClose={() => setEditing(false)} onSave={async (values) => { await data.updateFund(fund.id, values); setEditing(false); if (values.archived) navigate('/funds'); }}/>}
     {showMembers && <Members fund={fund} members={members} data={data} isOwner={owner} onClose={() => setShowMembers(false)}/>}
   </>;
-}
-
-function EditFund({ fund, onClose, onSave }) {
-  const [values, setValues] = useState({ name: fund.name, type: fund.type, accent: fund.accent, archived: fund.archived });
-  const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  return <Modal title="EDIT FUND" onClose={onClose}><form onSubmit={async (event) => { event.preventDefault(); if (!values.name.trim() || busy) return; setBusy(true); try { await onSave({ ...values, name: values.name.trim() }); } catch (saveError) { setError(saveError.message); setBusy(false); } }}><Field label="NAME"><input required maxLength="35" value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })}/></Field><Field label="TYPE"><select value={values.type} onChange={(event) => setValues({ ...values, type: event.target.value })}><option value="personal">Personal</option><option value="shared">Shared</option></select></Field><Field label="STATUS"><select value={String(values.archived)} onChange={(event) => setValues({ ...values, archived: event.target.value === 'true' })}><option value="false">Active</option><option value="true">Archived</option></select></Field>{error && <p className="form-error">{error}</p>}<Button disabled={busy || !values.name.trim()}>{busy ? 'SAVING…' : 'SAVE FUND'}</Button></form></Modal>;
 }
 
 function Members({ fund, members, data, isOwner, onClose }) {
