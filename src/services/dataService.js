@@ -91,6 +91,8 @@ export async function createRemittance(uid, values, allocations) {
   };
 }
 
+export async function removeRemittance(id) { await deleteDoc(doc(db, 'remittances', id)); return id; }
+
 export async function addAllocation(values) { const ref = await addDoc(collection(db, 'allocations'), { ...values, createdAt: serverTimestamp() }); return { id: ref.id, ...values, createdAt: localNow() }; }
 export async function addCategory(uid, name, symbol = '◆') { const ref = await addDoc(collection(db, 'categories'), { userId: uid, name, symbol, createdAt: serverTimestamp() }); return { id: ref.id, userId: uid, name, symbol, createdAt: localNow() }; }
 

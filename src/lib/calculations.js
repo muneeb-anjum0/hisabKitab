@@ -44,6 +44,10 @@ export function patchFund(funds, id, values) {
   return funds.map((fund) => fund.id === id ? { ...fund, ...values } : fund);
 }
 
+export function canDeleteRemittance(remittanceId, allocations) {
+  return !allocations.some((item) => item.remittanceId === remittanceId);
+}
+
 export function unallocatedTotal(remittances, allocations) {
   return sum(remittances, (item) => item.totalAmount) - sum(allocations, (item) => item.amount);
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMoneyLots, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, patchFund, portfolioTotals, unallocatedTotal } from './calculations';
+import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, patchFund, portfolioTotals, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -135,5 +135,10 @@ describe('financial ledger', () => {
     const updated = patchFund(original, 'house', { name: 'Home', accent: 'blue' });
     expect(updated[0]).toMatchObject({ id: 'house', name: 'Home', accent: 'blue' });
     expect(updated[1]).toBe(original[1]);
+  });
+
+  it('only deletes money received before it enters Fund history', () => {
+    expect(canDeleteRemittance('unused', allocations)).toBe(true);
+    expect(canDeleteRemittance('r1', allocations)).toBe(false);
   });
 });
