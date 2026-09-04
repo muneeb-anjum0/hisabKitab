@@ -72,13 +72,7 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
 }
 
 function HeroInk() {
-  return <svg className="hero-ink" viewBox="0 0 520 230" aria-hidden="true">
-    <defs><pattern id="dots" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.4" fill="#111"/></pattern></defs>
-    <path d="M0 230 76 156l35 34 58-96 43 64 48-81 46 69 64-112 58 106 38-48 104 138Z" fill="url(#dots)"/>
-    <path d="M40 230 111 173l34 31 55-82 42 58 47-69 42 57 39-70 37 62 33-35 80 105Z" fill="#111"/>
-    <path d="m145 204 55-82 18 25 24 33 47-69 19 26 23 31 39-70 18 30" fill="none" stroke="#fff" strokeWidth="6" strokeLinejoin="miter"/>
-    <path d="M25 213 98 143l32 29m298-13 31-39 41 55" fill="none" stroke="#111" strokeWidth="5"/>
-  </svg>;
+  return <div className="hero-ink" aria-hidden="true"/>;
 }
 
 function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }
