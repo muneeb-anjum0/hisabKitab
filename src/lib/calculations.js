@@ -48,6 +48,16 @@ export function canDeleteRemittance(remittanceId, allocations) {
   return !allocations.some((item) => item.remittanceId === remittanceId);
 }
 
+export function sortFunds(funds) {
+  return [...funds].sort((a, b) => (Number.isFinite(a.sortOrder) ? a.sortOrder : Number.MAX_SAFE_INTEGER) - (Number.isFinite(b.sortOrder) ? b.sortOrder : Number.MAX_SAFE_INTEGER));
+}
+
+export function moveFund(ids, id, direction) {
+  const from = ids.indexOf(id); const to = from + direction;
+  if (from < 0 || to < 0 || to >= ids.length) return ids;
+  const next = [...ids]; [next[from], next[to]] = [next[to], next[from]]; return next;
+}
+
 export function unallocatedTotal(remittances, allocations) {
   return sum(remittances, (item) => item.totalAmount) - sum(allocations, (item) => item.amount);
 }

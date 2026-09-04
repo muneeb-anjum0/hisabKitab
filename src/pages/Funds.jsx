@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
-import { fundTotals } from '../lib/calculations';
+import { fundTotals, sortFunds } from '../lib/calculations';
 import { money } from '../lib/currency';
 import { Modal, Field, Button, Empty } from '../components/comic/Comic';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,8 +9,8 @@ import FundManagement from '../components/common/FundManagement';
 
 export default function Funds() {
   const data = useData(); const { user } = useAuth(); const [creating, setCreating] = useState(false); const [showArchived, setShowArchived] = useState(false);
-  const activeFunds = data.funds.filter((fund) => !fund.archived);
-  const archivedFunds = data.funds.filter((fund) => fund.archived);
+  const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
+  const archivedFunds = sortFunds(data.funds.filter((fund) => fund.archived));
   const renderFund = (fund, index) => { const totals = fundTotals(fund.id, data.allocations, data.transactions); const owner = data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner'); return <article className={`fund-strip ${fund.accent} ${fund.archived ? 'archived' : ''}`} key={fund.id}><b className="fund-index">{String(index + 1).padStart(2, '0')}</b><Link className="fund-strip-link" to={`/funds/${fund.id}`}><div><small>{fund.archived ? 'ARCHIVED' : fund.type === 'shared' ? 'SHARED' : 'PERSONAL'}</small><h2>{fund.name}</h2></div><div className="fund-strip-numbers"><span>ALLOCATED <b>{money(totals.allocated)}</b></span><span>SPENT <b>{money(totals.spent)}</b></span></div><strong>{money(totals.remaining)}<small>AVAILABLE</small></strong><i>→</i></Link><FundManagement fund={fund} owner={owner}/></article>; };
   return <>
     <div className="page-title"><span className="kicker">EVERY RUPEE HAS A JOB</span><h1>THE FUNDS</h1><p>Separate pockets. One honest ledger.</p><Button onClick={() => setCreating(true)}>+ NEW FUND</Button></div>

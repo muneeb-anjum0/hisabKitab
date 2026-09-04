@@ -45,6 +45,12 @@ export async function createFund(uid, values) {
 }
 
 export async function updateFund(id, values) { await updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() }); return { id, ...values, updatedAt: localNow() }; }
+export async function reorderFunds(ids) {
+  const batch = writeBatch(db);
+  ids.forEach((id, sortOrder) => batch.update(doc(db, 'funds', id), { sortOrder, updatedAt: serverTimestamp() }));
+  await batch.commit();
+  return ids;
+}
 export async function removeEmptyFund(id, uid) {
   const batch = writeBatch(db);
   batch.delete(doc(db, 'fundMembers', `${id}_${uid}`));
