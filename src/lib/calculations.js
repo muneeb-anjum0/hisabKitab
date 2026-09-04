@@ -49,7 +49,12 @@ export function canDeleteRemittance(remittanceId, allocations) {
 }
 
 export function sortFunds(funds) {
-  return [...funds].sort((a, b) => (Number.isFinite(a.sortOrder) ? a.sortOrder : Number.MAX_SAFE_INTEGER) - (Number.isFinite(b.sortOrder) ? b.sortOrder : Number.MAX_SAFE_INTEGER));
+  return [...funds].sort((a, b) => {
+    const order = (Number.isFinite(a.sortOrder) ? a.sortOrder : Number.MAX_SAFE_INTEGER) - (Number.isFinite(b.sortOrder) ? b.sortOrder : Number.MAX_SAFE_INTEGER);
+    if (order) return order;
+    const created = String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+    return created || String(a.id).localeCompare(String(b.id));
+  });
 }
 
 export function moveFund(ids, id, direction) {

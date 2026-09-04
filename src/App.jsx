@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useData } from './contexts/DataContext';
 import Nav from './components/navigation/Nav';
@@ -38,7 +38,7 @@ export default function App() {
     <main className="content">
       {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
       {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
-      {data.loading ? <LedgerLoading/> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><Routes>
+      {data.loading ? <LedgerLoading/> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><AnimatedRoutes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
         <Route path="/funds" element={<Funds/>}/>
         <Route path="/funds/:id" element={<FundDetail/>}/>
@@ -46,11 +46,16 @@ export default function App() {
         <Route path="/summary" element={<Summary/>}/>
         <Route path="/profile" element={<Profile/>}/>
         <Route path="*" element={<Navigate to="/" replace/>}/>
-      </Routes></Suspense>}
+      </AnimatedRoutes></Suspense>}
     </main>
     {quickAction && <Suspense fallback={null}><QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/></Suspense>}
     {data.toast && <div className={`toast ${data.toast.type}`} role="status">{data.toast.message}</div>}
   </div>;
+}
+
+function AnimatedRoutes({ children }) {
+  const location = useLocation();
+  return <div className="route-enter" key={location.pathname}><Routes location={location}>{children}</Routes></div>;
 }
 
 function LedgerLoading() {

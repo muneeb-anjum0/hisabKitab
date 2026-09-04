@@ -144,6 +144,7 @@ describe('financial ledger', () => {
 
   it('sorts and rearranges Fund cards without losing ids', () => {
     expect(sortFunds([{ id: 'later', sortOrder: 2 }, { id: 'first', sortOrder: 0 }]).map((fund) => fund.id)).toEqual(['first', 'later']);
+    expect(sortFunds([{ id: 'z', createdAt: '2026-01-02' }, { id: 'a', createdAt: '2026-01-01' }]).map((fund) => fund.id)).toEqual(['a', 'z']);
     expect(moveFund(['first', 'middle', 'last'], 'middle', -1)).toEqual(['middle', 'first', 'last']);
     expect(moveFund(['first', 'middle', 'last'], 'first', -1)).toEqual(['first', 'middle', 'last']);
     expect(placeFund(['first', 'middle', 'last'], 'last', 'first')).toEqual(['last', 'first', 'middle']);

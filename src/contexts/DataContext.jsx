@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import * as api from '../services/dataService';
 import { canDeleteRemittance, fundDeletionAssessment, patchFund } from '../lib/calculations';
@@ -24,6 +24,8 @@ export function DataProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const reorderQueue = useRef(Promise.resolve());
+  const reorderVersion = useRef(0);
 
   const refresh = useCallback(async () => {
     if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); return; }
@@ -61,19 +63,25 @@ export function DataProvider({ children }) {
 
   const value = {
     ...data, categories, loading, error, toast, setToast, refresh,
-    createFund: (values) => write(() => api.createFund(user.uid, values), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'),
+    createFund: (values) => { const sortOrder = Math.max(-1, ...data.funds.filter((fund) => !fund.archived).map((fund) => Number.isFinite(fund.sortOrder) ? fund.sortOrder : -1)) + 1; const orderedValues = { ...values, sortOrder }; return write(() => api.createFund(user.uid, orderedValues), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'); },
     updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: patchFund(current.funds, id, result) }), 'CHANGES SAVED.'),
     reorderFunds: async (ids) => {
       const previousFunds = data.funds;
+      const previousOrders = new Map(previousFunds.map((fund) => [fund.id, fund.sortOrder]));
+      const version = ++reorderVersion.current;
       const applyOrder = (funds) => funds.map((fund) => { const sortOrder = ids.indexOf(fund.id); return sortOrder < 0 ? fund : { ...fund, sortOrder }; });
       setData((current) => ({ ...current, funds: applyOrder(current.funds) }));
       try {
-        await api.reorderFunds(ids);
-        setToast({ type: 'success', message: 'FUND ORDER SAVED.' });
+        const save = reorderQueue.current.then(() => api.reorderFunds(ids, previousFunds));
+        reorderQueue.current = save.catch(() => {});
+        await save;
+        if (version === reorderVersion.current) setToast({ type: 'success', message: 'FUND ORDER SAVED.' });
       } catch (writeError) {
         console.error(writeError);
-        setData((current) => ({ ...current, funds: previousFunds }));
-        setToast({ type: 'error', message: writeError.message || "COULDN'T SAVE THAT." });
+        if (version === reorderVersion.current) {
+          setData((current) => ({ ...current, funds: current.funds.map((fund) => previousOrders.has(fund.id) ? { ...fund, sortOrder: previousOrders.get(fund.id) } : fund) }));
+          setToast({ type: 'error', message: "COULDN'T SAVE FUND ORDER. YOUR PREVIOUS ORDER WAS RESTORED." });
+        }
         throw writeError;
       }
     },
