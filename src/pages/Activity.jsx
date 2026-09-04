@@ -6,6 +6,7 @@ import QuickAdd from '../components/forms/QuickAdd';
 import { Button, Empty, Modal } from '../components/comic/Comic';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
+import { timestampMillis } from '../lib/calculations';
 
 export default function Activity() {
   const data = useData(); const { user } = useAuth();
@@ -22,7 +23,12 @@ export default function Activity() {
         && (filters.type === 'all' || item.type === filters.type)
         && (!filters.month || item.activityDate?.startsWith(filters.month))
         && text.includes(filters.search.toLowerCase());
-    }).sort((a, b) => (b.activityDate || '').localeCompare(a.activityDate || ''));
+    }).sort((a, b) => {
+      const byDate = String(b.activityDate || '').localeCompare(String(a.activityDate || ''));
+      if (byDate) return byDate;
+      return timestampMillis(b.createdAt) - timestampMillis(a.createdAt)
+        || String(b.id).localeCompare(String(a.id));
+    });
   }, [data.transactions, data.remittances, filters]);
 
   const set = (key) => (event) => setFilters({ ...filters, [key]: event.target.value });

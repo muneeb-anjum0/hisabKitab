@@ -2,7 +2,7 @@ export const sum = (items, select = (item) => item) => items.reduce(
   (total, item) => total + (Number(select(item)) || 0), 0,
 );
 
-const timestampMillis = (value) => {
+export const timestampMillis = (value) => {
   if (!value) return 0;
   if (typeof value.toMillis === 'function') return value.toMillis();
   if (value.seconds) return value.seconds * 1000;
