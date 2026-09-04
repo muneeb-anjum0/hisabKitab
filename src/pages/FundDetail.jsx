@@ -18,7 +18,12 @@ export default function FundDetail() {
   if (!fund) return <Empty title="FUND NOT FOUND.">This Fund may have been archived or removed.</Empty>;
   const totals = fundTotals(id, data.allocations, data.transactions);
   const lotSummary = moneyLotSummary(id, data.allocations, data.remittances, data.transactions);
-  const transactions = data.transactions.filter((item) => item.fundId === id);
+  const transactions = data.transactions.filter((item) => item.fundId === id).sort((a, b) => {
+    const byDate = String(b.date || '').localeCompare(String(a.date || ''));
+    if (byDate) return byDate;
+    const created = (value) => typeof value?.toMillis === 'function' ? value.toMillis() : Date.parse(value || 0) || 0;
+    return created(b.createdAt) - created(a.createdAt) || String(b.id).localeCompare(String(a.id));
+  });
   const members = data.memberships.filter((item) => item.fundId === id);
   const currentMembership = members.find((item) => item.userId === user.uid);
   const owner = currentMembership?.role === 'owner';
