@@ -59,7 +59,5 @@ function AnimatedRoutes({ children }) {
 }
 
 function LedgerLoading() {
-  return <div className="ledger-loading" role="status" aria-live="polite">
-    <div className="sync-minimal"><span className="sync-dot" aria-hidden="true"/><b>SYNCING YOUR BOOK…</b><small>Fetching your latest ledger</small></div>
-  </div>;
+  return <div className="ledger-loading original-loader" role="status" aria-live="polite"><span aria-hidden="true"/><b>SYNCING YOUR BOOK…</b></div>;
 }
