@@ -38,7 +38,7 @@ export default function App() {
     <main className="content">
       {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
       {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
-      {data.loading ? <div className="ledger-loading"><span/><b>SYNCING YOUR BOOK…</b></div> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><Routes>
+      {data.loading ? <LedgerLoading/> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><Routes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
         <Route path="/funds" element={<Funds/>}/>
         <Route path="/funds/:id" element={<FundDetail/>}/>
@@ -50,5 +50,14 @@ export default function App() {
     </main>
     {quickAction && <Suspense fallback={null}><QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/></Suspense>}
     {data.toast && <div className={`toast ${data.toast.type}`} role="status">{data.toast.message}</div>}
+  </div>;
+}
+
+function LedgerLoading() {
+  return <div className="ledger-loading" role="status" aria-live="polite">
+    <div className="loading-burst" aria-hidden="true">SYNC!</div>
+    <div className="comic-book-loader" aria-hidden="true"><div className="book-cover"><b>HISAB<br/>KITAB!</b><i>₹</i></div><span className="turning-page one"/><span className="turning-page two"/><span className="ink-line line-one"/><span className="ink-line line-two"/><span className="ink-line line-three"/></div>
+    <div className="loading-copy"><small>LEDGER LINK ACTIVE</small><h2>SYNCING YOUR BOOK…</h2><p>Every rupee is finding its page.</p></div>
+    <div className="sync-track" aria-hidden="true"><i/><span>FUNDS</span><span>MONEY LOTS</span><span>ACTIVITY</span></div>
   </div>;
 }
