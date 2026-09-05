@@ -127,6 +127,11 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .quick-grid button:nth-child(2):active{transform:translate(-2px,5px) rotate(1.5deg) scale(.97);box-shadow:2px 0 0 var(--ink);filter:brightness(.94)}
   .quick-grid button:nth-child(3):active{transform:translate(4px,3px) rotate(-2deg) scale(.975);box-shadow:1px 2px 0 var(--ink);filter:saturate(1.25)}
   .quick-grid button:nth-child(4):active{transform:translate(-3px,4px) rotate(2deg) scale(.98);box-shadow:2px 1px 0 var(--purple);filter:brightness(.96)}
+  .dashboard-aside .direct-actions button{-webkit-tap-highlight-color:transparent;transition:transform 85ms ease,box-shadow 85ms ease,filter 85ms ease}
+  .dashboard-aside .direct-actions button:nth-child(1):active{transform:translate(-2px,5px) rotate(-1.5deg) scale(.97);box-shadow:1px 1px 0 var(--ink);filter:brightness(.96)}
+  .dashboard-aside .direct-actions button:nth-child(2):active{transform:translate(5px,4px) rotate(1deg) scale(.975);box-shadow:0 1px 0 var(--ink);filter:saturate(1.2)}
+  .dashboard-aside .direct-actions button:nth-child(3):active{transform:translate(-3px,4px) rotate(1.8deg) scale(.96);box-shadow:2px 1px 0 var(--ink);filter:brightness(.93)}
+  .dashboard-aside .direct-actions button:nth-child(4):active{transform:translate(4px,5px) rotate(-2deg) scale(.98);box-shadow:1px 0 0 var(--ink);filter:saturate(1.15)}
   .auth-page{padding:18px 12px}.auth-art{padding:18px 9px}.auth-logo{font-size:39px}.auth-art h1{font-size:39px;margin:30px 0 12px}.auth-form{padding:20px}.auth-form h2{font-size:30px}
   .dashboard-funds{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:var(--red) var(--yellow);padding-bottom:14px}
   .dashboard-funds::-webkit-scrollbar{height:10px}.dashboard-funds::-webkit-scrollbar-track{background:var(--yellow);border:2px solid var(--ink)}.dashboard-funds::-webkit-scrollbar-thumb{background:var(--red);border:2px solid var(--ink)}
