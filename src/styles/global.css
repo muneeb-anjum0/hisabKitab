@@ -152,3 +152,10 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 @keyframes comic-tap-pop{32%{translate:0 -4px;rotate:-2deg;scale:1.06;filter:brightness(1.12)}68%{translate:0 2px;rotate:1deg;scale:.96}}
 @keyframes comic-tap-wiggle{25%{translate:-4px 2px;rotate:-4deg;scale:.96}52%{translate:4px 2px;rotate:4deg;scale:.94;filter:saturate(1.4)}76%{translate:-1px -1px;rotate:-1deg;scale:1.02}}
 @keyframes comic-tap-squash{32%{translate:2px 4px;rotate:2deg;scale:1.04 .86;filter:contrast(1.2)}68%{translate:-1px -2px;rotate:-1deg;scale:.98 1.05}}
+
+@media(max-width:800px){
+  .funds-title{display:flex;flex-direction:column;align-items:flex-start;min-height:0;margin-bottom:38px}
+  .funds-title h1{margin-bottom:8px}
+  .funds-title p{margin-bottom:17px}
+  .funds-title>.ink-button{position:static;margin:0}
+}
