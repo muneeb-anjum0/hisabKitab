@@ -159,3 +159,8 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .funds-title p{margin-bottom:17px}
   .funds-title>.ink-button{position:static;margin:0}
 }
+
+/* Keep the autocomplete sheet above dashboard cards despite route animations creating stacking contexts. */
+.dash-header{position:relative;z-index:40;overflow:visible}
+.global-search{z-index:1;overflow:visible}
+.search-results{z-index:100}
