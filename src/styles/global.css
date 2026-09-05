@@ -137,3 +137,25 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .dashboard-funds::-webkit-scrollbar{height:10px}.dashboard-funds::-webkit-scrollbar-track{background:var(--yellow);border:2px solid var(--ink)}.dashboard-funds::-webkit-scrollbar-thumb{background:var(--red);border:2px solid var(--ink)}
   .dashboard-funds:not(.is-rearranging) .dash-fund-card:hover,.dashboard-funds:not(.is-rearranging) .new-fund-card:hover{transform:none;box-shadow:4px 4px 0 var(--ink)}
 }
+
+/* Persistent press states make touch feedback reliable in installed Android PWAs. */
+@media(max-width:800px){
+  .mobile-nav a.is-pressed{background:var(--yellow);color:var(--ink);box-shadow:inset 0 0 0 3px var(--ink)}
+  .mobile-nav>span:nth-child(1) a.is-pressed{transform:translate(-2px,4px) rotate(-2deg) scale(.94)}
+  .mobile-nav>span:nth-child(2) a.is-pressed{transform:translateY(5px) rotate(1deg) scale(.93)}
+  .mobile-nav>span:nth-child(3) a.is-pressed{transform:translate(2px,4px) rotate(-1deg) scale(.95)}
+  .mobile-nav>span:nth-child(4) a.is-pressed{transform:translate(2px,3px) rotate(2deg) scale(.94)}
+  .mobile-nav>span:nth-child(1) a.is-pressed i{transform:rotate(-10deg) scale(1.18)}
+  .mobile-nav>span:nth-child(2) a.is-pressed i{transform:rotate(7deg) scale(1.15)}
+  .mobile-nav>span:nth-child(3) a.is-pressed i{transform:translateY(-2px) rotate(-5deg) scale(1.2)}
+  .mobile-nav>span:nth-child(4) a.is-pressed i{transform:rotate(10deg) scale(1.16)}
+  .mobile-add.is-pressed{background:var(--yellow);color:var(--ink);transform:translate(4px,4px) rotate(2deg) scale(.92);box-shadow:1px 1px 0 var(--red)}
+  .quick-grid button:nth-child(1).is-pressed{transform:translate(5px,5px) rotate(-1deg) scale(.98);box-shadow:0 0 0 var(--ink);filter:saturate(1.2)}
+  .quick-grid button:nth-child(2).is-pressed{transform:translate(-2px,5px) rotate(1.5deg) scale(.97);box-shadow:2px 0 0 var(--ink);filter:brightness(.94)}
+  .quick-grid button:nth-child(3).is-pressed{transform:translate(4px,3px) rotate(-2deg) scale(.975);box-shadow:1px 2px 0 var(--ink);filter:saturate(1.25)}
+  .quick-grid button:nth-child(4).is-pressed{transform:translate(-3px,4px) rotate(2deg) scale(.98);box-shadow:2px 1px 0 var(--purple);filter:brightness(.96)}
+  .dashboard-aside .direct-actions button:nth-child(1).is-pressed{transform:translate(-2px,5px) rotate(-1.5deg) scale(.97);box-shadow:1px 1px 0 var(--ink);filter:brightness(.96)}
+  .dashboard-aside .direct-actions button:nth-child(2).is-pressed{transform:translate(5px,4px) rotate(1deg) scale(.975);box-shadow:0 1px 0 var(--ink);filter:saturate(1.2)}
+  .dashboard-aside .direct-actions button:nth-child(3).is-pressed{transform:translate(-3px,4px) rotate(1.8deg) scale(.96);box-shadow:2px 1px 0 var(--ink);filter:brightness(.93)}
+  .dashboard-aside .direct-actions button:nth-child(4).is-pressed{transform:translate(4px,5px) rotate(-2deg) scale(.98);box-shadow:1px 0 0 var(--ink);filter:saturate(1.15)}
+}
