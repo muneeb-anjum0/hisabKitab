@@ -109,4 +109,7 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .mobile-nav{height:60px}.mobile-nav a{height:60px}.mobile-nav i{font-size:17px}.mobile-nav small{font-size:8px}.mobile-add{top:-27px;width:52px;height:52px;font-size:31px}
   .modal{padding:22px 16px calc(20px + env(safe-area-inset-bottom))}.modal h2{font-size:30px;margin-bottom:18px}.quick-grid{gap:11px}.quick-grid button{padding:13px}.quick-grid b{font-size:22px}
   .auth-page{padding:18px 12px}.auth-art{padding:18px 9px}.auth-logo{font-size:39px}.auth-art h1{font-size:39px;margin:30px 0 12px}.auth-form{padding:20px}.auth-form h2{font-size:30px}
+  .dashboard-funds{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:var(--red) var(--yellow);padding-bottom:14px}
+  .dashboard-funds::-webkit-scrollbar{height:10px}.dashboard-funds::-webkit-scrollbar-track{background:var(--yellow);border:2px solid var(--ink)}.dashboard-funds::-webkit-scrollbar-thumb{background:var(--red);border:2px solid var(--ink)}
+  .dashboard-funds:not(.is-rearranging) .dash-fund-card:hover,.dashboard-funds:not(.is-rearranging) .new-fund-card:hover{transform:none;box-shadow:4px 4px 0 var(--ink)}
 }
