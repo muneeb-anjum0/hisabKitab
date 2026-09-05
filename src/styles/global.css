@@ -138,24 +138,17 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .dashboard-funds:not(.is-rearranging) .dash-fund-card:hover,.dashboard-funds:not(.is-rearranging) .new-fund-card:hover{transform:none;box-shadow:4px 4px 0 var(--ink)}
 }
 
-/* Persistent press states make touch feedback reliable in installed Android PWAs. */
+/* Every mobile control gets a complete comic beat before its action is replayed. */
 @media(max-width:800px){
-  .mobile-nav a.is-pressed{background:var(--yellow);color:var(--ink);box-shadow:inset 0 0 0 3px var(--ink)}
-  .mobile-nav>span:nth-child(1) a.is-pressed{transform:translate(-2px,4px) rotate(-2deg) scale(.94)}
-  .mobile-nav>span:nth-child(2) a.is-pressed{transform:translateY(5px) rotate(1deg) scale(.93)}
-  .mobile-nav>span:nth-child(3) a.is-pressed{transform:translate(2px,4px) rotate(-1deg) scale(.95)}
-  .mobile-nav>span:nth-child(4) a.is-pressed{transform:translate(2px,3px) rotate(2deg) scale(.94)}
-  .mobile-nav>span:nth-child(1) a.is-pressed i{transform:rotate(-10deg) scale(1.18)}
-  .mobile-nav>span:nth-child(2) a.is-pressed i{transform:rotate(7deg) scale(1.15)}
-  .mobile-nav>span:nth-child(3) a.is-pressed i{transform:translateY(-2px) rotate(-5deg) scale(1.2)}
-  .mobile-nav>span:nth-child(4) a.is-pressed i{transform:rotate(10deg) scale(1.16)}
-  .mobile-add.is-pressed{background:var(--yellow);color:var(--ink);transform:translate(4px,4px) rotate(2deg) scale(.92);box-shadow:1px 1px 0 var(--red)}
-  .quick-grid button:nth-child(1).is-pressed{transform:translate(5px,5px) rotate(-1deg) scale(.98);box-shadow:0 0 0 var(--ink);filter:saturate(1.2)}
-  .quick-grid button:nth-child(2).is-pressed{transform:translate(-2px,5px) rotate(1.5deg) scale(.97);box-shadow:2px 0 0 var(--ink);filter:brightness(.94)}
-  .quick-grid button:nth-child(3).is-pressed{transform:translate(4px,3px) rotate(-2deg) scale(.975);box-shadow:1px 2px 0 var(--ink);filter:saturate(1.25)}
-  .quick-grid button:nth-child(4).is-pressed{transform:translate(-3px,4px) rotate(2deg) scale(.98);box-shadow:2px 1px 0 var(--purple);filter:brightness(.96)}
-  .dashboard-aside .direct-actions button:nth-child(1).is-pressed{transform:translate(-2px,5px) rotate(-1.5deg) scale(.97);box-shadow:1px 1px 0 var(--ink);filter:brightness(.96)}
-  .dashboard-aside .direct-actions button:nth-child(2).is-pressed{transform:translate(5px,4px) rotate(1deg) scale(.975);box-shadow:0 1px 0 var(--ink);filter:saturate(1.2)}
-  .dashboard-aside .direct-actions button:nth-child(3).is-pressed{transform:translate(-3px,4px) rotate(1.8deg) scale(.96);box-shadow:2px 1px 0 var(--ink);filter:brightness(.93)}
-  .dashboard-aside .direct-actions button:nth-child(4).is-pressed{transform:translate(4px,5px) rotate(-2deg) scale(.98);box-shadow:1px 0 0 var(--ink);filter:saturate(1.15)}
+  button,a[href],[role="button"]{-webkit-tap-highlight-color:transparent}
+  .comic-touching{animation-duration:190ms!important;animation-timing-function:ease-out!important;animation-fill-mode:both!important;pointer-events:none;will-change:translate,rotate,scale,filter}
+  .comic-tap-1{animation-name:comic-tap-left!important}.comic-tap-2{animation-name:comic-tap-stomp!important}.comic-tap-3{animation-name:comic-tap-right!important}
+  .comic-tap-4{animation-name:comic-tap-pop!important}.comic-tap-5{animation-name:comic-tap-wiggle!important}.comic-tap-6{animation-name:comic-tap-squash!important}
 }
+
+@keyframes comic-tap-left{35%{translate:-4px 4px;rotate:-3deg;scale:.94;filter:brightness(.9)}70%{translate:1px -1px;rotate:1deg;scale:1.02}}
+@keyframes comic-tap-stomp{35%{translate:0 5px;scale:.9 1.03;filter:saturate(1.35)}70%{translate:0 -2px;scale:1.03 .98}}
+@keyframes comic-tap-right{35%{translate:5px 3px;rotate:3deg;scale:.94;filter:contrast(1.18)}70%{translate:-1px -1px;rotate:-1deg;scale:1.02}}
+@keyframes comic-tap-pop{32%{translate:0 -4px;rotate:-2deg;scale:1.06;filter:brightness(1.12)}68%{translate:0 2px;rotate:1deg;scale:.96}}
+@keyframes comic-tap-wiggle{25%{translate:-4px 2px;rotate:-4deg;scale:.96}52%{translate:4px 2px;rotate:4deg;scale:.94;filter:saturate(1.4)}76%{translate:-1px -1px;rotate:-1deg;scale:1.02}}
+@keyframes comic-tap-squash{32%{translate:2px 4px;rotate:2deg;scale:1.04 .86;filter:contrast(1.2)}68%{translate:-1px -2px;rotate:-1deg;scale:.98 1.05}}

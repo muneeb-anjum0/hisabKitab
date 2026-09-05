@@ -12,7 +12,6 @@ export default function QuickAdd({ onClose, initial = 'menu', edit = null, editI
   const [mode, setMode] = useState(edit ? 'expense' : editIncome ? 'remittance' : initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [pressedChoice, setPressedChoice] = useState('');
   const amountRef = useRef(null);
   const funds = data.funds.filter((fund) => !fund.archived && data.memberships.some(
     (member) => member.fundId === fund.id && ['owner', 'editor'].includes(member.role),
@@ -28,17 +27,12 @@ export default function QuickAdd({ onClose, initial = 'menu', edit = null, editI
     try { await operation(); onClose(); }
     catch (submitError) { setError(submitError.message || "Couldn't save that."); setBusy(false); }
   };
-  const choose = (choice) => {
-    if (!window.matchMedia('(max-width: 800px)').matches) { setMode(choice); return; }
-    setPressedChoice(choice); window.setTimeout(() => { setPressedChoice(''); setMode(choice); }, 140);
-  };
-
   if (mode === 'menu') return <Modal title="WHAT HAPPENED?" onClose={onClose}>
     <div className="quick-grid">
-      <button className={pressedChoice === 'expense' ? 'is-pressed' : ''} onClick={() => choose('expense')}><b>SPENT</b><span>Add an expense</span></button>
-      <button className={pressedChoice === 'remittance' ? 'is-pressed' : ''} onClick={() => choose('remittance')}><b>MONEY IN</b><span>Record money received</span></button>
-      <button className={pressedChoice === 'transfer' ? 'is-pressed' : ''} onClick={() => choose('transfer')}><b>TRANSFER</b><span>Move money between Funds</span></button>
-      <button className={pressedChoice === 'fund' ? 'is-pressed' : ''} onClick={() => choose('fund')}><b>NEW FUND</b><span>Create a place for your money</span></button>
+      <button onClick={() => setMode('expense')}><b>SPENT</b><span>Add an expense</span></button>
+      <button onClick={() => setMode('remittance')}><b>MONEY IN</b><span>Record money received</span></button>
+      <button onClick={() => setMode('transfer')}><b>TRANSFER</b><span>Move money between Funds</span></button>
+      <button onClick={() => setMode('fund')}><b>NEW FUND</b><span>Create a place for your money</span></button>
     </div>
   </Modal>;
 
