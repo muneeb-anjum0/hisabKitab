@@ -107,6 +107,7 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
   .summary-banner b{font-size:32px}.summary-banner>strong{font-size:31px}.summary-columns{margin-top:27px}.summary-columns>.panel{padding:18px}
   .profile-grid{gap:18px}.profile-grid>.panel{padding:20px}.big-avatar{width:78px;height:78px;font-size:48px}.identity h2{font-size:28px;margin-top:18px}
   .mobile-nav{height:60px}.mobile-nav a{height:60px}.mobile-nav i{font-size:17px}.mobile-nav small{font-size:8px}.mobile-add{top:-27px;width:52px;height:52px;font-size:31px}
+  .mobile-nav a,.mobile-nav button{-webkit-tap-highlight-color:transparent;user-select:none}
   .modal{padding:22px 16px calc(20px + env(safe-area-inset-bottom))}.modal h2{font-size:30px;margin-bottom:18px}.quick-grid{gap:11px}.quick-grid button{padding:13px}.quick-grid b{font-size:22px}
   .auth-page{padding:18px 12px}.auth-art{padding:18px 9px}.auth-logo{font-size:39px}.auth-art h1{font-size:39px;margin:30px 0 12px}.auth-form{padding:20px}.auth-form h2{font-size:30px}
   .dashboard-funds{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:auto;scrollbar-color:var(--red) var(--yellow);padding-bottom:14px}
