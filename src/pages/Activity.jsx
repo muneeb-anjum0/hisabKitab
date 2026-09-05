@@ -12,7 +12,7 @@ export default function Activity() {
   const data = useData(); const { user } = useAuth();
   const editableFundIds = new Set(data.memberships.filter((member) => member.userId === user.uid && ['owner', 'editor'].includes(member.role)).map((member) => member.fundId));
   const [filters, setFilters] = useState({ search: '', fund: 'all', category: 'all', type: 'all', month: '' });
-  const [editing, setEditing] = useState(null); const [deleting, setDeleting] = useState(null); const [deletingIncome, setDeletingIncome] = useState(null);
+  const [editing, setEditing] = useState(null); const [editingIncome, setEditingIncome] = useState(null); const [deleting, setDeleting] = useState(null); const [deletingIncome, setDeletingIncome] = useState(null);
   const items = useMemo(() => {
     const transactionItems = data.transactions.map((item) => ({ ...item, activityDate: item.date }));
     const remittanceItems = data.remittances.map((item) => ({ ...item, id: `remittance-${item.id}`, sourceId: item.id, type: 'income', description: `Money from ${item.sender}`, amount: item.totalAmount, activityDate: item.receivedAt }));
@@ -35,24 +35,25 @@ export default function Activity() {
   return <>
     <div className="page-title compact"><span className="kicker red">EVERY MOVE. NO MYSTERY.</span><h1>ACTIVITY</h1></div>
     <section className="filter-bar"><label><span>SEARCH</span><input type="search" placeholder="Description or note…" value={filters.search} onChange={set('search')}/></label><label><span>FUND</span><select value={filters.fund} onChange={set('fund')}><option value="all">All Funds</option>{data.funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></label><label><span>CATEGORY</span><select value={filters.category} onChange={set('category')}><option value="all">All categories</option>{data.categories.map((category) => <option value={category.id} key={category.id}>{category.name}</option>)}</select></label><label><span>TYPE</span><select value={filters.type} onChange={set('type')}><option value="all">All types</option><option value="expense">Expenses</option><option value="income">Money received</option><option value="transfer">Transfers</option></select></label><label><span>MONTH</span><input type="month" value={filters.month} onChange={set('month')}/></label></section>
-    <section className="panel ledger-panel activity-ledger">{items.length ? items.map((item) => item.type === 'income' ? <IncomeRow key={item.id} item={item} allocated={data.allocations.some((allocation) => allocation.remittanceId === item.sourceId)} onDelete={() => setDeletingIncome(item)}/> : <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships} onEdit={item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null} onDelete={item.type === 'expense' && editableFundIds.has(item.fundId) ? setDeleting : null}/>) : <Empty title="NOTHING'S MOVED YET.">Real expenses, money received, and transfers will appear here.</Empty>}</section>
+    <section className="panel ledger-panel activity-ledger">{items.length ? items.map((item) => item.type === 'income' ? <IncomeRow key={item.id} item={item} onEdit={() => setEditingIncome(data.remittances.find((entry) => entry.id === item.sourceId))} onDelete={() => setDeletingIncome(item)}/> : <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships} onEdit={item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null} onDelete={item.type === 'expense' && editableFundIds.has(item.fundId) ? setDeleting : null}/>) : <Empty title="NOTHING'S MOVED YET.">Real expenses, money received, and transfers will appear here.</Empty>}</section>
     {editing && <QuickAdd edit={editing} onClose={() => setEditing(null)}/>}
+    {editingIncome && <QuickAdd editIncome={editingIncome} onClose={() => setEditingIncome(null)}/>}
     {deleting && <DeleteExpense item={deleting} onClose={() => setDeleting(null)} onDelete={async () => {
       await data.removeTransaction(deleting.id); setDeleting(null);
     }}/>}
-    {deletingIncome && <DeleteIncome item={deletingIncome} allocated={data.allocations.some((item) => item.remittanceId === deletingIncome.sourceId)} onClose={() => setDeletingIncome(null)} onDelete={async () => {
+    {deletingIncome && <DeleteIncome item={deletingIncome} onClose={() => setDeletingIncome(null)} onDelete={async () => {
       await data.removeRemittance(deletingIncome.sourceId); setDeletingIncome(null);
     }}/>}
   </>;
 }
 
-function IncomeRow({ item, allocated, onDelete }) {
-  return <article className="income-row"><div><small>MONEY RECEIVED · {friendlyDate(item.activityDate)}</small><strong>{item.description}</strong>{item.note && <span>{item.note}</span>}</div><b>+{money(item.amount)}</b><button className="income-delete" onClick={onDelete} aria-label={`Delete ${item.description}`}>{allocated ? 'LOCKED' : 'DELETE'}</button></article>;
+function IncomeRow({ item, onEdit, onDelete }) {
+  return <article className="income-row"><div><small>MONEY RECEIVED · {friendlyDate(item.activityDate)}</small><strong>{item.description}</strong>{item.note && <span>{item.note}</span>}</div><b>+{money(item.amount)}</b><div className="income-actions"><button className="income-edit" onClick={onEdit} aria-label={`Edit ${item.description}`}>EDIT</button><button className="income-delete" onClick={onDelete} aria-label={`Delete ${item.description}`}>DELETE</button></div></article>;
 }
 
-function DeleteIncome({ item, allocated, onClose, onDelete }) {
+function DeleteIncome({ item, onClose, onDelete }) {
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
-  return <Modal title={allocated ? 'THIS MONEY HAS A HISTORY.' : 'DELETE MONEY RECEIVED?'} onClose={onClose}><div className="delete-preview"><strong>{money(item.amount)}</strong><span>{item.description}</span></div>{allocated ? <div className="history-warning"><b>RECEIPT LOCKED.</b><p>Some of this money was allocated to a Fund. Keep it to preserve the ledger and Money Lot trail.</p></div> : <p>This receipt is fully unallocated. Deleting it will remove it from Activity, totals, and available unallocated money.</p>}{error && <p className="form-error">{error}</p>}<div className="confirm-actions"><Button variant="paper" onClick={onClose} disabled={busy}>{allocated ? 'CLOSE' : 'CANCEL'}</Button>{!allocated && <Button className="danger-button" onClick={async () => { setBusy(true); try { await onDelete(); } catch (deleteError) { setError(deleteError.message); setBusy(false); } }} disabled={busy}>{busy ? 'DELETING…' : 'DELETE RECEIPT'}</Button>}</div></Modal>;
+  return <Modal title="DELETE MONEY RECEIVED?" onClose={onClose}><div className="delete-preview"><strong>{money(item.amount)}</strong><span>{item.description}</span></div><div className="history-warning"><b>THIS CHANGES THE FUND.</b><p>The receipt and every Fund allocation created from it will be removed. Existing expenses remain in your ledger.</p></div>{error && <p className="form-error">{error}</p>}<div className="confirm-actions"><Button variant="paper" onClick={onClose} disabled={busy}>CANCEL</Button><Button className="danger-button" onClick={async () => { setBusy(true); try { await onDelete(); } catch (deleteError) { setError(deleteError.message); setBusy(false); } }} disabled={busy}>{busy ? 'DELETING…' : 'DELETE MONEY'}</Button></div></Modal>;
 }
 
 function DeleteExpense({ item, onClose, onDelete }) {

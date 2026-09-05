@@ -7,9 +7,9 @@ import { Modal, Button, Field } from '../comic/Comic';
 
 const isPositive = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
 
-export default function QuickAdd({ onClose, initial = 'menu', edit = null }) {
+export default function QuickAdd({ onClose, initial = 'menu', edit = null, editIncome = null }) {
   const data = useData();
-  const [mode, setMode] = useState(edit ? 'expense' : initial);
+  const [mode, setMode] = useState(edit ? 'expense' : editIncome ? 'remittance' : initial);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const amountRef = useRef(null);
@@ -37,9 +37,9 @@ export default function QuickAdd({ onClose, initial = 'menu', edit = null }) {
     </div>
   </Modal>;
 
-  const back = () => (edit || initial !== 'menu') ? onClose() : setMode('menu');
+  const back = () => (edit || editIncome || initial !== 'menu') ? onClose() : setMode('menu');
   if (mode === 'expense') return <ExpenseForm {...{ data, funds, edit, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => edit ? data.updateTransaction(edit.id, values) : data.addTransaction(values))}/>;
-  if (mode === 'remittance') return <RemittanceForm {...{ funds, amountRef, busy, error }} onBack={back} onSubmit={(values, allocations) => submit(() => data.createRemittance(values, allocations))}/>;
+  if (mode === 'remittance') return <RemittanceForm {...{ data, funds, editIncome, amountRef, busy, error }} onBack={back} onSubmit={(values, allocations) => submit(() => editIncome ? data.updateRemittance(editIncome.id, values, allocations) : data.createRemittance(values, allocations))}/>;
   if (mode === 'transfer') return <TransferForm {...{ data, funds, amountRef, busy, error }} onBack={back} onSubmit={(values) => submit(() => data.createTransfer(values))}/>;
   return <FundForm {...{ busy, error }} onBack={back} onSubmit={(values) => submit(() => data.createFund(values))}/>;
 }
@@ -75,11 +75,12 @@ function ExpenseForm({ data, funds, edit, amountRef, busy, error, onBack, onSubm
   </Modal>;
 }
 
-function RemittanceForm({ funds, amountRef, busy, error, onBack, onSubmit }) {
-  const [values, setValues] = useState({ sender: '', totalAmount: '', receivedAt: localISO(), note: '' });
-  const [allocationValues, setAllocationValues] = useState({});
-  const [split, setSplit] = useState(false);
-  const [purpose, setPurpose] = useState(funds[0]?.id || '');
+function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBack, onSubmit }) {
+  const existingAllocations = editIncome ? data.allocations.filter((item) => item.remittanceId === editIncome.id) : [];
+  const [values, setValues] = useState({ sender: editIncome?.sender || '', totalAmount: editIncome?.totalAmount || '', receivedAt: editIncome?.receivedAt || localISO(), note: editIncome?.note || '' });
+  const [allocationValues, setAllocationValues] = useState(() => Object.fromEntries(existingAllocations.map((item) => [item.fundId, item.amount])));
+  const [split, setSplit] = useState(existingAllocations.length > 1);
+  const [purpose, setPurpose] = useState(existingAllocations[0]?.fundId || funds[0]?.id || '');
   const allocated = split ? Object.values(allocationValues).reduce((total, value) => total + (Number(value) || 0), 0) : (purpose ? Number(values.totalAmount) || 0 : 0);
   const remaining = (Number(values.totalAmount) || 0) - allocated;
   const valid = isPositive(values.totalAmount) && values.sender.trim() && values.receivedAt && remaining >= 0;
@@ -88,7 +89,7 @@ function RemittanceForm({ funds, amountRef, busy, error, onBack, onSubmit }) {
     const allocations = split ? funds.map((fund) => ({ fundId: fund.id, amount: Number(allocationValues[fund.id]) || 0 })) : (purpose ? [{ fundId: purpose, amount: Number(values.totalAmount) }] : []);
     onSubmit({ ...values, totalAmount: Number(values.totalAmount), sender: values.sender.trim(), note: values.note.trim() }, allocations);
   };
-  return <Modal title="ADD MONEY" onClose={onBack} wide><form onSubmit={save}>
+  return <Modal title={editIncome ? 'EDIT MONEY RECEIVED' : 'ADD MONEY'} onClose={onBack} wide><form onSubmit={save}>
     <div className="remit-layout"><div>
       <Field label="FROM"><input required maxLength="80" value={values.sender} onChange={(e) => setValues({ ...values, sender: e.target.value })} placeholder="Dad"/></Field>
       <Field label="AMOUNT (PKR)"><input ref={amountRef} required type="number" min="1" step="1" inputMode="decimal" className="amount-input" value={values.totalAmount} onChange={(e) => setValues({ ...values, totalAmount: e.target.value })}/></Field>
@@ -102,7 +103,7 @@ function RemittanceForm({ funds, amountRef, busy, error, onBack, onSubmit }) {
     </div></div>
     {remaining < 0 && <p className="form-error">Your split is {money(-remaining)} over the amount received.</p>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <Button disabled={busy || !valid}>{busy ? 'SAVING…' : 'SAVE MONEY'}</Button>
+    <Button disabled={busy || !valid}>{busy ? 'SAVING…' : editIncome ? 'SAVE CHANGES' : 'SAVE MONEY'}</Button>
   </form></Modal>;
 }
 

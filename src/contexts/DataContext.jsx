@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import * as api from '../services/dataService';
-import { canDeleteRemittance, fundDeletionAssessment, patchFund } from '../lib/calculations';
+import { fundDeletionAssessment, patchFund } from '../lib/calculations';
 
 const DataContext = createContext(null);
 const EMPTY_DATA = { funds: [], memberships: [], remittances: [], allocations: [], transactions: [], categories: [] };
@@ -93,9 +93,17 @@ export function DataProvider({ children }) {
     updateTransaction: (id, values) => write(() => api.updateTransaction(id, values), (current, result) => ({ ...current, transactions: current.transactions.map((item) => item.id === id ? { ...item, ...result } : item) }), 'CHANGES SAVED.'),
     removeTransaction: (id) => write(() => api.removeTransaction(id), (current) => ({ ...current, transactions: current.transactions.filter((item) => item.id !== id) }), 'EXPENSE DELETED.'),
     createRemittance: (values, allocations) => write(() => api.createRemittance(user.uid, values, allocations), (current, result) => ({ ...current, remittances: [result.remittance, ...current.remittances], allocations: [...current.allocations, ...result.allocations] }), 'KA-CHING. MONEY ADDED.'),
+    updateRemittance: (id, values, allocations) => {
+      const existing = data.allocations.filter((item) => item.remittanceId === id);
+      return write(() => api.updateRemittance(id, values, allocations, existing), (current, result) => ({
+        ...current,
+        remittances: current.remittances.map((item) => item.id === id ? { ...item, ...result.remittance } : item),
+        allocations: [...current.allocations.filter((item) => item.remittanceId !== id), ...result.allocations],
+      }), 'MONEY RECEIPT UPDATED.');
+    },
     removeRemittance: (id) => {
-      if (!canDeleteRemittance(id, data.allocations)) return Promise.reject(new Error('This money has Fund history and cannot be deleted.'));
-      return write(() => api.removeRemittance(id), (current) => ({ ...current, remittances: current.remittances.filter((item) => item.id !== id) }), 'MONEY RECEIPT DELETED.');
+      const linked = data.allocations.filter((item) => item.remittanceId === id);
+      return write(() => api.removeRemittance(id, linked), (current) => ({ ...current, remittances: current.remittances.filter((item) => item.id !== id), allocations: current.allocations.filter((item) => item.remittanceId !== id) }), 'MONEY AND FUND ALLOCATION DELETED.');
     },
     createTransfer: (values) => write(() => api.createTransfer(user.uid, values.fromId, values.toId, values.amount, values.date, values.note, values.lotUsages, values.sourceFundName), (current, result) => ({ ...current, transactions: [...result, ...current.transactions] }), 'TRANSFER COMPLETE.'),
     allocate: (values) => {

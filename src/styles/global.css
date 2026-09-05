@@ -83,3 +83,5 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 
 /* Use the same notebook-opening splash while the signed-in ledger syncs. */
 .book-opening-loader{z-index:250}
+
+.income-actions{display:flex;gap:8px}.income-actions button{border:2px solid #111;padding:6px 9px;font:900 11px var(--display);box-shadow:3px 3px 0 #111}.income-edit{background:var(--yellow)}.income-actions .income-delete{margin-left:0;background:var(--red);color:#fff;box-shadow:3px 3px 0 #111}

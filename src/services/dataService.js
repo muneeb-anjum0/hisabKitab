@@ -100,7 +100,31 @@ export async function createRemittance(uid, values, allocations) {
   };
 }
 
-export async function removeRemittance(id) { await deleteDoc(doc(db, 'remittances', id)); return id; }
+export async function updateRemittance(id, values, allocations, existingAllocations = []) {
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'remittances', id), { ...values, updatedAt: serverTimestamp() });
+  const existingByFund = new Map(existingAllocations.map((item) => [item.fundId, item]));
+  const nextFundIds = new Set();
+  const nextAllocations = allocations.filter((item) => Number(item.amount) > 0).map((item) => {
+    nextFundIds.add(item.fundId);
+    const existing = existingByFund.get(item.fundId);
+    const ref = existing ? doc(db, 'allocations', existing.id) : doc(collection(db, 'allocations'));
+    const allocation = { remittanceId: id, fundId: item.fundId, amount: Number(item.amount), source: values.sender, receivedAt: values.receivedAt };
+    existing ? batch.update(ref, { ...allocation, updatedAt: serverTimestamp() }) : batch.set(ref, { ...allocation, createdAt: serverTimestamp() });
+    return { id: ref.id, ...allocation, createdAt: existing?.createdAt || localNow(), updatedAt: localNow() };
+  });
+  existingAllocations.filter((item) => !nextFundIds.has(item.fundId)).forEach((item) => batch.delete(doc(db, 'allocations', item.id)));
+  await batch.commit();
+  return { remittance: { id, ...values, updatedAt: localNow() }, allocations: nextAllocations };
+}
+
+export async function removeRemittance(id, allocations = []) {
+  const batch = writeBatch(db);
+  allocations.forEach((item) => batch.delete(doc(db, 'allocations', item.id)));
+  batch.delete(doc(db, 'remittances', id));
+  await batch.commit();
+  return id;
+}
 
 export async function addAllocation(values) { const ref = await addDoc(collection(db, 'allocations'), { ...values, createdAt: serverTimestamp() }); return { id: ref.id, ...values, createdAt: localNow() }; }
 export async function addCategory(uid, name, symbol = '◆') { const ref = await addDoc(collection(db, 'categories'), { userId: uid, name, symbol, createdAt: serverTimestamp() }); return { id: ref.id, userId: uid, name, symbol, createdAt: localNow() }; }
