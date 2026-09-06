@@ -1,7 +1,9 @@
 import {
   GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail,
-  signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile,
+  signInWithCredential, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile,
 } from 'firebase/auth';
+import { Capacitor } from '@capacitor/core';
+import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -46,7 +48,16 @@ export async function emailLogin(email, password) {
 }
 
 export async function googleLogin() {
-  try { return await syncUser((await signInWithPopup(auth, new GoogleAuthProvider())).user); }
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const result = await FirebaseAuthentication.signInWithGoogle();
+      const idToken = result.credential?.idToken;
+      if (!idToken) throw new Error('Google did not return an ID token.');
+      const credential = GoogleAuthProvider.credential(idToken);
+      return await syncUser((await signInWithCredential(auth, credential)).user);
+    }
+    return await syncUser((await signInWithPopup(auth, new GoogleAuthProvider())).user);
+  }
   catch (error) { throw new Error(friendlyError(error)); }
 }
 
