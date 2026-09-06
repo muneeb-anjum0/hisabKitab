@@ -1,71 +1,71 @@
 # HisabKitab
 
-HisabKitab is a mobile-first personal and household ledger for receiving money once, splitting it into Funds, and spending against those Funds. It uses React, Vite, Firebase Authentication, Cloud Firestore, and a deliberately inked comic-editorial design system.
+> Every rupee has a job.
 
-## Run locally
+[![Version](https://img.shields.io/github/v/release/muneeb-anjum0/hisabKitab?display_name=tag&style=flat-square&color=f4d431)](https://github.com/muneeb-anjum0/hisabKitab/releases/latest)
+[![Web app](https://img.shields.io/badge/web-live-2d75e8?style=flat-square)](https://hisabkitab-a0c26.web.app)
+[![CI](https://img.shields.io/github/actions/workflow/status/muneeb-anjum0/hisabKitab/quality.yml?branch=main&style=flat-square&label=build)](https://github.com/muneeb-anjum0/hisabKitab/actions/workflows/quality.yml)
 
-```bash
-npm install
-npm run dev
-```
+HisabKitab is a comic-styled personal and household ledger for receiving money, dividing it into purpose-built Funds, and tracking where every amount goes. It is available as a responsive web application, an installable PWA, and a native Android package.
 
-The application requires Firebase configuration and never substitutes a fake user or dummy financial data. With placeholder credentials, it shows a configuration screen instead of entering the ledger.
+**[Open the web app](https://hisabkitab-a0c26.web.app)** · **[Download the latest Android release](https://github.com/muneeb-anjum0/hisabKitab/releases/latest)**
 
-## Firebase setup
+## What it does
 
-1. Create a project in the [Firebase console](https://console.firebase.google.com/).
-2. In **Build → Authentication → Sign-in method**, enable **Email/Password** and **Google**.
-3. In **Build → Firestore Database**, create a database. Choose the region closest to your users. Do not use open production rules.
-4. In **Project settings → General → Your apps**, add a Web app and copy its configuration.
-5. Copy `.env.example` to `.env.local` (the repository already includes a placeholder local file) and replace every placeholder:
-
-```env
-VITE_FIREBASE_API_KEY=apiKey
-VITE_FIREBASE_AUTH_DOMAIN=authDomain
-VITE_FIREBASE_PROJECT_ID=projectId
-VITE_FIREBASE_STORAGE_BUCKET=storageBucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=messagingSenderId
-VITE_FIREBASE_APP_ID=appId
-```
-
-These six values come directly from the Firebase `firebaseConfig` object. Restart Vite after changing them. `.env.local` is ignored by Git.
-
-6. Add `localhost` and your deployment domain under **Authentication → Settings → Authorized domains**.
-7. Install and authenticate the Firebase CLI, then select your project and deploy the rules/indexes:
-
-```bash
-npm install -g firebase-tools
-firebase login
-firebase use --add
-firebase deploy --only firestore:rules,firestore:indexes
-```
-
-The included rules use deterministic membership IDs (`fundId_userId`) and enforce owner/editor/viewer access. Private `users` documents are self-only; exact-email sharing uses the minimal authenticated `publicProfiles` directory. This Firebase-only sharing mechanism does not email people who have not registered.
-
-## Commands
-
-```bash
-npm run dev       # local Vite server
-npm test          # calculation test suite
-npm run build     # production bundle
-npm run preview   # preview the production bundle
-firebase deploy   # Firestore configuration + Firebase Hosting
-```
+- Organizes balances into separate, color-coded Funds.
+- Records income, expenses, transfers, allocations, and shared-Fund membership.
+- Traces allocated income through Money Lots using FIFO spending.
+- Calculates balances from the ledger instead of storing mutable totals.
+- Supports email/password and native Google authentication.
+- Keeps the web experience installable and offline-aware.
+- Presents activity and monthly recaps in the same inked comic design system.
 
 ## Ledger model
 
-Fund balances are never stored or incremented independently. They are calculated as allocations minus expenses, plus signed adjustments and signed transfer entries. A transfer creates two linked entries and never counts as income. Any received amount not represented by allocations remains unallocated.
+Fund balances are derived from allocations, signed expenses, adjustments, and linked transfer entries. Transfers move value between Funds without counting as income. Received money not represented by an allocation remains unallocated.
 
-### Money Lots and FIFO
+Every allocation is a Money Lot tied to its source, date, Fund, and original amount. Expenses consume the oldest available lot first unless a specific lot is selected. Transfers consume source lots and create linked destination history, preserving the complete money trail.
 
-Every allocation is also a Money Lot: a traceable batch tied to its remittance, sender, date, Fund, and original amount. Existing allocations automatically appear as historical Money Lots; no migration or duplication is required. New expenses store a `lotUsages` breakdown on the transaction. The default allocation strategy consumes the oldest available lot first (FIFO). A user can select a specific lot; if it is insufficient, the remainder continues through available lots in FIFO order. Legacy expenses without `lotUsages` are replayed FIFO at calculation time.
+The primary Firestore collections are `users`, `publicProfiles`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. Access is enforced by the included owner/editor/viewer security rules.
 
-Transfers consume Money Lots in the source Fund and derive a destination transfer lot linked to the paired transfer entry. Money Lot balances, like Fund balances, are calculated from the ledger and are never independently mutated.
+## Technology
 
-Primary collections are `users`, `publicProfiles`, `funds`, `fundMembers`, `remittances`, `allocations`, `transactions`, and `categories`. `users` is private; `publicProfiles` contains only the minimal name/email directory needed for exact-email shared-Fund lookup. Dashboard and activity queries are deliberately capped in `src/services/dataService.js`; for a high-volume production account, add pagination and server-side monthly aggregates while keeping this ledger authoritative.
+| Layer | Languages and technology |
+| --- | --- |
+| Interface | JavaScript, JSX, HTML, CSS, React, React Router |
+| Web build | Vite |
+| Authentication and data | Firebase Authentication, Cloud Firestore |
+| Web deployment | Firebase Hosting and PWA service worker |
+| Android package | Capacitor, Java, Android SDK, Gradle |
+| Interaction | dnd-kit sortable drag and drop |
+| Verification | Vitest and GitHub Actions |
 
-Confirmed mutations update only their affected local collections instead of reloading every Firestore query. A full reconciliation remains available through `refresh()` for startup, retry, and membership changes.
+The application code is primarily modern JavaScript/JSX and CSS. The Android container uses Java with Gradle build configuration; Capacitor packages the production Vite bundle as an Android APK while retaining native Google sign-in and system-bar integration.
 
-## PWA and offline behavior
+## Deployment and releases
 
-The production build registers `public/sw.js` to cache the application shell. Firestore uses persistent multi-tab local cache and queues supported writes while offline. The UI shows network state. The manifest includes 192px, 512px, maskable 512px, and Apple touch icons, plus standalone display, scope, theme, and safe-area metadata.
+The production web build is deployed on [Firebase Hosting](https://hisabkitab-a0c26.web.app). Firestore rules and indexes are versioned alongside the application.
+
+Stable Android builds are published through [GitHub Releases](https://github.com/muneeb-anjum0/hisabKitab/releases). The current repository snapshot also contains a single installable artifact at [`HisabKitab.apk`](./HisabKitab.apk). Release versions follow semantic versioning.
+
+## Repository map
+
+```text
+src/                  React application, domain logic, and styles
+public/               PWA manifest, service worker, and web artwork
+android/              Capacitor Android project and native resources
+.github/workflows/    Automated test and production-build checks
+firestore.rules       Firestore authorization policy
+firestore.indexes.json
+firebase.json         Firebase Hosting and Firestore deployment config
+capacitor.config.json Native application configuration
+HisabKitab.apk        Current stable Android build
+```
+
+## Data integrity
+
+HisabKitab does not substitute dummy accounts or financial data. Firebase configuration is supplied through ignored local environment values, writes update only their affected client collections, and startup performs a full ledger reconciliation. Private user records remain self-only; the minimal authenticated public profile directory exists solely for exact-email Fund sharing.
+
+---
+
+Built and maintained by [Muneeb Anjum](https://github.com/muneeb-anjum0).

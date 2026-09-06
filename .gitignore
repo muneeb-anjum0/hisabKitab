@@ -4,3 +4,6 @@ dist
 .firebase
 firebase-debug.log
 *.log
+.DS_Store
+coverage
+android/.idea/
