@@ -3,6 +3,10 @@
   "appName": "HisabKitab",
   "webDir": "dist",
   "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "dark"
+    },
     "FirebaseAuthentication": {
       "skipNativeAuth": true,
       "providers": ["google.com"]

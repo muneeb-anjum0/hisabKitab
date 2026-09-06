@@ -32,7 +32,7 @@ export default function App() {
   }, []);
 
   if (!configured) return <FirebaseSetup/>;
-  if (authLoading) return <BookOpeningLoader label="OPENING THE BOOK…"/>;
+  if (authLoading || (user && data.loading)) return <BookOpeningLoader/>;
   if (!user) return <Auth/>;
 
   return <div className="app-shell">
@@ -40,7 +40,7 @@ export default function App() {
     <main className="content">
       {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
       {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
-      {data.loading ? <LedgerLoading/> : <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><AnimatedRoutes>
+      <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><AnimatedRoutes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
         <Route path="/funds" element={<Funds/>}/>
         <Route path="/funds/:id" element={<FundDetail/>}/>
@@ -48,7 +48,7 @@ export default function App() {
         <Route path="/summary" element={<Summary/>}/>
         <Route path="/profile" element={<Profile/>}/>
         <Route path="*" element={<Navigate to="/" replace/>}/>
-      </AnimatedRoutes></Suspense>}
+      </AnimatedRoutes></Suspense>
     </main>
     {quickAction && <Suspense fallback={null}><QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/></Suspense>}
     {data.toast && <div className={`toast ${data.toast.type}`} role="status">{data.toast.message}</div>}
@@ -125,10 +125,21 @@ function AnimatedRoutes({ children }) {
   return <div className="route-enter" key={location.pathname}><Routes location={location}>{children}</Routes></div>;
 }
 
-function LedgerLoading() {
-  return <BookOpeningLoader label="SYNCING YOUR BOOK…"/>;
-}
+function BookOpeningLoader() {
+  const [progress, setProgress] = useState(12);
 
-function BookOpeningLoader({ label }) {
-  return <div className="splash book-opening-loader" role="status" aria-live="polite"><div className="mini-logo" aria-hidden="true">HK!</div><span>{label}</span></div>;
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setProgress((current) => current >= 88 ? current : Math.min(88, current + Math.max(2, Math.round((88 - current) / 7))));
+    }, 90);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  return <div className="splash book-opening-loader" role="status" aria-live="polite">
+    <div className="startup-card">
+      <div className="mini-logo" aria-hidden="true">HK!</div>
+      <div className="startup-copy"><strong>OPENING YOUR BOOK…</strong><small>Getting your latest ledger ready</small></div>
+      <div className="startup-progress" aria-hidden="true"><i style={{ width: `${progress}%` }}/></div>
+    </div>
+  </div>;
 }

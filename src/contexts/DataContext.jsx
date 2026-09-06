@@ -22,17 +22,18 @@ export function DataProvider({ children }) {
   const { user, configured } = useAuth();
   const [data, setData] = useState(EMPTY_DATA);
   const [loading, setLoading] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
   const reorderQueue = useRef(Promise.resolve());
   const reorderVersion = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); return; }
+    if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); setLoadedUserId(null); return; }
     setLoading(true);
     try { setData(await withTimeout(api.loadUserData(user.uid))); setError(''); }
     catch (loadError) { console.error(loadError); setError(loadError.message || 'Could not load your ledger.'); }
-    finally { setLoading(false); }
+    finally { setLoadedUserId(user.uid); setLoading(false); }
   }, [configured, user]);
 
   useEffect(() => { refresh(); }, [refresh]);
@@ -62,7 +63,7 @@ export function DataProvider({ children }) {
   }, [data.categories]);
 
   const value = {
-    ...data, categories, loading, error, toast, setToast, refresh,
+    ...data, categories, loading: loading || Boolean(user && loadedUserId !== user.uid), error, toast, setToast, refresh,
     createFund: (values) => { const sortOrder = Math.max(-1, ...data.funds.filter((fund) => !fund.archived).map((fund) => Number.isFinite(fund.sortOrder) ? fund.sortOrder : -1)) + 1; const orderedValues = { ...values, sortOrder }; return write(() => api.createFund(user.uid, orderedValues), (current, result) => ({ ...current, funds: [...current.funds, result.fund], memberships: [...current.memberships, result.membership] }), 'NEW FUND. STAMPED IN.'); },
     updateFund: (id, values) => write(() => api.updateFund(id, values), (current, result) => ({ ...current, funds: patchFund(current.funds, id, result) }), 'CHANGES SAVED.'),
     reorderFunds: async (ids) => {

@@ -9,7 +9,10 @@ const documents = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...i
 const localNow = () => new Date().toISOString();
 
 export async function loadUserData(uid) {
-  const membershipSnapshot = await getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid)));
+  const membershipRequest = getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid)));
+  const remittanceRequest = getDocs(query(collection(db, 'remittances'), where('ownerId', '==', uid), limit(150)));
+  const categoryRequest = getDocs(query(collection(db, 'categories'), where('userId', '==', uid)));
+  const membershipSnapshot = await membershipRequest;
   const memberships = documents(membershipSnapshot);
   const fundIds = memberships.map((membership) => membership.fundId);
   const funds = []; const allocations = []; const transactions = [];
@@ -25,10 +28,7 @@ export async function loadUserData(uid) {
   }));
   chunkResults.forEach((result) => { funds.push(...result.funds); allocations.push(...result.allocations); transactions.push(...result.transactions); });
 
-  const [remittanceSnapshot, categorySnapshot] = await Promise.all([
-    getDocs(query(collection(db, 'remittances'), where('ownerId', '==', uid), limit(150))),
-    getDocs(query(collection(db, 'categories'), where('userId', '==', uid))),
-  ]);
+  const [remittanceSnapshot, categorySnapshot] = await Promise.all([remittanceRequest, categoryRequest]);
   return { funds, memberships, allocations, transactions, remittances: documents(remittanceSnapshot), categories: documents(categorySnapshot) };
 }
 
