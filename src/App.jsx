@@ -137,7 +137,7 @@ function BookOpeningLoader() {
 
   return <div className="splash book-opening-loader" role="status" aria-live="polite">
     <div className="startup-card">
-      <div className="mini-logo" aria-hidden="true">HK!</div>
+      <div className="mini-logo" aria-hidden="true"><img src="/icon.svg" alt="" /></div>
       <div className="startup-copy"><strong>OPENING YOUR BOOK…</strong><small>Getting your latest ledger ready</small></div>
       <div className="startup-progress" aria-hidden="true"><i style={{ width: `${progress}%` }}/></div>
     </div>

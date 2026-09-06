@@ -78,8 +78,16 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 .dash-header{border-bottom:0}
 
 /* Preserve the original balloon while hiding the line at the tail join. */
-.speech:before{content:'';position:absolute;right:8px;bottom:-4px;width:29px;height:13px;background:#fff;transform:rotate(8deg);z-index:1}
-.speech:after{right:7px;bottom:-18px;width:25px;height:24px;background:#fff;border:0;border-right:3px solid #111;border-bottom:3px solid #111;transform:skew(35deg);z-index:0}
+.speech:after{right:7px;bottom:-18px;width:25px;height:24px;background:#fff;border:0;border-right:3px solid #111;border-bottom:3px solid #111;transform:skew(35deg);z-index:-1}
+.speech-wrap{align-self:start;margin-top:38px;position:relative;z-index:2;transform:rotate(-3deg)}.speech-wrap .speech{margin:0;transform:none;position:relative;z-index:2}.speech-wrap .speech:after{content:none}.speech-wrap:after{content:'';position:absolute;right:17px;bottom:-10px;width:29px;height:31px;background:#fff;border-top:3px solid #111;border-right:3px solid #111;border-bottom:3px solid #111;transform:skew(35deg);z-index:1}
+@media(max-width:800px){.speech-wrap{display:none}}
+@media(max-width:800px){.hero-space{display:none}}
+.comic-hero>.hero-ink{position:absolute;inset:0;width:100%;height:100%;margin:0;background:radial-gradient(circle,#111 0 1.05px,transparent 1.15px);background-size:7px 7px;clip-path:polygon(0 100%,0 88%,6% 76%,12% 85%,19% 67%,25% 82%,32% 57%,39% 79%,46% 69%,53% 84%,61% 54%,68% 77%,75% 64%,82% 80%,89% 61%,95% 73%,100% 65%,100% 100%);z-index:1;pointer-events:none}
+@media(max-width:800px){.comic-hero>.hero-ink{clip-path:polygon(0 100%,0 93%,6% 84%,12% 91%,19% 77%,25% 89%,32% 69%,39% 87%,46% 79%,53% 91%,61% 67%,68% 85%,75% 75%,82% 88%,89% 73%,95% 82%,100% 76%,100% 100%)}}
+@media(max-width:800px){.mobile-nav a i{display:grid;width:30px;height:28px;place-items:center;font-size:26px;line-height:1}}
+.category-settings summary{display:flex;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;border:3px solid var(--ink);padding:12px 14px;background:var(--yellow);box-shadow:4px 4px 0 var(--ink);font:900 22px/1 var(--display);user-select:none}.category-settings summary::-webkit-details-marker{display:none}.category-settings summary b{font-size:11px}.category-settings summary b:after{content:' +';font-size:18px}.category-settings[open] summary b{font-size:0}.category-settings[open] summary b:after{content:'CLOSE −';font-size:11px}.category-settings-body{padding-top:22px}
+@media(min-width:801px){.comic-hero>.hero-ink{-webkit-mask-image:linear-gradient(to right,transparent 0 29%,rgba(0,0,0,.2) 34%,rgba(0,0,0,.65) 39%,#000 44%);mask-image:linear-gradient(to right,transparent 0 29%,rgba(0,0,0,.2) 34%,rgba(0,0,0,.65) 39%,#000 44%)}}
+html body{background-image:none}.comic-hero:after{display:block;background:radial-gradient(circle,#d4d4d4 0 1.05px,transparent 1.15px);background-size:7px 7px;opacity:1}.balance-hero:after,.book-cover:after{display:none}.auth-art,.unallocated-strip,.journey-panel,.month-empty,.ledger-loading,.money-lots{background-image:none}
 
 /* Use the same notebook-opening splash while the signed-in ledger syncs. */
 .book-opening-loader{z-index:250}
@@ -170,6 +178,7 @@ html,body{background:#fff}body{background-image:radial-gradient(#1111110e .65px,
 .capacitor-native .splash{padding:calc(18px + var(--safe-area-inset-top,0px)) calc(18px + var(--safe-area-inset-right,0px)) calc(18px + var(--safe-area-inset-bottom,0px)) calc(18px + var(--safe-area-inset-left,0px))}
 .startup-card{width:min(360px,100%);display:grid;grid-template-columns:58px 1fr;align-items:center;gap:13px;background:#fff;border:3px solid var(--ink);border-left:8px solid var(--yellow);box-shadow:6px 6px 0 var(--ink);padding:15px}
 .startup-card .mini-logo{width:54px;height:54px;display:grid;place-items:center;font:900 24px/1 var(--display);border:3px solid var(--ink);background:var(--yellow);box-shadow:3px 3px 0 var(--red);transform:rotate(-2deg)}
+.auth-logo img{display:block;width:clamp(92px,10vw,144px);height:auto}.setup-masthead img{display:block;width:clamp(150px,22vw,280px);height:auto}.startup-card .mini-logo{padding:2px}.startup-card .mini-logo img{display:block;width:100%;height:100%}
 .startup-copy{display:flex;flex-direction:column;text-align:left;gap:3px}.startup-copy strong{font:900 18px/1 var(--display)}.startup-copy small{font-size:8px;color:#625d54}
 .startup-progress{grid-column:1/-1;height:10px;border:2px solid var(--ink);background:#eee;margin-top:2px;overflow:hidden}.startup-progress i{display:block;height:100%;background:var(--blue);transition:width 110ms ease-out}
 @media(max-width:800px){

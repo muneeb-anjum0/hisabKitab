@@ -1,1 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="84" fill="#f4d431"/><path d="M76 67h360v378H76z" fill="#fffaf0" stroke="#111" stroke-width="24"/><path d="M113 117h53v278h-53zm233 0h53v278h-53zM166 225h180v54H166z" fill="#e7462f" stroke="#111" stroke-width="10"/><path d="M185 117h142v77H185zm0 193h142v85H185z" fill="#2878f0" stroke="#111" stroke-width="10"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">HisabKitab HK! logo</title>
+  <desc id="desc">A comic-style HK monogram with the blue K joined behind the red H.</desc>
+  <rect width="512" height="512" rx="112" fill="#f4d431"/>
+  <rect x="72" y="82" width="368" height="348" rx="44" fill="#fffaf0" stroke="#12110f" stroke-width="12"/>
+  <g transform="translate(-18 0)">
+  <path d="M248 256L344 166M248 256L344 346" fill="none" stroke="#12110f" stroke-width="42" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M248 256L344 166M248 256L344 346" fill="none" stroke="#2d75e8" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M145 164V348M145 256H248M248 164V348" fill="none" stroke="#12110f" stroke-width="42" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M145 164V348M145 256H248M248 164V348" fill="none" stroke="#e54c35" stroke-width="24" stroke-linecap="square" stroke-linejoin="miter"/>
+  <path d="M402 172V284" fill="none" stroke="#12110f" stroke-width="46" stroke-linecap="round"/>
+  <path d="M402 172V284" fill="none" stroke="#e54c35" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="402" cy="346" r="27" fill="#12110f"/>
+  <circle cx="402" cy="346" r="17" fill="#e54c35"/>
+  </g>
+</svg>

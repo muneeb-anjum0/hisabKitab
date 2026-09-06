@@ -5,7 +5,7 @@ import { Button, Field } from '../components/comic/Comic';
 export function FirebaseSetup() {
   const required = ['API Key', 'Auth Domain', 'Project ID', 'Storage Bucket', 'Messaging Sender ID', 'App ID'];
   return <main className="setup-page">
-    <section className="setup-masthead"><span>HISAB</span><b>KITAB!</b></section>
+    <section className="setup-masthead"><img src="/icon.svg" alt="HisabKitab" /></section>
     <section className="setup-card panel">
       <span className="kicker red">CONFIGURATION REQUIRED</span>
       <h1>HISABKITAB NEEDS FIREBASE.</h1>
@@ -61,7 +61,7 @@ export default function Auth() {
 
   return <main className="auth-page">
     <section className="auth-art">
-      <div className="auth-logo"><span>HISAB</span><b>KITAB!</b></div>
+      <div className="auth-logo"><img src="/icon.svg" alt="HisabKitab" /></div>
       <div className="pow">₹</div>
       <h1>MONEY.<br/><em>SPLIT CLEARLY.</em><br/>SPENT SMARTLY.</h1>
       <p>Your personal and household money, without the mystery.</p>
