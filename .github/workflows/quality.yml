@@ -2,7 +2,6 @@ name: Quality
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 permissions:
@@ -13,25 +12,72 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  web:
-    name: Test and build
+  ledger-tests:
+    name: Ledger and Money Lots
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+      - run: npm ci
+      - run: npm test -- src/lib/calculations.test.js
 
-      - name: Install dependencies
-        run: npm ci
+  platform-tests:
+    name: Dates, currency, and app configuration
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test -- src/lib/currency.test.js src/lib/dates.test.js src/lib/platform.test.js
 
-      - name: Run tests
-        run: npm test
+  web-build:
+    name: Production web build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify deployable output
+        run: test -f dist/index.html && test -f dist/manifest.webmanifest && test -f dist/sw.js
 
-      - name: Build production application
-        run: npm run build
+  android-build:
+    name: Android APK build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+      - run: npm ci
+      - run: npm run build
+      - run: npx cap sync android
+      - name: Compile APK
+        working-directory: android
+        run: ./gradlew assembleDebug
+      - name: Preserve APK from this run
+        uses: actions/upload-artifact@v4
+        with:
+          name: HisabKitab-${{ github.sha }}
+          path: android/app/build/outputs/apk/debug/HisabKitab-debug.apk
+          if-no-files-found: error
+          retention-days: 14
