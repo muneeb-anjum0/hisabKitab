@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, monthlyTotals, moveFund, patchFund, placeFund, portfolioTotals, sortFunds, unallocatedTotal } from './calculations';
+import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, moneyLotSummary, monthlyTotals, moveFund, patchFund, placeFund, portfolioTotals, sortFunds, sum, timestampMillis, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -150,5 +150,131 @@ describe('financial ledger', () => {
     expect(placeFund(['first', 'middle', 'last'], 'last', 'first')).toEqual(['last', 'first', 'middle']);
     expect(placeFund(['first', 'middle', 'last'], 'first', 'last')).toEqual(['middle', 'last', 'first']);
     expect(placeFund(['first', 'middle', 'last'], 'first', 'middle')).toEqual(['middle', 'first', 'last']);
+  });
+});
+
+describe('calculation edge cases', () => {
+  it('sums numeric strings and safely ignores invalid values', () => {
+    expect(sum([{ value: '12.5' }, { value: null }, { value: 'nope' }, { value: -2.5 }], (item) => item.value)).toBe(10);
+  });
+
+  it('normalizes Firestore, seconds, ISO, and missing timestamps', () => {
+    expect(timestampMillis({ toMillis: () => 1234 })).toBe(1234);
+    expect(timestampMillis({ seconds: 2 })).toBe(2000);
+    expect(timestampMillis('2026-09-01T00:00:00.000Z')).toBe(Date.parse('2026-09-01T00:00:00.000Z'));
+    expect(timestampMillis(null)).toBe(0);
+    expect(timestampMillis('not-a-date')).toBe(0);
+  });
+
+  it('keeps unrelated Funds and transaction types out of Fund totals', () => {
+    const result = fundTotals('home', [{ fundId: 'home', amount: '100' }, { fundId: 'other', amount: 900 }], [
+      { fundId: 'home', type: 'expense', amount: '25' },
+      { fundId: 'home', type: 'income', amount: 500 },
+      { fundId: 'other', type: 'expense', amount: 300 },
+    ]);
+    expect(result).toEqual({ allocated: 100, spent: 25, adjustments: 0, remaining: 75 });
+  });
+
+  it('reports transferred-in state when remaining exceeds the available denominator', () => {
+    expect(fundCardState({ allocated: 100, remaining: 140 })).toEqual({ kind: 'inflow', label: 'TRANSFERRED IN', percentage: null });
+    expect(fundCardState({ allocated: 0, adjustments: 50, remaining: 50 })).toEqual({ kind: 'normal', label: '100% LEFT', percentage: 100 });
+  });
+
+  it('clamps normal Fund percentages to a safe zero-to-one-hundred range', () => {
+    expect(fundCardState({ allocated: 100, remaining: 0 }).percentage).toBe(0);
+    expect(fundCardState({ allocated: 100, remaining: 100 }).percentage).toBe(100);
+  });
+
+  it('counts counterparty transfers as Fund history that blocks deletion', () => {
+    const data = {
+      allocations: [],
+      memberships: [{ fundId: 'home', role: 'owner' }],
+      transactions: [{ fundId: 'other', counterpartyFundId: 'home', type: 'transfer', amount: -40 }],
+    };
+    expect(fundDeletionAssessment('home', data)).toMatchObject({ empty: false, transactionCount: 1, transferCount: 1 });
+  });
+
+  it('counts incoming transfers as derived Money Lots', () => {
+    const data = {
+      allocations: [{ id: 'allocation', fundId: 'home', amount: 50 }],
+      memberships: [{ fundId: 'home', role: 'owner' }],
+      transactions: [{ id: 'incoming', fundId: 'home', type: 'transfer', amount: 25 }],
+    };
+    expect(fundDeletionAssessment('home', data).moneyLots).toBe(2);
+  });
+
+  it('does not mutate the original Fund list while sorting', () => {
+    const original = [{ id: 'second', sortOrder: 2 }, { id: 'first', sortOrder: 1 }];
+    const sorted = sortFunds(original);
+    expect(sorted.map((fund) => fund.id)).toEqual(['first', 'second']);
+    expect(original.map((fund) => fund.id)).toEqual(['second', 'first']);
+  });
+
+  it('uses id as a deterministic final Fund sorting fallback', () => {
+    expect(sortFunds([{ id: 'z' }, { id: 'a' }]).map((fund) => fund.id)).toEqual(['a', 'z']);
+  });
+
+  it('leaves Fund order unchanged for invalid moves and placements', () => {
+    const ids = ['one', 'two'];
+    expect(moveFund(ids, 'missing', 1)).toBe(ids);
+    expect(moveFund(ids, 'two', 1)).toBe(ids);
+    expect(placeFund(ids, 'one', 'missing')).toBe(ids);
+    expect(placeFund(ids, 'one', 'one')).toBe(ids);
+  });
+
+  it('can represent negative unallocated money without hiding inconsistency', () => {
+    expect(unallocatedTotal([{ totalAmount: 100 }], [{ amount: 125 }])).toBe(-25);
+  });
+
+  it('keeps archived Funds out while retaining received and unallocated totals', () => {
+    const result = portfolioTotals([{ id: 'old', archived: true }], [{ fundId: 'old', amount: 60 }], [], [{ totalAmount: 100 }]);
+    expect(result).toMatchObject({ allocated: 0, remaining: 0, received: 100, unallocated: 40 });
+  });
+
+  it('excludes transfers and out-of-month records from monthly spending', () => {
+    expect(monthlyTotals('2026-09', [
+      { type: 'expense', amount: 10, date: '2026-09-30' },
+      { type: 'transfer', amount: -100, date: '2026-09-15' },
+      { type: 'expense', amount: 20, date: '2026-10-01' },
+    ], [{ totalAmount: 50, receivedAt: '2026-09-01' }, { totalAmount: 70, receivedAt: '2026-08-31' }])).toEqual({ received: 50, spent: 10, remaining: 40 });
+  });
+
+  it('orders Money Lots by received date, creation time, then id', () => {
+    const lots = buildMoneyLots('home', [
+      { id: 'b', fundId: 'home', remittanceId: 'r', amount: 10, createdAt: { seconds: 2 } },
+      { id: 'a', fundId: 'home', remittanceId: 'r', amount: 20, createdAt: { seconds: 1 } },
+    ], [{ id: 'r', receivedAt: '2026-09-01', sender: 'Baba' }], []);
+    expect(lots.map((lot) => [lot.id, lot.number])).toEqual([['a', 1], ['b', 2]]);
+  });
+
+  it('caps explicit lot usage at both the transaction and lot balance', () => {
+    const lots = buildMoneyLots('home', [{ id: 'lot', fundId: 'home', amount: 100 }], [], [
+      { id: 'expense', fundId: 'home', type: 'expense', amount: 30, date: '2026-09-01', lotUsages: [{ lotId: 'lot', amount: 90 }] },
+    ]);
+    expect(lots[0]).toMatchObject({ spent: 30, remaining: 70 });
+  });
+
+  it('falls back to FIFO when a saved usage references a missing lot', () => {
+    const lots = buildMoneyLots('home', [{ id: 'real', fundId: 'home', amount: 100 }], [], [
+      { id: 'expense', fundId: 'home', type: 'expense', amount: 35, date: '2026-09-01', lotUsages: [{ lotId: 'missing', amount: 35 }] },
+    ]);
+    expect(lots[0]).toMatchObject({ spent: 35, remaining: 65 });
+  });
+
+  it('reports uncovered spending when available Money Lots are insufficient', () => {
+    expect(consumeMoneyLots([{ id: 'one', remaining: 20 }, { id: 'empty', remaining: 0 }], 35)).toEqual({ usages: [{ lotId: 'one', amount: 20 }], uncovered: 15 });
+  });
+
+  it('treats invalid and negative requested consumption as zero', () => {
+    expect(consumeMoneyLots([{ id: 'one', remaining: 20 }], -5)).toEqual({ usages: [], uncovered: 0 });
+    expect(consumeMoneyLots([{ id: 'one', remaining: 20 }], 'invalid')).toEqual({ usages: [], uncovered: 0 });
+  });
+
+  it('summarizes original, spent, and remaining Money Lot values', () => {
+    const summary = moneyLotSummary('home', [{ id: 'lot', fundId: 'home', amount: 100 }], [], [
+      { fundId: 'home', type: 'expense', amount: 35, date: '2026-09-01' },
+    ]);
+    expect(summary).toMatchObject({ original: 100, spent: 35, remaining: 65 });
+    expect(summary.lots).toHaveLength(1);
   });
 });
