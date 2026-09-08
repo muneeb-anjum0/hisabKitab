@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, moneyLotSummary, monthlyTotals, moveFund, patchFund, placeFund, portfolioTotals, sortFunds, sum, timestampMillis, unallocatedTotal } from './calculations';
+import { buildMoneyLots, canDeleteRemittance, consumeMoneyLots, fundCardState, fundDeletionAssessment, fundTotals, ledgerMonths, moneyLotSummary, monthlyBreakdown, monthlyCsv, monthlyTotals, moveFund, patchFund, placeFund, portfolioTotals, sortFunds, sum, timestampMillis, unallocatedTotal } from './calculations';
 
 const funds = [{ id: 'personal' }, { id: 'house' }];
 const remittances = [{ id: 'r1', totalAmount: 30000, receivedAt: '2026-09-01' }];
@@ -48,6 +48,23 @@ describe('financial ledger', () => {
   it('calculates monthly income and expenses', () => {
     const transactions = [{ type: 'expense', amount: 1000, date: '2026-09-04' }, { type: 'expense', amount: 500, date: '2026-08-31' }];
     expect(monthlyTotals('2026-09', transactions, remittances)).toEqual({ received: 30000, spent: 1000, remaining: 29000 });
+  });
+
+  it('keeps multiple years of months ordered without mixing their ledgers', () => {
+    const transactions = [{ type: 'expense', amount: 10, date: '2025-12-31' }, { type: 'expense', amount: 20, date: '2026-01-01' }, { type: 'expense', amount: 30, date: '2026-09-09' }];
+    const income = [{ totalAmount: 100, receivedAt: '2025-12-01' }, { totalAmount: 200, receivedAt: '2026-01-02' }];
+    expect(ledgerMonths(transactions, income, '2026-10')).toEqual(['2026-10', '2026-09', '2026-01', '2025-12']);
+    expect(monthlyTotals('2025-12', transactions, income)).toEqual({ received: 100, spent: 10, remaining: 90 });
+    expect(monthlyTotals('2026-01', transactions, income)).toEqual({ received: 200, spent: 20, remaining: 180 });
+  });
+
+  it('builds month breakdowns and safely escaped CSV exports', () => {
+    const transactions = [{ type: 'expense', amount: 75, date: '2026-09-02', fundId: 'house', categoryId: 'food', description: 'Tea, milk', note: 'He said "yes"' }];
+    const breakdown = monthlyBreakdown('2026-09', transactions, remittances, [{ id: 'house', name: 'House' }], [{ id: 'food', name: 'Food' }]);
+    expect(breakdown.byFund).toEqual([{ id: 'house', name: 'House', value: 75 }]);
+    expect(breakdown.byCategory).toEqual([{ id: 'food', name: 'Food', value: 75 }]);
+    const csv = monthlyCsv('2026-09', breakdown, [{ id: 'house', name: 'House' }], [{ id: 'food', name: 'Food' }]);
+    expect(csv).toContain('"Tea, milk"'); expect(csv).toContain('"He said ""yes"""'); expect(csv).toContain('"Total spent","75"');
   });
 
   it('preserves the requested end-to-end money journey', () => {

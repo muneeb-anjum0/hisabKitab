@@ -59,7 +59,7 @@ GitHub Actions runs four independent checks on every push and pull request:
 | Production web build | The complete Vite production build and the presence of the deployable HTML, PWA manifest, and service worker output. |
 | Android APK build | A clean Java 21 Android compilation after rebuilding and synchronizing the Capacitor web bundle. The resulting APK is retained as a downloadable workflow artifact for 14 days. |
 
-The unit suite currently contains 57 assertions across the financial calculations, date helpers, currency helpers, and platform contracts. Separating the workflow into four jobs makes it clear whether a failure belongs to ledger behavior, configuration, web packaging, or Android packaging.
+The unit suite currently contains 59 assertions across the financial calculations, date helpers, currency helpers, and platform contracts. Separating the workflow into four jobs makes it clear whether a failure belongs to ledger behavior, configuration, web packaging, or Android packaging.
 
 ## Repository map
 

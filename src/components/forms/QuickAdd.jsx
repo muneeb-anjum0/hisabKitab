@@ -82,7 +82,7 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
   const [purpose, setPurpose] = useState(existingAllocations[0]?.fundId || funds[0]?.id || '');
   const allocated = split ? Object.values(allocationValues).reduce((total, value) => total + (Number(value) || 0), 0) : (purpose ? Number(values.totalAmount) || 0 : 0);
   const remaining = (Number(values.totalAmount) || 0) - allocated;
-  const valid = isPositive(values.totalAmount) && values.sender.trim() && values.receivedAt && remaining >= 0;
+  const valid = isPositive(values.totalAmount) && values.sender.trim() && values.receivedAt && funds.length > 0 && Math.abs(remaining) < 0.005;
   const save = (event) => {
     event.preventDefault(); if (!valid || busy) return;
     const allocations = split ? funds.map((fund) => ({ fundId: fund.id, amount: Number(allocationValues[fund.id]) || 0 })) : (purpose ? [{ fundId: purpose, amount: Number(values.totalAmount) }] : []);
@@ -95,10 +95,10 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
       <Field label="DATE"><input required type="date" value={values.receivedAt} onChange={(e) => setValues({ ...values, receivedAt: e.target.value })}/></Field>
       <Field label="NOTE — OPTIONAL"><textarea maxLength="300" rows="2" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
     </div><div className="split-box"><h3>GIVE IT A JOB</h3>
-      {funds.length ? <><Field label="PURPOSE"><select value={purpose} disabled={split} onChange={(event) => setPurpose(event.target.value)}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><button type="button" className="split-toggle" onClick={() => setSplit(!split)}>{split ? '← USE ONE FUND' : '+ SPLIT ACROSS FUNDS'}</button>{split && funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>)}</> : <p>Create a Fund after saving to allocate this money later.</p>}
+      {funds.length ? <><Field label="PURPOSE"><select value={purpose} disabled={split} onChange={(event) => setPurpose(event.target.value)}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><button type="button" className="split-toggle" onClick={() => setSplit(!split)}>{split ? '← USE ONE FUND' : '+ SPLIT ACROSS FUNDS'}</button>{split && funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>)}</> : <p>Create a Fund first. Every rupee must have a job.</p>}
       <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>ALLOCATED</span><strong>{money(allocated)}</strong></div>
       <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>UNALLOCATED</span><strong>{money(remaining)}</strong></div>
-      <small>Partial allocation is allowed.</small>
+      <small>Allocate the complete amount before saving.</small>
     </div></div>
     {remaining < 0 && <p className="form-error">Your split is {money(-remaining)} over the amount received.</p>}
     {error && <p className="form-error" role="alert">{error}</p>}

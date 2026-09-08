@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
-import { fundCardState, fundTotals, moneyLotSummary, portfolioTotals, sortFunds, timestampMillis } from '../lib/calculations';
+import { fundCardState, fundTotals, ledgerMonths, moneyLotSummary, monthlyBreakdown, monthlyCsv, portfolioTotals, sortFunds, timestampMillis } from '../lib/calculations';
 import { money } from '../lib/currency';
 import { friendlyDate, monthKey } from '../lib/dates';
 import { Button, Empty, Field, Modal } from '../components/comic/Comic';
@@ -18,6 +18,7 @@ const greeting = () => { const hour = new Date().getHours(); return hour < 12 ? 
 export default function Dashboard({ onAction }) {
   const data = useData(); const { user } = useAuth(); const navigate = useNavigate();
   const [allocating, setAllocating] = useState(false); const [search, setSearch] = useState(''); const [rearranging, setRearranging] = useState(false); const [activeId, setActiveId] = useState(null); const [orderedFunds, setOrderedFunds] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState(null);
   const searchRef = useRef(null); const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
   const canRearrange = activeFunds.length > 1 && activeFunds.every((fund) => data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner'));
   const stableOrderRef = useRef([]); const orderedFundsRef = useRef([]); const saveVersionRef = useRef(0);
@@ -28,9 +29,7 @@ export default function Dashboard({ onAction }) {
   const totals = useMemo(() => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances), [activeFunds, data.allocations, data.transactions, data.remittances]);
   const displayedFunds = rearranging ? orderedFunds.map((fund) => totals.funds.find((item) => item.id === fund.id) || fund) : totals.funds.slice(0, 4);
   const currentMonth = monthKey();
-  const received = data.remittances.filter((item) => monthKey(item.receivedAt) === currentMonth).reduce((total, item) => total + Number(item.totalAmount), 0);
-  const expenses = data.transactions.filter((item) => item.type === 'expense' && monthKey(item.date) === currentMonth);
-  const spent = expenses.reduce((total, item) => total + Number(item.amount), 0);
+  const months = useMemo(() => ledgerMonths(data.transactions, data.remittances, currentMonth), [data.transactions, data.remittances, currentMonth]);
   const recentTransactions = useMemo(() => [...data.transactions].sort((a, b) => {
     const byDate = String(b.date || '').localeCompare(String(a.date || ''));
     if (byDate) return byDate;
@@ -50,18 +49,17 @@ export default function Dashboard({ onAction }) {
 
     <div className="dashboard-grid">
       <main className="dashboard-main">
-        <section className="comic-hero"><div className="hero-finance"><span className="hero-label">TOTAL AVAILABLE</span><strong>{money(totals.remaining + totals.unallocated)}</strong><div className="hero-mini"><span>TOTAL RECEIVED<b>{money(totals.received)}</b></span><span>TOTAL SPENT<b>{money(totals.spent)}</b></span><span>UNALLOCATED<b>{money(totals.unallocated)}</b></span></div></div><div className="speech-wrap"><div className="speech">SAME MONEY.<br/>A BRIGHTER YOU.</div></div><div className="hero-space"/><div className="hero-ink" aria-hidden="true"/><div className="hero-mantra">PLAN<br/>TRACK<br/>SPEND<br/><em>REPEAT</em></div></section>
+        <section className="comic-hero"><div className="hero-finance"><span className="hero-label">TOTAL AVAILABLE</span><strong>{money(totals.remaining + totals.unallocated)}</strong><div className="hero-mini two-stats"><span>TOTAL RECEIVED<b>{money(totals.received)}</b></span><span>TOTAL SPENT<b>{money(totals.spent)}</b></span></div></div><div className="speech-wrap"><div className="speech">SAME MONEY.<br/>A BRIGHTER YOU.</div></div><div className="hero-space"/><div className="hero-ink" aria-hidden="true"/><div className="hero-mantra">PLAN<br/>TRACK<br/>SPEND<br/><em>REPEAT</em></div></section>
 
         <section className="dash-section fund-section"><header><h2>YOUR FUNDS</h2><span>{rearranging ? "MOVE 'EM AROUND" : 'SEPARATE POCKETS. ONE CLEAR LIFE.'}</span>{canRearrange && <button className={`rearrange-toggle ${rearranging ? 'active' : ''}`} onClick={enterRearrange}>{rearranging ? '✓ DONE' : '⠿ REARRANGE'}</button>}<Link to="/funds">View all →</Link></header><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({ active }) => { stableOrderRef.current = [...orderedFundsRef.current]; setActiveId(active.id); }} onDragOver={moveDuringDrag} onDragEnd={finishReorder} onDragCancel={() => { orderedFundsRef.current = stableOrderRef.current; setOrderedFunds(stableOrderRef.current); setActiveId(null); }}><SortableContext items={displayedFunds.map((fund) => fund.id)} strategy={rectSortingStrategy}><div className={`dashboard-funds ${rearranging ? 'is-rearranging' : ''}`}>{displayedFunds.map((fund, index) => <SortableFundCard key={fund.id} fund={fund} index={index} rearranging={rearranging} owner={data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner')} count={data.transactions.filter((item) => item.fundId === fund.id).length}/>) }{!rearranging && <button className="new-fund-card" onClick={() => onAction('fund')}><b>＋</b><span>NEW FUND</span></button>}</div></SortableContext>{createPortal(<DragOverlay>{activeId ? <FundCardView fund={displayedFunds.find((fund) => fund.id === activeId)} count={data.transactions.filter((item) => item.fundId === activeId).length} overlay/> : null}</DragOverlay>, document.body)}</DndContext></section>
 
-        <section className="dashboard-lower"><div className="dash-section recent-block"><header><h2>RECENT ACTIVITY</h2><span>LATEST MOVES IN YOUR STORY.</span><Link to="/activity">View all →</Link></header><div className="compact-ledger">{recentTransactions.length ? recentTransactions.map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>}</div></div><div className="dash-section month-block"><header><h2>THIS MONTH</h2><span>A QUICK GLANCE.</span></header><div className="month-totals"><p className="received"><span><i>↗</i> Received</span><b>{money(received)}</b></p><p className="spent"><span><i>↘</i> Spent</span><b>{money(spent)}</b></p><p className="month-remaining"><span><i>⊕</i> Remaining</span><b>{money(received - spent)}</b></p></div>{activeFunds.length ? <div className="month-bars">{activeFunds.slice(0, 5).map((fund) => { const value = expenses.filter((item) => item.fundId === fund.id).reduce((total, item) => total + Number(item.amount), 0); const max = Math.max(...activeFunds.map((entry) => expenses.filter((item) => item.fundId === entry.id).reduce((total, item) => total + Number(item.amount), 0)), 1); return <div key={fund.id}><span>{fund.name}</span><i><b className={fund.accent} style={{ width: `${value / max * 100}%` }}/></i><strong>{money(value)}</strong></div>; })}</div> : <div className="month-empty"><b>YOUR MONTH,<br/>AT A GLANCE.</b><span>Create a Fund to unlock the breakdown.</span></div>}</div></section>
-
-        {totals.unallocated > 0 && <section className="unallocated-strip"><div className="wallet-mark">▤</div><div><small>UNALLOCATED</small><strong>{money(totals.unallocated)}</strong><p>WAITING FOR A JOB.</p></div><Button onClick={() => setAllocating(true)}>ALLOCATE</Button></section>}
+        <section className="dashboard-lower"><div className="dash-section recent-block"><header><h2>RECENT ACTIVITY</h2><span>LATEST MOVES IN YOUR STORY.</span><Link to="/activity">View all →</Link></header><div className="compact-ledger">{recentTransactions.length ? recentTransactions.map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>}</div></div><div className="dash-section month-carousel"><header><h2>MONTHLY BOOKS</h2><span>SWIPE THROUGH TIME.</span></header><div className="month-track">{months.map((month) => <MonthCard key={month} month={month} data={data} funds={activeFunds} onOpen={() => setSelectedMonth(month)}/>)}</div></div></section>
       </main>
 
       <aside className="dashboard-aside"><div className="sticky-note"><b>IT ALL<br/>ADDS UP.</b></div><div className="direct-actions"><button className="primary" onClick={() => onAction('remittance')}>＋ ADD MONEY</button><button onClick={() => onAction('expense')}>＋ ADD EXPENSE</button><button onClick={() => onAction('transfer')}>⇄ TRANSFER MONEY</button><button onClick={() => onAction('fund')}>＋ CREATE FUND</button></div><Reminder totals={totals} funds={activeFunds} data={data}/><JourneyPanel/><div className="lot-watch"><small>MONEY LOT WATCH</small><b>{data.allocations.length} LOT{data.allocations.length !== 1 ? 'S' : ''} ON THE BOOKS</b><span>Oldest money is spent first unless you choose a specific lot.</span></div></aside>
     </div>
     {allocating && <AllocateMoney data={data} onClose={() => setAllocating(false)}/>}
+    {selectedMonth && <MonthDetails month={selectedMonth} data={data} funds={activeFunds} onClose={() => setSelectedMonth(null)}/>}
   </div>;
 }
 
@@ -76,6 +74,24 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
   const state = fundCardState(fund);
   const content = <><FundIconBadge name={fund.name}/><h3>{fund.name}</h3>{state.kind === 'overspent' && <span className="overspent-stamp">OVERSPENT</span>}<strong>{money(fund.remaining)}</strong><small>of {money(fund.allocated)}</small><div className="fund-card-progress"><div className="fund-meter"><span style={{ width: `${state.percentage ?? 0}%` }}/></div><b>{state.kind === 'overspent' ? `OVER BY ${money(state.overBy)}` : state.label}</b></div><footer>{count} TRANSACTION{count !== 1 ? 'S' : ''}</footer></>;
   return overlay ? <article className={`dash-fund-card fund-drag-overlay ${fund.accent}`}><div className="fund-card-link">{content}</div></article> : <Link className="fund-card-link" draggable={false} to={`/funds/${fund.id}`} onClick={(event) => rearranging && event.preventDefault()}>{content}</Link>;
+}
+
+function MonthCard({ month, data, funds, onOpen }) {
+  const summary = monthlyBreakdown(month, data.transactions, data.remittances, funds, data.categories);
+  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
+  return <button className="month-card" onClick={onOpen}><header><b>{label}</b><span>OPEN BOOK →</span></header><div className="month-totals"><p className="received"><span><i>↗</i> Received</span><b>{money(summary.received)}</b></p><p className="spent"><span><i>↘</i> Spent</span><b>{money(summary.spent)}</b></p><p className="month-remaining"><span><i>⊕</i> Net</span><b>{money(summary.remaining)}</b></p></div></button>;
+}
+
+function MonthDetails({ month, data, funds, onClose }) {
+  const summary = monthlyBreakdown(month, data.transactions, data.remittances, funds, data.categories);
+  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
+  const exportCsv = () => {
+    const blob = new Blob([monthlyCsv(month, summary, funds, data.categories)], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
+    anchor.href = url; anchor.download = `HisabKitab-${month}.csv`; anchor.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  return <Modal title={label} onClose={onClose} wide><div className="month-detail-totals"><b>IN {money(summary.received)}</b><b>OUT {money(summary.spent)}</b><b>NET {money(summary.remaining)}</b></div><div className="month-detail-grid"><section><h3>BY FUND</h3>{summary.byFund.length ? summary.byFund.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section><section><h3>BY CATEGORY</h3>{summary.byCategory.length ? summary.byCategory.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section></div><Button onClick={exportCsv}>↓ EXPORT CSV</Button></Modal>;
 }
 
 function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }

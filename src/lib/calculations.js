@@ -97,6 +97,40 @@ export function monthlyTotals(month, transactions, remittances) {
   return { received, spent, remaining: received - spent };
 }
 
+export function ledgerMonths(transactions, remittances, fallback = '') {
+  const months = new Set([
+    ...transactions.map((item) => item.date),
+    ...remittances.map((item) => item.receivedAt),
+    fallback,
+  ].filter(Boolean).map((value) => String(value).slice(0, 7)).filter((value) => /^\d{4}-\d{2}$/.test(value)));
+  return [...months].sort().reverse();
+}
+
+export function monthlyBreakdown(month, transactions, remittances, funds = [], categories = []) {
+  const expenses = transactions.filter((item) => item.type === 'expense' && String(item.date).startsWith(month));
+  const income = remittances.filter((item) => String(item.receivedAt).startsWith(month));
+  const totals = monthlyTotals(month, transactions, remittances);
+  const group = (items, key, labels) => [...items.reduce((map, item) => {
+    const id = item[key] || 'other'; map.set(id, (map.get(id) || 0) + Number(item.amount || 0)); return map;
+  }, new Map())].map(([id, value]) => ({ id, name: labels.get(id) || 'Other', value })).sort((a, b) => b.value - a.value);
+  return {
+    ...totals, expenses, income,
+    byFund: group(expenses, 'fundId', new Map(funds.map((item) => [item.id, item.name]))),
+    byCategory: group(expenses, 'categoryId', new Map(categories.map((item) => [item.id, item.name]))),
+  };
+}
+
+const csvCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+export function monthlyCsv(month, breakdown, funds = [], categories = []) {
+  const fundNames = new Map(funds.map((item) => [item.id, item.name]));
+  const categoryNames = new Map(categories.map((item) => [item.id, item.name]));
+  const rows = [['Date', 'Type', 'Description', 'Fund', 'Category', 'Amount', 'Note']];
+  breakdown.income.forEach((item) => rows.push([item.receivedAt, 'Money received', item.sender || 'Money received', '', '', item.totalAmount, item.note || '']));
+  breakdown.expenses.forEach((item) => rows.push([item.date, 'Expense', item.description, fundNames.get(item.fundId) || '', categoryNames.get(item.categoryId) || 'Other', item.amount, item.note || '']));
+  rows.push([], ['Month', month], ['Total received', breakdown.received], ['Total spent', breakdown.spent], ['Net', breakdown.remaining]);
+  return rows.map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
 /** Existing allocations are canonical Money Lots. Positive transfers are derived transfer lots. */
 export function buildMoneyLots(fundId, allocations, remittances, transactions) {
   const remittanceMap = new Map(remittances.map((item) => [item.id, item]));

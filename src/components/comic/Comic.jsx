@@ -42,9 +42,18 @@ export function Modal({ title, onClose, children, wide = false }) {
       else if (!event.shiftKey && document.activeElement === lastItem) { event.preventDefault(); firstItem.focus(); }
     };
     document.body.classList.add('modal-open');
+    const fitKeyboard = () => {
+      if (!window.visualViewport) return;
+      dialog.style.setProperty('--keyboard-height', `${Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop)}px`);
+      document.activeElement?.matches?.('input,textarea,select') && document.activeElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    };
+    window.visualViewport?.addEventListener('resize', fitKeyboard);
+    window.visualViewport?.addEventListener('scroll', fitKeyboard);
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.classList.remove('modal-open');
+      window.visualViewport?.removeEventListener('resize', fitKeyboard);
+      window.visualViewport?.removeEventListener('scroll', fitKeyboard);
       document.removeEventListener('keydown', onKeyDown);
       previousFocus?.focus?.();
     };
