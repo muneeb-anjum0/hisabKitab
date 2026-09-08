@@ -26,6 +26,7 @@ export function Field({ label, error, children, className = '' }) {
 
 export function Modal({ title, onClose, children, wide = false }) {
   const dialogRef = useRef(null);
+  const backdropRef = useRef(null);
   useEffect(() => {
     const dialog = dialogRef.current;
     const previousFocus = document.activeElement;
@@ -42,24 +43,29 @@ export function Modal({ title, onClose, children, wide = false }) {
       else if (!event.shiftKey && document.activeElement === lastItem) { event.preventDefault(); firstItem.focus(); }
     };
     document.body.classList.add('modal-open');
-    const fitKeyboard = () => {
-      if (!window.visualViewport) return;
-      dialog.style.setProperty('--keyboard-height', `${Math.max(0, window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop)}px`);
-      document.activeElement?.matches?.('input,textarea,select') && document.activeElement.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    const fitViewport = () => {
+      const viewport = window.visualViewport;
+      if (!viewport) return;
+      backdropRef.current?.style.setProperty('--modal-viewport-height', `${viewport.height}px`);
+      backdropRef.current?.style.setProperty('--modal-viewport-top', `${viewport.offsetTop}px`);
+      if (document.activeElement?.matches?.('input,textarea,select')) {
+        window.requestAnimationFrame(() => document.activeElement?.scrollIntoView?.({ block: 'nearest' }));
+      }
     };
-    window.visualViewport?.addEventListener('resize', fitKeyboard);
-    window.visualViewport?.addEventListener('scroll', fitKeyboard);
+    fitViewport();
+    window.visualViewport?.addEventListener('resize', fitViewport);
+    window.visualViewport?.addEventListener('scroll', fitViewport);
     document.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.classList.remove('modal-open');
-      window.visualViewport?.removeEventListener('resize', fitKeyboard);
-      window.visualViewport?.removeEventListener('scroll', fitKeyboard);
+      window.visualViewport?.removeEventListener('resize', fitViewport);
+      window.visualViewport?.removeEventListener('scroll', fitViewport);
       document.removeEventListener('keydown', onKeyDown);
       previousFocus?.focus?.();
     };
   }, [onClose]);
 
-  return <div className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+  return <div ref={backdropRef} className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
     <section ref={dialogRef} className={`modal panel ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
       <div className="torn-label">DO THE MATH</div>
