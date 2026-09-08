@@ -1,4 +1,4 @@
-const VERSION = 'v9';
+const VERSION = 'v10';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
 const FONT_CACHE = 'hisabkitab-fonts-v1';

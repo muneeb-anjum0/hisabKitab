@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 export function Panel({ children, className = '', as: Tag = 'section', ...props }) {
   return <Tag className={`panel ${className}`} {...props}>{children}</Tag>;
@@ -65,14 +66,14 @@ export function Modal({ title, onClose, children, wide = false }) {
     };
   }, [onClose]);
 
-  return <div ref={backdropRef} className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+  return createPortal(<div ref={backdropRef} className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
     <section ref={dialogRef} className={`modal panel ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
       <div className="torn-label">DO THE MATH</div>
       <h2 id="modal-title">{title}</h2>
       {children}
     </section>
-  </div>;
+  </div>, document.body);
 }
 
 export function Progress({ value, max, label }) {

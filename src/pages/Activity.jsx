@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import TransactionRow from '../components/common/TransactionRow';
@@ -41,10 +42,11 @@ export default function Activity() {
 }
 
 function ComicSelect({ label, value, options, onChange }) {
-  const [open, setOpen] = useState(false); const root = useRef(null);
-  useEffect(() => { const close = (event) => { if (!root.current?.contains(event.target)) setOpen(false); }; document.addEventListener('pointerdown', close); return () => document.removeEventListener('pointerdown', close); }, []);
+  const [open, setOpen] = useState(false); const root = useRef(null); const menu = useRef(null);
+  useEffect(() => { const close = (event) => { if (!root.current?.contains(event.target) && !menu.current?.contains(event.target)) setOpen(false); }; document.addEventListener('pointerdown', close); return () => document.removeEventListener('pointerdown', close); }, []);
   const selected = options.find(([id]) => id === value)?.[1] || options[0]?.[1];
-  return <div className={`comic-select ${open ? 'open' : ''}`} ref={root}><span>{label}</span><button type="button" onClick={() => setOpen(!open)} aria-expanded={open}>{selected}<b>▾</b></button>{open && <div className="comic-options" role="listbox">{options.map(([id, text], index) => <button type="button" role="option" aria-selected={id === value} style={{ '--option-index': index }} key={id} onClick={() => { onChange(id); setOpen(false); }}>{text}{id === value && <b>✓</b>}</button>)}</div>}</div>;
+  const popover = open && createPortal(<div className="comic-options-layer"><div className="comic-options" ref={menu} role="listbox" aria-label={label}>{options.map(([id, text], index) => <button type="button" role="option" aria-selected={id === value} style={{ '--option-index': index }} key={id} onClick={() => { onChange(id); setOpen(false); }}>{text}{id === value && <b>✓</b>}</button>)}</div></div>, document.body);
+  return <><div className={`comic-select ${open ? 'open' : ''}`} ref={root}><span>{label}</span><button type="button" onClick={() => setOpen(!open)} aria-expanded={open}>{selected}<b>▾</b></button></div>{popover}</>;
 }
 
 function IncomeRow({ item, onEdit, onDelete }) { return <article className="income-row"><div><small>MONEY RECEIVED · {friendlyDate(item.activityDate)}</small><strong>{item.description}</strong>{item.note && <span>{item.note}</span>}</div><b>+{money(item.amount)}</b><div className="income-actions"><button className="income-edit" onClick={onEdit}>EDIT</button><button className="income-delete" onClick={onDelete}>DELETE</button></div></article>; }
