@@ -4,4 +4,6 @@
     <string name="title_activity_main">HisabKitab</string>
     <string name="package_name">com.muneebanjum.hisabkitab</string>
     <string name="custom_url_scheme">com.muneebanjum.hisabkitab</string>
+    <string name="widget_square_description">Quickly add a HisabKitab expense</string>
+    <string name="widget_wide_description">Open your ledger, add expenses, or add money</string>
 </resources>

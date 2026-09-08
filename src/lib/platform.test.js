@@ -39,6 +39,25 @@ describe('application contracts', () => {
     expect(capacitor.plugins.SystemBars).toMatchObject({ insetsHandling: 'css', style: 'dark' });
   });
 
+  it('registers native back navigation and both Android quick-action widgets', () => {
+    const androidManifest = read('android/app/src/main/AndroidManifest.xml');
+    expect(androidManifest).toContain('android:enableOnBackInvokedCallback="true"');
+    expect(androidManifest).toContain('.HisabSquareWidget');
+    expect(androidManifest).toContain('.HisabWideWidget');
+    ['android/app/src/main/res/xml/widget_square_info.xml', 'android/app/src/main/res/xml/widget_wide_info.xml'].forEach((path) => {
+      expect(existsSync(new URL(`../../${path}`, import.meta.url))).toBe(true);
+    });
+  });
+
+  it('keeps an offline-first shell and optimistic queued ledger writes', () => {
+    const worker = read('public/sw.js');
+    const service = read('src/services/dataService.js');
+    expect(worker).toContain("caches.match('/index.html')");
+    expect(worker).toContain('cached || fresh');
+    expect(service).toContain('waitForPendingWrites(db)');
+    expect(service).toContain('pendingSync: true');
+  });
+
   it('keeps Firebase Hosting configured as a single-page application', () => {
     expect(firebase.hosting.public).toBe('dist');
     expect(firebase.hosting.rewrites).toContainEqual({ source: '**', destination: '/index.html' });

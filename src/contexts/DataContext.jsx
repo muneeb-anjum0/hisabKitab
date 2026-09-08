@@ -11,6 +11,13 @@ const SYSTEM_CATEGORIES = [
   ['transport', 'Transport', '➜'], ['medical', 'Medical', '+'], ['entertainment', 'Entertainment', '♪'],
   ['home', 'Home', '⌂'], ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
+const cacheKey = (uid) => `hk-ledger-v2:${uid}`;
+const readSnapshot = (uid) => {
+  try {
+    const snapshot = JSON.parse(localStorage.getItem(cacheKey(uid)));
+    return snapshot?.data && Array.isArray(snapshot.data.funds) ? snapshot.data : null;
+  } catch { return null; }
+};
 
 function withTimeout(operation) {
   return Promise.race([operation, new Promise((_, reject) => window.setTimeout(
@@ -25,18 +32,39 @@ export function DataProvider({ children }) {
   const [loadedUserId, setLoadedUserId] = useState(null);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
+  const loadedUserIdRef = useRef(null);
   const reorderQueue = useRef(Promise.resolve());
   const reorderVersion = useRef(0);
 
   const refresh = useCallback(async () => {
-    if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); setLoadedUserId(null); return; }
-    setLoading(true);
+    if (!configured || !user) { setData(EMPTY_DATA); setLoading(false); setLoadedUserId(null); loadedUserIdRef.current = null; return; }
+    const cached = readSnapshot(user.uid);
+    if (loadedUserIdRef.current !== user.uid && cached) { setData(cached); setLoadedUserId(user.uid); loadedUserIdRef.current = user.uid; setLoading(false); }
+    if (!navigator.onLine) { setLoadedUserId(user.uid); loadedUserIdRef.current = user.uid; setLoading(false); return; }
+    if (!cached && loadedUserIdRef.current !== user.uid) setLoading(true);
     try { setData(await withTimeout(api.loadUserData(user.uid))); setError(''); }
     catch (loadError) { console.error(loadError); setError(loadError.message || 'Could not load your ledger.'); }
-    finally { setLoadedUserId(user.uid); setLoading(false); }
+    finally { setLoadedUserId(user.uid); loadedUserIdRef.current = user.uid; setLoading(false); }
   }, [configured, user]);
 
   useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    if (!user || loadedUserId !== user.uid) return undefined;
+    const timer = window.setTimeout(() => {
+      try { localStorage.setItem(cacheKey(user.uid), JSON.stringify({ savedAt: Date.now(), data })); }
+      catch { /* Storage can be unavailable or full; Firestore still keeps its IndexedDB cache. */ }
+    }, 180);
+    return () => window.clearTimeout(timer);
+  }, [data, loadedUserId, user]);
+  useEffect(() => {
+    const reconnect = () => {
+      if (!navigator.onLine) return;
+      api.finishQueuedWrites().catch(() => {}).finally(() => void refresh());
+    };
+    const syncError = (event) => { setToast({ type: 'error', message: event.detail?.message || 'A QUEUED CHANGE NEEDS ATTENTION.' }); };
+    window.addEventListener('online', reconnect); window.addEventListener('hk-sync-error', syncError);
+    return () => { window.removeEventListener('online', reconnect); window.removeEventListener('hk-sync-error', syncError); };
+  }, [refresh]);
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(null), 2400);
@@ -48,7 +76,7 @@ export function DataProvider({ children }) {
     try {
       const result = await operation();
       setData((current) => apply(current, result));
-      setToast({ type: 'success', message });
+      setToast({ type: 'success', message: navigator.onLine ? message : 'SAVED OFFLINE. QUEUED FOR SYNC.' });
       return result;
     } catch (writeError) {
       console.error(writeError);

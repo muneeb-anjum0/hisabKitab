@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { useData } from './contexts/DataContext';
 import Nav from './components/navigation/Nav';
-import Dashboard from './pages/Dashboard';
 import Auth, { FirebaseSetup } from './pages/Auth';
 
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 const QuickAdd = lazy(() => import('./components/forms/QuickAdd'));
 const Funds = lazy(() => import('./pages/Funds'));
 const FundDetail = lazy(() => import('./pages/FundDetail'));
@@ -17,28 +17,60 @@ export default function App() {
   const { user, loading: authLoading, configured } = useAuth();
   const data = useData();
   const [quickAction, setQuickAction] = useState(null);
-  const [online, setOnline] = useState(navigator.onLine);
+  const [networkNotice, setNetworkNotice] = useState(navigator.onLine ? null : 'offline');
+  const navigate = useNavigate();
+  const location = useLocation();
 
   useComicTouchFeedback();
+  useMobileNavigationGestures();
 
   useEffect(() => {
-    const updateNetwork = () => setOnline(navigator.onLine);
+    let dismiss;
+    const updateNetwork = () => {
+      const connected = navigator.onLine;
+      window.clearTimeout(dismiss);
+      if (connected) { setNetworkNotice('back'); dismiss = window.setTimeout(() => setNetworkNotice(null), 2600); }
+      else setNetworkNotice('offline');
+    };
     window.addEventListener('online', updateNetwork);
     window.addEventListener('offline', updateNetwork);
     return () => {
       window.removeEventListener('online', updateNetwork);
       window.removeEventListener('offline', updateNetwork);
+      window.clearTimeout(dismiss);
     };
   }, []);
+
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.()) return undefined;
+    let backHandle; let urlHandle; let cancelled = false;
+    import('@capacitor/app').then(({ App }) => {
+      if (cancelled) return;
+      backHandle = App.addListener('backButton', () => {
+        if (quickAction) setQuickAction(null);
+        else if (location.pathname !== '/') navigate(-1);
+        else App.minimizeApp();
+      });
+      urlHandle = App.addListener('appUrlOpen', ({ url }) => {
+        const action = url?.match(/hisabkitab:\/\/add\/(expense|remittance|transfer|fund)/)?.[1];
+        if (action) setQuickAction(action);
+      });
+      App.getLaunchUrl().then(({ url }) => {
+        const action = url?.match(/hisabkitab:\/\/add\/(expense|remittance|transfer|fund)/)?.[1];
+        if (action) setQuickAction(action);
+      });
+    });
+    return () => { cancelled = true; backHandle?.then?.((handle) => handle.remove()); urlHandle?.then?.((handle) => handle.remove()); };
+  }, [location.pathname, navigate, quickAction]);
 
   if (!configured) return <FirebaseSetup/>;
   if (authLoading || (user && data.loading)) return <BookOpeningLoader/>;
   if (!user) return <Auth/>;
 
   return <div className="app-shell">
+    {networkNotice && <div className={`network-banner ${networkNotice}`} role="status"><b>{networkNotice === 'offline' ? 'NO SIGNAL. STILL COUNTING.' : 'SIGNAL’S BACK!'}</b><span>{networkNotice === 'offline' ? 'Changes save here now and sync when the internet returns.' : 'Your queued changes are heading to the ledger.'}</span></div>}
     <Nav onQuick={() => setQuickAction('menu')}/>
     <main className="content">
-      {!online && <div className="offline">OFFLINE — FIRESTORE WILL SYNC SUPPORTED WRITES WHEN YOU RETURN.</div>}
       {data.error && <div className="error-banner" role="alert"><strong>FIRESTORE NEEDS ATTENTION.</strong><span>{data.error}</span><button onClick={data.refresh}>RETRY</button></div>}
       <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}><AnimatedRoutes>
         <Route path="/" element={<Dashboard onAction={setQuickAction}/>}/>
@@ -91,8 +123,7 @@ function useComicTouchFeedback() {
       event.stopPropagation();
       event.stopImmediatePropagation();
       pending.add(control);
-      const controls = [...document.querySelectorAll(comicControlSelector)].filter((item) => item.offsetParent !== null);
-      const variant = (Math.max(0, controls.indexOf(control)) % 6) + 1;
+      const variant = ((control.textContent?.length || control.tagName.length) % 6) + 1;
       control.classList.remove('comic-tap-1', 'comic-tap-2', 'comic-tap-3', 'comic-tap-4', 'comic-tap-5', 'comic-tap-6');
       void control.offsetWidth;
       control.classList.add('comic-touching', `comic-tap-${variant}`);
@@ -118,6 +149,31 @@ function useComicTouchFeedback() {
       timers.forEach(window.clearTimeout);
     };
   }, []);
+}
+
+function useMobileNavigationGestures() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 800px)').matches) return undefined;
+    let start = null;
+    const down = (event) => {
+      if (event.pointerType !== 'touch' || event.target.closest('input,textarea,select,[data-no-swipe],.dashboard-funds,.money-lots')) return;
+      if (event.clientX <= 28 || event.clientX >= window.innerWidth - 28) start = { x: event.clientX, y: event.clientY, edge: event.clientX <= 28 ? 'left' : 'right' };
+    };
+    const up = (event) => {
+      if (!start) return;
+      const dx = event.clientX - start.x; const dy = Math.abs(event.clientY - start.y); const edge = start.edge; start = null;
+      if (dy > 55 || Math.abs(dx) < 72) return;
+      if (edge === 'left' && dx > 0) {
+        const close = document.querySelector('.modal-close');
+        if (close) close.click(); else navigate(-1);
+      }
+      if (edge === 'right' && dx < 0) navigate(1);
+    };
+    const cancel = () => { start = null; };
+    window.addEventListener('pointerdown', down, { passive: true }); window.addEventListener('pointerup', up, { passive: true }); window.addEventListener('pointercancel', cancel, { passive: true });
+    return () => { window.removeEventListener('pointerdown', down); window.removeEventListener('pointerup', up); window.removeEventListener('pointercancel', cancel); };
+  }, [navigate]);
 }
 
 function AnimatedRoutes({ children }) {

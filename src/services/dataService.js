@@ -1,12 +1,17 @@
 import {
-  addDoc, collection, deleteDoc, doc, documentId, getDocs, limit, orderBy,
-  query, serverTimestamp, setDoc, updateDoc, where, writeBatch,
+  collection, deleteDoc, doc, documentId, getDocs, limit, orderBy,
+  query, serverTimestamp, setDoc, updateDoc, waitForPendingWrites, where, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 const withTimestamps = (values) => ({ ...values, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 const documents = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 const localNow = () => new Date().toISOString();
+const queueWrite = (promise) => {
+  promise.catch((error) => window.dispatchEvent(new CustomEvent('hk-sync-error', { detail: error })));
+};
+
+export const finishQueuedWrites = () => waitForPendingWrites(db);
 
 export async function loadUserData(uid) {
   const membershipRequest = getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid)));
@@ -32,75 +37,77 @@ export async function loadUserData(uid) {
   return { funds, memberships, allocations, transactions, remittances: documents(remittanceSnapshot), categories: documents(categorySnapshot) };
 }
 
-export async function createFund(uid, values) {
+export function createFund(uid, values) {
   const fundRef = doc(collection(db, 'funds'));
   const batch = writeBatch(db);
   batch.set(fundRef, withTimestamps({ ...values, ownerId: uid, archived: false }));
   batch.set(doc(db, 'fundMembers', `${fundRef.id}_${uid}`), { fundId: fundRef.id, userId: uid, role: 'owner', createdAt: serverTimestamp() });
-  await batch.commit();
-  return {
+  queueWrite(batch.commit());
+  return Promise.resolve({
     fund: { id: fundRef.id, ...values, ownerId: uid, archived: false, createdAt: localNow(), updatedAt: localNow() },
     membership: { id: `${fundRef.id}_${uid}`, fundId: fundRef.id, userId: uid, role: 'owner', createdAt: localNow() },
-  };
+  });
 }
 
-export async function updateFund(id, values) { await updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() }); return { id, ...values, updatedAt: localNow() }; }
-export async function reorderFunds(ids, funds = []) {
+export function updateFund(id, values) { queueWrite(updateDoc(doc(db, 'funds', id), { ...values, updatedAt: serverTimestamp() })); return Promise.resolve({ id, ...values, updatedAt: localNow() }); }
+export function reorderFunds(ids, funds = []) {
   const batch = writeBatch(db);
   ids.forEach((id, sortOrder) => {
     if (funds.find((fund) => fund.id === id)?.sortOrder === sortOrder) return;
     batch.update(doc(db, 'funds', id), { sortOrder, updatedAt: serverTimestamp() });
   });
-  await batch.commit();
-  return ids;
+  queueWrite(batch.commit());
+  return Promise.resolve(ids);
 }
-export async function removeEmptyFund(id, uid) {
+export function removeEmptyFund(id, uid) {
   const batch = writeBatch(db);
   batch.delete(doc(db, 'fundMembers', `${id}_${uid}`));
   batch.delete(doc(db, 'funds', id));
-  await batch.commit();
-  return id;
+  queueWrite(batch.commit());
+  return Promise.resolve(id);
 }
-export async function addTransaction(uid, values) {
-  const ref = await addDoc(collection(db, 'transactions'), withTimestamps({ ...values, userId: uid }));
-  return { id: ref.id, ...values, userId: uid, createdAt: localNow(), updatedAt: localNow() };
+export function addTransaction(uid, values) {
+  const ref = doc(collection(db, 'transactions'));
+  const createdAt = localNow();
+  queueWrite(setDoc(ref, withTimestamps({ ...values, userId: uid })));
+  return Promise.resolve({ id: ref.id, ...values, userId: uid, createdAt, updatedAt: createdAt, pendingSync: true });
 }
-export async function updateTransaction(id, values) {
-  await updateDoc(doc(db, 'transactions', id), { ...values, updatedAt: serverTimestamp() });
-  return { id, ...values, updatedAt: localNow() };
+export function updateTransaction(id, values) {
+  queueWrite(updateDoc(doc(db, 'transactions', id), { ...values, updatedAt: serverTimestamp() }));
+  return Promise.resolve({ id, ...values, updatedAt: localNow(), pendingSync: true });
 }
-export async function removeTransaction(id) { await deleteDoc(doc(db, 'transactions', id)); return id; }
+export function removeTransaction(id) { queueWrite(deleteDoc(doc(db, 'transactions', id))); return Promise.resolve(id); }
 
-export async function createTransfer(uid, fromId, toId, amount, date, note, lotUsages = [], sourceFundName = '') {
+export function createTransfer(uid, fromId, toId, amount, date, note, lotUsages = [], sourceFundName = '') {
   const batch = writeBatch(db);
   const linkId = doc(collection(db, 'transactions')).id;
   const outRef = doc(db, 'transactions', `${linkId}_out`);
   const inRef = doc(db, 'transactions', `${linkId}_in`);
   batch.set(outRef, withTimestamps({ fundId: fromId, counterpartyFundId: toId, counterpartyId: inRef.id, userId: uid, type: 'transfer', amount: -amount, description: 'Transfer out', date, note, linkId, lotUsages }));
   batch.set(inRef, withTimestamps({ fundId: toId, counterpartyFundId: fromId, counterpartyId: outRef.id, userId: uid, type: 'transfer', amount, description: 'Transfer in', date, note, linkId, sourceFundName }));
-  await batch.commit();
+  queueWrite(batch.commit());
   const createdAt = localNow();
-  return [
+  return Promise.resolve([
     { id: outRef.id, fundId: fromId, counterpartyFundId: toId, counterpartyId: inRef.id, userId: uid, type: 'transfer', amount: -amount, description: 'Transfer out', date, note, linkId, lotUsages, createdAt },
     { id: inRef.id, fundId: toId, counterpartyFundId: fromId, counterpartyId: outRef.id, userId: uid, type: 'transfer', amount, description: 'Transfer in', date, note, linkId, sourceFundName, createdAt },
-  ];
+  ]);
 }
 
-export async function createRemittance(uid, values, allocations) {
+export function createRemittance(uid, values, allocations) {
   const remittanceRef = doc(collection(db, 'remittances'));
   const batch = writeBatch(db);
   batch.set(remittanceRef, withTimestamps({ ...values, ownerId: uid, currency: 'PKR' }));
   const allocationRows = allocations.filter((item) => item.amount > 0).map((item) => ({ ref: doc(collection(db, 'allocations')), item }));
   allocationRows.forEach(({ ref, item }) => batch.set(ref, { remittanceId: remittanceRef.id, fundId: item.fundId, amount: Number(item.amount), source: values.sender, receivedAt: values.receivedAt, createdAt: serverTimestamp() }));
-  await batch.commit();
+  queueWrite(batch.commit());
   const createdAt = localNow();
-  return {
+  return Promise.resolve({
     remittance: { id: remittanceRef.id, ...values, ownerId: uid, currency: 'PKR', createdAt },
     allocations: allocationRows.map(({ ref, item }) => ({ id: ref.id, remittanceId: remittanceRef.id, fundId: item.fundId, amount: Number(item.amount), source: values.sender, receivedAt: values.receivedAt, createdAt })),
-  };
+  });
 }
 
-export async function updateRemittance(id, values, allocations, existingAllocations = []) {
+export function updateRemittance(id, values, allocations, existingAllocations = []) {
   const batch = writeBatch(db);
   batch.update(doc(db, 'remittances', id), { ...values, updatedAt: serverTimestamp() });
   const existingByFund = new Map(existingAllocations.map((item) => [item.fundId, item]));
@@ -114,20 +121,20 @@ export async function updateRemittance(id, values, allocations, existingAllocati
     return { id: ref.id, ...allocation, createdAt: existing?.createdAt || localNow(), updatedAt: localNow() };
   });
   existingAllocations.filter((item) => !nextFundIds.has(item.fundId)).forEach((item) => batch.delete(doc(db, 'allocations', item.id)));
-  await batch.commit();
-  return { remittance: { id, ...values, updatedAt: localNow() }, allocations: nextAllocations };
+  queueWrite(batch.commit());
+  return Promise.resolve({ remittance: { id, ...values, updatedAt: localNow() }, allocations: nextAllocations });
 }
 
-export async function removeRemittance(id, allocations = []) {
+export function removeRemittance(id, allocations = []) {
   const batch = writeBatch(db);
   allocations.forEach((item) => batch.delete(doc(db, 'allocations', item.id)));
   batch.delete(doc(db, 'remittances', id));
-  await batch.commit();
-  return id;
+  queueWrite(batch.commit());
+  return Promise.resolve(id);
 }
 
-export async function addAllocation(values) { const ref = await addDoc(collection(db, 'allocations'), { ...values, createdAt: serverTimestamp() }); return { id: ref.id, ...values, createdAt: localNow() }; }
-export async function addCategory(uid, name, symbol = '◆') { const ref = await addDoc(collection(db, 'categories'), { userId: uid, name, symbol, createdAt: serverTimestamp() }); return { id: ref.id, userId: uid, name, symbol, createdAt: localNow() }; }
+export function addAllocation(values) { const ref = doc(collection(db, 'allocations')); queueWrite(setDoc(ref, { ...values, createdAt: serverTimestamp() })); return Promise.resolve({ id: ref.id, ...values, createdAt: localNow() }); }
+export function addCategory(uid, name, symbol = '◆') { const ref = doc(collection(db, 'categories')); queueWrite(setDoc(ref, { userId: uid, name, symbol, createdAt: serverTimestamp() })); return Promise.resolve({ id: ref.id, userId: uid, name, symbol, createdAt: localNow() }); }
 
 export async function addMember(fundId, email, role) {
   const profileSnapshot = await getDocs(query(collection(db, 'publicProfiles'), where('email', '==', email), limit(1)));
@@ -139,5 +146,5 @@ export async function addMember(fundId, email, role) {
   });
 }
 
-export const updateMember = (id, role) => updateDoc(doc(db, 'fundMembers', id), { role });
-export const removeMember = (id) => deleteDoc(doc(db, 'fundMembers', id));
+export const updateMember = (id, role) => { queueWrite(updateDoc(doc(db, 'fundMembers', id), { role })); return Promise.resolve(); };
+export const removeMember = (id) => { queueWrite(deleteDoc(doc(db, 'fundMembers', id))); return Promise.resolve(); };
