@@ -205,11 +205,12 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
   @keyframes sheet-settle{from{transform:translateY(100%)}70%{transform:translateY(-8px)}to{transform:none}}
   .mobile-nav{left:18px;right:18px;bottom:calc(10px + env(safe-area-inset-bottom));height:54px;display:flex;grid-template-columns:none;padding:4px;isolation:isolate;border:1px solid #ffffff24;border-radius:27px;background:#12110fc7;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;transition:opacity 150ms,transform 220ms ease}
   .mobile-nav>span{z-index:2;flex:1 1 0;width:25%;min-width:0;display:grid;place-items:center}
+  .mobile-nav>span:nth-child(3){z-index:7}
   .mobile-nav a{position:relative;width:calc(100% - 10px);max-width:86px;height:42px;gap:0;display:flex;align-items:center;justify-content:center;background:transparent!important;color:#fff;box-shadow:none!important;border:0;border-radius:21px;transition:background-color 120ms,color 120ms;transform:none!important}
   .mobile-nav a i{width:27px;height:25px;font-size:23px}.mobile-nav a small{font-size:7px;line-height:1}
   .mobile-nav a.active{background:#f4d431bd!important;color:var(--ink)}
   .mobile-nav a.active:after{content:none}
-  .mobile-add,.mobile-add:active{z-index:5;top:-13px;right:-20px;width:44px;height:44px;border-width:3px;background:#e54c35c7;color:#fff;font-size:27px;box-shadow:none}
+  .mobile-add,.mobile-add:active{z-index:8;top:-13px;right:-18px;width:44px;height:44px;border-width:4px;border-color:var(--ink);background:#e54c35d9;color:#fff;font-size:27px;box-shadow:none;transform:rotate(-4deg)}
   .content{padding-bottom:calc(82px + env(safe-area-inset-bottom))}
 }
 
