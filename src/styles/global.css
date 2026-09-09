@@ -204,10 +204,8 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
   body.modal-open .mobile-nav{opacity:0;pointer-events:none;transform:translateY(calc(100% + 45px));transition:opacity 120ms,transform 180ms ease-in}
   @keyframes sheet-settle{from{transform:translateY(100%)}70%{transform:translateY(-8px)}to{transform:none}}
   .mobile-nav{grid-template-columns:repeat(4,minmax(0,1fr));padding:0;isolation:isolate;border-color:#ffffff4a;background:linear-gradient(145deg,#282828d9,#090909e8 72%);box-shadow:0 12px 32px #0008,inset 0 1px 0 #ffffff52,inset 0 -1px 0 #0008;transition:opacity 180ms,transform 320ms cubic-bezier(.2,.8,.2,1)}
-  .mobile-nav>span{z-index:2;min-width:0;display:grid;place-items:center}.mobile-nav a{width:100%;height:62px;background:transparent!important;box-shadow:none!important;border-radius:0;transition:color 150ms,transform 180ms;transform-origin:center}.mobile-nav a.active{color:var(--yellow);transform:translateY(-1px)}
-  .nav-liquid-indicator{display:block;position:absolute;z-index:1;left:0;top:0;width:25%;height:100%;transform:translateX(var(--nav-shift));transition:transform 210ms cubic-bezier(.2,1.05,.32,1);pointer-events:none;will-change:transform}
-  .nav-liquid-indicator:before{content:'';position:absolute;left:6px;right:6px;top:6px;bottom:6px;border:1px solid #ffffff42;border-radius:999px;background:radial-gradient(circle at 30% 14%,#ffffff70 0 2px,transparent 3px),linear-gradient(150deg,#ffffff35,#ffffff0d 56%,#ffffff22);box-shadow:inset 0 1px 3px #fff6,inset 0 -9px 18px #0003,0 4px 12px #0004;backdrop-filter:blur(18px) saturate(1.65);-webkit-backdrop-filter:blur(18px) saturate(1.65)}
-  .nav-liquid-indicator:after{content:'';position:absolute;left:21%;right:21%;top:9px;height:4px;border-radius:99px;background:linear-gradient(90deg,transparent,#ffffff85,transparent);filter:blur(.4px)}
+  .mobile-nav>span{z-index:2;min-width:0;display:grid;place-items:center}.mobile-nav a{position:relative;width:100%;height:62px;background:transparent!important;box-shadow:none!important;border-radius:0;transition:color 120ms;transform:none!important}.mobile-nav a.active{color:var(--yellow)}
+  .mobile-nav a.active:after{content:'';position:absolute;left:50%;bottom:5px;width:24px;height:3px;border-radius:3px;background:var(--yellow);transform:translateX(-50%)}
   .mobile-add{z-index:5;top:-20px;right:-24px;width:54px;height:54px}
 }
 
