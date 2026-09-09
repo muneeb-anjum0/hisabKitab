@@ -210,6 +210,7 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
   .mobile-nav a{position:relative;width:auto;max-width:none;height:60px;gap:3px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:transparent!important;color:#fff;box-shadow:none!important;border:0;border-radius:0;overflow:visible}
   .mobile-nav a i{width:30px;height:28px;font-size:17px}.mobile-nav a small{font-size:8px;line-height:normal;letter-spacing:normal}
   .mobile-nav a.active{background:transparent!important;background-image:none!important;color:var(--yellow)}
+  .mobile-nav a:active{background:var(--yellow)!important;background-image:none!important;color:var(--ink);box-shadow:inset 0 0 0 3px var(--ink)!important}
   .mobile-nav a.active:after{content:none}
   .mobile-add{position:absolute;z-index:2;top:-27px;right:-31px;width:52px;height:52px;border:4px solid var(--ink);border-radius:0;background:var(--red);color:#fff;font-size:31px;box-shadow:4px 4px 0 var(--yellow);transform:rotate(-4deg);isolation:auto;overflow:visible}
   .mobile-add:active{background:var(--yellow);color:var(--ink);transform:translate(4px,4px) rotate(2deg) scale(.92);box-shadow:1px 1px 0 var(--red)}
