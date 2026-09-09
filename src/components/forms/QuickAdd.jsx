@@ -3,7 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import { localISO } from '../../lib/dates';
 import { buildMoneyLots, consumeMoneyLots, fundTotals } from '../../lib/calculations';
 import { money } from '../../lib/currency';
-import { Modal, Button, ComicSelect, Field } from '../comic/Comic';
+import { Modal, Button, ComicDatePicker, ComicSelect, Field } from '../comic/Comic';
 
 const isPositive = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
 
@@ -62,7 +62,7 @@ function ExpenseForm({ data, funds, edit, amountRef, busy, error, onBack, onSubm
   return <Modal title={edit ? 'EDIT EXPENSE' : 'ADD EXPENSE'} onClose={onBack}>
     {!funds.length ? <NoFunds onCreate={() => onBack()}/> : <form onSubmit={save}>
       <Field label="AMOUNT (PKR)"><input ref={amountRef} inputMode="decimal" type="number" min="1" step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })} placeholder="0" className="amount-input"/></Field>
-      <div className="form-pair"><ComicSelect label="FUND" value={values.fundId} onChange={(fundId) => setValues({ ...values, fundId })} options={funds.map((fund) => [fund.id, fund.name])}/><Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field></div>
+      <div className="form-pair"><ComicSelect label="FUND" value={values.fundId} onChange={(fundId) => setValues({ ...values, fundId })} options={funds.map((fund) => [fund.id, fund.name])}/><ComicDatePicker label="DATE" value={values.date} onChange={(date) => setValues({ ...values, date })}/></div>
       <Field label="WHAT WAS IT?"><input required maxLength="80" value={values.description} onChange={(e) => setValues({ ...values, description: e.target.value })} placeholder="Groceries, fuel, chai…"/></Field>
       <ComicSelect label="CATEGORY" value={values.categoryId} onChange={(categoryId) => setValues({ ...values, categoryId })} options={data.categories.map((category) => [category.id, `${category.symbol} ${category.name}`])}/>
       <ComicSelect label="USE MONEY FROM" value={values.preferredLotId} onChange={(preferredLotId) => setValues({ ...values, preferredLotId })} options={[["auto", "Auto · oldest available first"], ...lots.filter((lot) => lot.remaining > 0).map((lot) => [lot.id, `Lot #${String(lot.number).padStart(2, '0')} · ${lot.source} · ${money(lot.remaining)} left`])]}/>
@@ -92,7 +92,7 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
     <div className="remit-layout"><div>
       <Field label="FROM"><input required maxLength="80" value={values.sender} onChange={(e) => setValues({ ...values, sender: e.target.value })} placeholder="Dad"/></Field>
       <Field label="AMOUNT (PKR)"><input ref={amountRef} required type="number" min="1" step="1" inputMode="decimal" className="amount-input" value={values.totalAmount} onChange={(e) => setValues({ ...values, totalAmount: e.target.value })}/></Field>
-      <Field label="DATE"><input required type="date" value={values.receivedAt} onChange={(e) => setValues({ ...values, receivedAt: e.target.value })}/></Field>
+      <ComicDatePicker label="DATE" value={values.receivedAt} onChange={(receivedAt) => setValues({ ...values, receivedAt })}/>
       <Field label="NOTE — OPTIONAL"><textarea maxLength="300" rows="2" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
     </div><div className="split-box"><h3>GIVE IT A JOB</h3>
       {funds.length ? <><ComicSelect label="PURPOSE" value={purpose} disabled={split} onChange={setPurpose} options={funds.map((fund) => [fund.id, fund.name])}/><button type="button" className="split-toggle" onClick={() => setSplit(!split)}>{split ? '← USE ONE FUND' : '+ SPLIT ACROSS FUNDS'}</button>{split && funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>)}</> : <p>Create a Fund first. Every rupee must have a job.</p>}
@@ -116,7 +116,7 @@ function TransferForm({ data, funds, amountRef, busy, error, onBack, onSubmit })
     {funds.length < 2 ? <NoFunds message="You need at least two active Funds to make a transfer."/> : <form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, amount: Number(values.amount), note: values.note.trim(), lotUsages: consumption.usages, sourceFundName: funds.find((fund) => fund.id === values.fromId)?.name || '' }); }}>
       <Field label={`AMOUNT — ${money(available)} AVAILABLE`}><input ref={amountRef} className="amount-input" type="number" min="1" max={Math.max(0, available)} step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })}/></Field>
       <div className="form-pair"><ComicSelect label="FROM" value={values.fromId} onChange={(fromId) => setValues({ ...values, fromId })} options={funds.map((fund) => [fund.id, fund.name])}/><ComicSelect label="TO" value={values.toId} onChange={(toId) => setValues({ ...values, toId })} options={funds.map((fund) => [fund.id, fund.name])}/></div>
-      <Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field>
+      <ComicDatePicker label="DATE" value={values.date} onChange={(date) => setValues({ ...values, date })}/>
       <Field label="NOTE — OPTIONAL"><input maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
       {values.fromId === values.toId && <p className="form-error">Pick two different Funds.</p>}
       {Number(values.amount) > available && <p className="form-error">That Fund only has {money(available)} available.</p>}
