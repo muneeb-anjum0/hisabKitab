@@ -102,7 +102,7 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
     </div></div>
     {remaining < 0 && <p className="form-error">Your split is {money(-remaining)} over the amount received.</p>}
     {error && <p className="form-error" role="alert">{error}</p>}
-    <Button disabled={busy || !valid}>{busy ? 'SAVING…' : editIncome ? 'SAVE CHANGES' : 'SAVE MONEY'}</Button>
+    <Button className="remittance-submit" disabled={busy || !valid}>{busy ? 'SAVING…' : editIncome ? 'SAVE CHANGES' : 'SAVE MONEY'}</Button>
   </form></Modal>;
 }
 
