@@ -234,3 +234,6 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
   .modal .ink-button{padding:8px 12px;font-size:15px;box-shadow:3px 3px 0 var(--red)}
   .modal .form-error{padding:6px;margin:5px 0;font-size:9px}
 }
+
+/* Keep Android's light status icons readable above every page and modal. */
+html.capacitor-native:before{content:'';position:fixed;z-index:5000;top:0;left:0;right:0;height:var(--safe-area-inset-top,env(safe-area-inset-top));background:var(--ink);pointer-events:none}
