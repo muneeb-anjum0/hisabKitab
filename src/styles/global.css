@@ -215,22 +215,22 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
 .comic-options-layer .comic-options{position:relative;inset:auto;top:auto;left:auto;right:auto;transform:rotate(-1deg);width:min(430px,100%);max-height:min(65dvh,520px);overflow:auto;z-index:auto}
 @media(max-width:800px){.comic-options-layer .comic-options{position:relative;inset:auto;top:auto;left:auto;right:auto;transform:rotate(-1deg);max-height:62dvh}.comic-options-layer .comic-options:before{content:'PICK ONE';display:block;padding:9px 11px;background:var(--red);color:#fff;border-bottom:3px solid var(--ink);font:900 13px var(--display)}}
 
-/* Compact the existing sheet content only while the software keyboard is visible. */
+/* Compact mobile sheets without adding another overlay or viewport state. */
 @media(max-width:800px){
-  .modal-backdrop.keyboard-open .modal{padding:9px 12px calc(10px + env(safe-area-inset-bottom));scroll-padding-block:42px}
-  .capacitor-native .modal-backdrop.keyboard-open .modal{padding-top:calc(7px + var(--safe-area-inset-top,env(safe-area-inset-top)))}
-  .keyboard-open .modal .torn-label{display:none}
-  .keyboard-open .modal-close{width:31px;height:31px;top:1px;margin:-2px -3px 0 0;font-size:24px;line-height:23px}
-  .keyboard-open .modal h2{font-size:24px;line-height:.9;margin:2px 38px 9px 0}
-  .keyboard-open .modal .field{margin-bottom:6px}
-  .keyboard-open .modal .field>span,.keyboard-open .modal .swatches legend{font-size:8px;margin-bottom:3px}
-  .keyboard-open .modal .field input,.keyboard-open .modal .field select,.keyboard-open .modal .field textarea{min-height:34px;padding:5px 8px;font-size:13px}
-  .keyboard-open .modal .field .amount-input{min-height:38px;font-size:24px;border-left-width:6px}
-  .keyboard-open .modal .form-pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
-  .keyboard-open .modal textarea{height:36px;min-height:36px;resize:none}
-  .keyboard-open .modal .remit-layout{gap:7px}.keyboard-open .modal .split-box{padding:9px}.keyboard-open .modal .split-box h3{font-size:20px;margin-bottom:7px}
-  .keyboard-open .modal .remaining{padding-top:5px}.keyboard-open .modal .remaining strong{font-size:17px}
-  .keyboard-open .modal .swatches{margin:5px 0 9px}.keyboard-open .modal .swatches button{width:31px;height:31px;margin-right:5px}
-  .keyboard-open .modal .ink-button{padding:7px 11px;font-size:15px;box-shadow:3px 3px 0 var(--red)}
-  .keyboard-open .modal .form-error{padding:6px;margin:5px 0;font-size:9px}
+  .modal{padding:10px 12px calc(11px + env(safe-area-inset-bottom));scroll-padding-block:42px}
+  .capacitor-native .modal{padding-top:calc(8px + var(--safe-area-inset-top,env(safe-area-inset-top)))}
+  .modal .torn-label{padding:2px 7px;font-size:8px}
+  .modal-close{width:31px;height:31px;top:1px;margin:-2px -3px 0 0;font-size:24px;line-height:23px}
+  .modal h2{font-size:24px;line-height:.9;margin:5px 38px 10px 0}
+  .modal .field{margin-bottom:7px}
+  .modal .field>span,.modal .swatches legend{font-size:8px;margin-bottom:3px}
+  .modal .field input,.modal .field select,.modal .field textarea{min-height:36px;padding:5px 8px;font-size:13px}
+  .modal .field .amount-input{min-height:40px;font-size:25px;border-left-width:6px}
+  .modal .form-pair{grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+  .modal textarea{height:40px;min-height:40px}
+  .modal .remit-layout{gap:8px}.modal .split-box{padding:10px}.modal .split-box h3{font-size:20px;margin-bottom:7px}
+  .modal .remaining{padding-top:5px}.modal .remaining strong{font-size:17px}
+  .modal .swatches{margin:6px 0 10px}.modal .swatches button{width:32px;height:32px;margin-right:5px}
+  .modal .ink-button{padding:8px 12px;font-size:15px;box-shadow:3px 3px 0 var(--red)}
+  .modal .form-error{padding:6px;margin:5px 0;font-size:9px}
 }
