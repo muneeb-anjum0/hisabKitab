@@ -111,6 +111,10 @@ function useComicTouchFeedback() {
         if (control && replaying.has(control)) replaying.delete(control);
         return;
       }
+      if (control.matches('[data-comic-option]')) {
+        touchedControl = null;
+        return;
+      }
       touchedControl = null;
       if (control.matches(':disabled, [aria-disabled="true"]') || pending.has(control)) {
         event.preventDefault();

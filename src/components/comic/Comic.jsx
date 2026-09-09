@@ -27,8 +27,10 @@ export function Field({ label, error, children, className = '' }) {
 
 export function ComicSelect({ label, value, options, onChange, disabled = false, compact = false }) {
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState(null);
   const root = useRef(null);
   const menu = useRef(null);
+  const pickTimer = useRef(null);
   const selected = options.find(([id]) => id === value)?.[1] || options[0]?.[1] || 'Nothing to pick';
 
   useEffect(() => {
@@ -44,8 +46,20 @@ export function ComicSelect({ label, value, options, onChange, disabled = false,
     };
   }, [open]);
 
-  const popover = open && createPortal(<div className="comic-options-layer" onPointerDown={(event) => event.target === event.currentTarget && setOpen(false)}><div className="comic-options" ref={menu} role="listbox" aria-label={label}>{options.map(([id, text], index) => <button type="button" role="option" aria-selected={id === value} style={{ '--option-index': index }} key={id} onClick={() => { onChange(id); setOpen(false); }}>{text}{id === value && <b>✓</b>}</button>)}</div></div>, document.body);
-  return <><div className={`comic-select ${open ? 'open' : ''} ${compact ? 'compact' : ''}`} ref={root}><span>{label}</span><button type="button" disabled={disabled || !options.length} onClick={() => setOpen(!open)} aria-haspopup="listbox" aria-expanded={open}>{selected}<b>▾</b></button></div>{popover}</>;
+  useEffect(() => () => window.clearTimeout(pickTimer.current), []);
+
+  const pick = (id) => {
+    if (picked !== null) return;
+    setPicked(id);
+    pickTimer.current = window.setTimeout(() => {
+      onChange(id);
+      setOpen(false);
+      setPicked(null);
+    }, 170);
+  };
+
+  const popover = open && createPortal(<div className="comic-options-layer" onPointerDown={(event) => event.target === event.currentTarget && setOpen(false)}><div className="comic-options" ref={menu} role="listbox" aria-label={label}>{options.map(([id, text], index) => <button type="button" data-comic-option role="option" aria-selected={id === value} className={picked === id ? 'comic-option-picked' : ''} style={{ '--option-index': index }} key={id} onClick={() => pick(id)}>{text}<b>{picked === id ? 'POW!' : id === value ? '✓' : ''}</b></button>)}</div></div>, document.body);
+  return <><div className={`comic-select ${open ? 'open' : ''} ${compact ? 'compact' : ''}`} ref={root}><span>{label}</span><button type="button" disabled={disabled || !options.length} onClick={() => { setPicked(null); setOpen(!open); }} aria-haspopup="listbox" aria-expanded={open}>{selected}<b>▾</b></button></div>{popover}</>;
 }
 
 const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
