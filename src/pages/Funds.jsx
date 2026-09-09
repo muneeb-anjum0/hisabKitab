@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useData } from '../contexts/DataContext';
 import { fundTotals, sortFunds } from '../lib/calculations';
 import { money } from '../lib/currency';
-import { Modal, Field, Button, Empty } from '../components/comic/Comic';
+import { Modal, Field, Button, ComicSelect, Empty } from '../components/comic/Comic';
 import { useAuth } from '../contexts/AuthContext';
 import FundManagement from '../components/common/FundManagement';
 import FundIconBadge from '../components/common/FundIconBadge';
@@ -25,5 +25,5 @@ function NewFund({ onClose, onSave }) {
   const [values, setValues] = useState({ name: '', type: 'personal', accent: 'blue' });
   const [busy, setBusy] = useState(false); const [error, setError] = useState('');
   const submit = async (event) => { event.preventDefault(); if (!values.name.trim() || busy) return; setBusy(true); setError(''); try { await onSave({ ...values, name: values.name.trim() }); } catch (saveError) { setError(saveError.message); setBusy(false); } };
-  return <Modal title="CREATE FUND" onClose={onClose}><form onSubmit={submit}><Field label="FUND NAME"><input autoFocus required maxLength="35" value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} placeholder="Personal, House…"/></Field><Field label="TYPE"><select value={values.type} onChange={(event) => setValues({ ...values, type: event.target.value })}><option value="personal">Personal</option><option value="shared">Shared</option></select></Field><fieldset className="swatches"><legend>ACCENT</legend>{['blue', 'red', 'green', 'purple', 'yellow'].map((accent) => <button type="button" aria-label={accent} className={`${accent} ${values.accent === accent ? 'active' : ''}`} onClick={() => setValues({ ...values, accent })} key={accent}/>)}</fieldset>{error && <p className="form-error">{error}</p>}<Button disabled={busy || !values.name.trim()}>{busy ? 'CREATING…' : 'CREATE FUND'}</Button></form></Modal>;
+  return <Modal title="CREATE FUND" onClose={onClose}><form onSubmit={submit}><Field label="FUND NAME"><input autoFocus required maxLength="35" value={values.name} onChange={(event) => setValues({ ...values, name: event.target.value })} placeholder="Personal, House…"/></Field><ComicSelect label="TYPE" value={values.type} onChange={(type) => setValues({ ...values, type })} options={[["personal", "Personal"], ["shared", "Shared"]]}/><fieldset className="swatches"><legend>ACCENT</legend>{['blue', 'red', 'green', 'purple', 'yellow'].map((accent) => <button type="button" aria-label={accent} className={`${accent} ${values.accent === accent ? 'active' : ''}`} onClick={() => setValues({ ...values, accent })} key={accent}/>)}</fieldset>{error && <p className="form-error">{error}</p>}<Button disabled={busy || !values.name.trim()}>{busy ? 'CREATING…' : 'CREATE FUND'}</Button></form></Modal>;
 }

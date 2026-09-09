@@ -3,7 +3,7 @@ import { useData } from '../../contexts/DataContext';
 import { localISO } from '../../lib/dates';
 import { buildMoneyLots, consumeMoneyLots, fundTotals } from '../../lib/calculations';
 import { money } from '../../lib/currency';
-import { Modal, Button, Field } from '../comic/Comic';
+import { Modal, Button, ComicSelect, Field } from '../comic/Comic';
 
 const isPositive = (value) => Number.isFinite(Number(value)) && Number(value) > 0;
 
@@ -62,10 +62,10 @@ function ExpenseForm({ data, funds, edit, amountRef, busy, error, onBack, onSubm
   return <Modal title={edit ? 'EDIT EXPENSE' : 'ADD EXPENSE'} onClose={onBack}>
     {!funds.length ? <NoFunds onCreate={() => onBack()}/> : <form onSubmit={save}>
       <Field label="AMOUNT (PKR)"><input ref={amountRef} inputMode="decimal" type="number" min="1" step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })} placeholder="0" className="amount-input"/></Field>
-      <div className="form-pair"><Field label="FUND"><select required value={values.fundId} onChange={(e) => setValues({ ...values, fundId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field></div>
+      <div className="form-pair"><ComicSelect label="FUND" value={values.fundId} onChange={(fundId) => setValues({ ...values, fundId })} options={funds.map((fund) => [fund.id, fund.name])}/><Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field></div>
       <Field label="WHAT WAS IT?"><input required maxLength="80" value={values.description} onChange={(e) => setValues({ ...values, description: e.target.value })} placeholder="Groceries, fuel, chai…"/></Field>
-      <Field label="CATEGORY"><select value={values.categoryId} onChange={(e) => setValues({ ...values, categoryId: e.target.value })}>{data.categories.map((category) => <option value={category.id} key={category.id}>{category.symbol} {category.name}</option>)}</select></Field>
-      <Field label="USE MONEY FROM"><select value={values.preferredLotId} onChange={(e) => setValues({ ...values, preferredLotId: e.target.value })}><option value="auto">Auto · oldest available first</option>{lots.filter((lot) => lot.remaining > 0).map((lot) => <option key={lot.id} value={lot.id}>Lot #{String(lot.number).padStart(2, '0')} · {lot.source} · {money(lot.remaining)} left</option>)}</select></Field>
+      <ComicSelect label="CATEGORY" value={values.categoryId} onChange={(categoryId) => setValues({ ...values, categoryId })} options={data.categories.map((category) => [category.id, `${category.symbol} ${category.name}`])}/>
+      <ComicSelect label="USE MONEY FROM" value={values.preferredLotId} onChange={(preferredLotId) => setValues({ ...values, preferredLotId })} options={[["auto", "Auto · oldest available first"], ...lots.filter((lot) => lot.remaining > 0).map((lot) => [lot.id, `Lot #${String(lot.number).padStart(2, '0')} · ${lot.source} · ${money(lot.remaining)} left`])]}/>
       <Field label="NOTE — OPTIONAL"><textarea maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })} rows="2"/></Field>
       {consumption.uncovered > 0 && <p className="form-error">This Fund is short by {money(consumption.uncovered)}.</p>}
       {error && <p className="form-error" role="alert">{error}</p>}
@@ -95,7 +95,7 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
       <Field label="DATE"><input required type="date" value={values.receivedAt} onChange={(e) => setValues({ ...values, receivedAt: e.target.value })}/></Field>
       <Field label="NOTE — OPTIONAL"><textarea maxLength="300" rows="2" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
     </div><div className="split-box"><h3>GIVE IT A JOB</h3>
-      {funds.length ? <><Field label="PURPOSE"><select value={purpose} disabled={split} onChange={(event) => setPurpose(event.target.value)}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><button type="button" className="split-toggle" onClick={() => setSplit(!split)}>{split ? '← USE ONE FUND' : '+ SPLIT ACROSS FUNDS'}</button>{split && funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>)}</> : <p>Create a Fund first. Every rupee must have a job.</p>}
+      {funds.length ? <><ComicSelect label="PURPOSE" value={purpose} disabled={split} onChange={setPurpose} options={funds.map((fund) => [fund.id, fund.name])}/><button type="button" className="split-toggle" onClick={() => setSplit(!split)}>{split ? '← USE ONE FUND' : '+ SPLIT ACROSS FUNDS'}</button>{split && funds.map((fund) => <Field key={fund.id} label={fund.name}><input type="number" min="0" step="1" inputMode="decimal" value={allocationValues[fund.id] || ''} onChange={(e) => setAllocationValues({ ...allocationValues, [fund.id]: e.target.value })} placeholder="0"/></Field>)}</> : <p>Create a Fund first. Every rupee must have a job.</p>}
       <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>ALLOCATED</span><strong>{money(allocated)}</strong></div>
       <div className={`remaining ${remaining < 0 ? 'bad' : ''}`}><span>UNALLOCATED</span><strong>{money(remaining)}</strong></div>
       <small>Allocate the complete amount before saving.</small>
@@ -115,7 +115,7 @@ function TransferForm({ data, funds, amountRef, busy, error, onBack, onSubmit })
   return <Modal title="TRANSFER" onClose={onBack}>
     {funds.length < 2 ? <NoFunds message="You need at least two active Funds to make a transfer."/> : <form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, amount: Number(values.amount), note: values.note.trim(), lotUsages: consumption.usages, sourceFundName: funds.find((fund) => fund.id === values.fromId)?.name || '' }); }}>
       <Field label={`AMOUNT — ${money(available)} AVAILABLE`}><input ref={amountRef} className="amount-input" type="number" min="1" max={Math.max(0, available)} step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })}/></Field>
-      <div className="form-pair"><Field label="FROM"><select value={values.fromId} onChange={(e) => setValues({ ...values, fromId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field><Field label="TO"><select value={values.toId} onChange={(e) => setValues({ ...values, toId: e.target.value })}>{funds.map((fund) => <option value={fund.id} key={fund.id}>{fund.name}</option>)}</select></Field></div>
+      <div className="form-pair"><ComicSelect label="FROM" value={values.fromId} onChange={(fromId) => setValues({ ...values, fromId })} options={funds.map((fund) => [fund.id, fund.name])}/><ComicSelect label="TO" value={values.toId} onChange={(toId) => setValues({ ...values, toId })} options={funds.map((fund) => [fund.id, fund.name])}/></div>
       <Field label="DATE"><input required type="date" value={values.date} onChange={(e) => setValues({ ...values, date: e.target.value })}/></Field>
       <Field label="NOTE — OPTIONAL"><input maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
       {values.fromId === values.toId && <p className="form-error">Pick two different Funds.</p>}
@@ -131,7 +131,7 @@ function FundForm({ busy, error, onBack, onSubmit }) {
   const valid = values.name.trim().length > 0;
   return <Modal title="CREATE FUND" onClose={onBack}><form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, name: values.name.trim() }); }}>
     <Field label="NAME"><input autoFocus required maxLength="35" value={values.name} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Personal, House…"/></Field>
-    <Field label="TYPE"><select value={values.type} onChange={(e) => setValues({ ...values, type: e.target.value })}><option value="personal">Personal</option><option value="shared">Shared</option></select></Field>
+    <ComicSelect label="TYPE" value={values.type} onChange={(type) => setValues({ ...values, type })} options={[["personal", "Personal"], ["shared", "Shared"]]}/>
     <fieldset className="swatches"><legend>ACCENT</legend>{['blue', 'red', 'green', 'purple', 'yellow'].map((accent) => <button type="button" aria-label={accent} className={`${accent} ${values.accent === accent ? 'active' : ''}`} onClick={() => setValues({ ...values, accent })} key={accent}/>)}</fieldset>
     {error && <p className="form-error" role="alert">{error}</p>}
     <Button disabled={busy || !valid}>{busy ? 'CREATING…' : 'CREATE FUND'}</Button>

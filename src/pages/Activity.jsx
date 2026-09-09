@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useMemo, useState } from 'react';
 import { useData } from '../contexts/DataContext';
 import { useAuth } from '../contexts/AuthContext';
 import TransactionRow from '../components/common/TransactionRow';
 import QuickAdd from '../components/forms/QuickAdd';
-import { Button, Empty, Modal } from '../components/comic/Comic';
+import { Button, ComicSelect, Empty, Modal } from '../components/comic/Comic';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
 import { timestampMillis } from '../lib/calculations';
@@ -41,15 +40,7 @@ export default function Activity() {
   </>;
 }
 
-function ComicSelect({ label, value, options, onChange }) {
-  const [open, setOpen] = useState(false); const root = useRef(null); const menu = useRef(null);
-  useEffect(() => { const close = (event) => { if (!root.current?.contains(event.target) && !menu.current?.contains(event.target)) setOpen(false); }; document.addEventListener('pointerdown', close); return () => document.removeEventListener('pointerdown', close); }, []);
-  const selected = options.find(([id]) => id === value)?.[1] || options[0]?.[1];
-  const popover = open && createPortal(<div className="comic-options-layer"><div className="comic-options" ref={menu} role="listbox" aria-label={label}>{options.map(([id, text], index) => <button type="button" role="option" aria-selected={id === value} style={{ '--option-index': index }} key={id} onClick={() => { onChange(id); setOpen(false); }}>{text}{id === value && <b>✓</b>}</button>)}</div></div>, document.body);
-  return <><div className={`comic-select ${open ? 'open' : ''}`} ref={root}><span>{label}</span><button type="button" onClick={() => setOpen(!open)} aria-expanded={open}>{selected}<b>▾</b></button></div>{popover}</>;
-}
-
-function IncomeRow({ item, onEdit, onDelete }) { return <article className="income-row"><div><small>MONEY RECEIVED · {friendlyDate(item.activityDate)}</small><strong>{item.description}</strong>{item.note && <span>{item.note}</span>}</div><b>+{money(item.amount)}</b><div className="income-actions"><button className="income-edit" onClick={onEdit}>EDIT</button><button className="income-delete" onClick={onDelete}>DELETE</button></div></article>; }
+function IncomeRow({ item, onEdit, onDelete }) { return <article className="income-row"><div><small>MONEY RECEIVED · {friendlyDate(item.activityDate)}</small><strong>{item.description}</strong>{item.note && <span>{item.note}</span>}</div><b>+{money(item.amount)}</b><div className="income-actions"><button className="income-edit" onClick={onEdit} aria-label={`Edit ${item.description}`} title="Edit">✎</button><button className="income-delete" onClick={onDelete} aria-label={`Delete ${item.description}`} title="Delete">×</button></div></article>; }
 function DeleteIncome({ item, onClose, onDelete }) { const [busy, setBusy] = useState(false); const [error, setError] = useState(''); return <Modal title="DELETE MONEY RECEIVED?" onClose={onClose}><div className="delete-preview"><strong>{money(item.amount)}</strong><span>{item.description}</span></div><div className="history-warning"><b>THIS CHANGES THE FUND.</b><p>The receipt and every Fund allocation created from it will be removed. Existing expenses remain in your ledger.</p></div>{error && <p className="form-error">{error}</p>}<Confirm busy={busy} onClose={onClose} onDelete={async () => { setBusy(true); try { await onDelete(); } catch (e) { setError(e.message); setBusy(false); } }} label="DELETE MONEY"/> </Modal>; }
 function DeleteExpense({ item, onClose, onDelete }) { const [busy, setBusy] = useState(false); const [error, setError] = useState(''); return <Modal title="DELETE THIS EXPENSE?" onClose={onClose}><div className="delete-preview"><strong>{money(item.amount)}</strong><span>{item.description}</span></div>{error && <p className="form-error">{error}</p>}<Confirm busy={busy} onClose={onClose} onDelete={async () => { setBusy(true); try { await onDelete(); } catch (e) { setError(e.message); setBusy(false); } }} label="DELETE"/></Modal>; }
 function Confirm({ busy, onClose, onDelete, label }) { return <div className="confirm-actions"><Button variant="paper" onClick={onClose} disabled={busy}>CANCEL</Button><Button className="danger-button" onClick={onDelete} disabled={busy}>{busy ? 'DELETING…' : label}</Button></div>; }

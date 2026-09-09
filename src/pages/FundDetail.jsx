@@ -5,7 +5,7 @@ import { useData } from '../contexts/DataContext';
 import { fundTotals, moneyLotSummary } from '../lib/calculations';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
-import { Button, Modal, Field, Progress, Empty } from '../components/comic/Comic';
+import { Button, ComicSelect, Modal, Field, Progress, Empty } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
 import FundManagement from '../components/common/FundManagement';
 import QuickAdd from '../components/forms/QuickAdd';
@@ -56,8 +56,8 @@ function Members({ fund, members, data, isOwner, onClose }) {
     <div className="member-list">{members.map((member) => <div key={member.id}>
       <span className="avatar">{(member.displayName || member.email || 'Y')[0].toUpperCase()}</span>
       <p><b>{member.displayName || member.email || 'You'}</b><small>{member.email || 'Fund owner'}</small></p>
-      {isOwner && member.role !== 'owner' ? <><select aria-label={`Role for ${member.displayName || member.email}`} value={member.role} onChange={(event) => quietly(data.updateMember(member.id, event.target.value))}><option value="editor">Editor</option><option value="viewer">Viewer</option></select><button className="member-remove" aria-label={`Remove ${member.displayName || member.email}`} onClick={() => quietly(data.removeMember(member.id))}>×</button></> : <em>{member.role}</em>}
+      {isOwner && member.role !== 'owner' ? <><ComicSelect compact label={`ROLE FOR ${member.displayName || member.email}`} value={member.role} onChange={(nextRole) => quietly(data.updateMember(member.id, nextRole))} options={[["editor", "Editor"], ["viewer", "Viewer"]]}/><button className="member-remove" aria-label={`Remove ${member.displayName || member.email}`} onClick={() => quietly(data.removeMember(member.id))}>×</button></> : <em>{member.role}</em>}
     </div>)}</div>
-    {isOwner && <form onSubmit={add}><Field label="ADD REGISTERED USER BY EMAIL"><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com"/></Field><Field label="ROLE"><select value={role} onChange={(event) => setRole(event.target.value)}><option value="editor">Editor — can spend</option><option value="viewer">Viewer — read only</option></select></Field>{error && <p className="form-error">{error}</p>}<Button disabled={busy || !email}>{busy ? 'ADDING…' : 'ADD TO FUND'}</Button></form>}
+    {isOwner && <form onSubmit={add}><Field label="ADD REGISTERED USER BY EMAIL"><input type="email" required value={email} onChange={(event) => setEmail(event.target.value)} placeholder="family@example.com"/></Field><ComicSelect label="ROLE" value={role} onChange={setRole} options={[["editor", "Editor — can spend"], ["viewer", "Viewer — read only"]]}/>{error && <p className="form-error">{error}</p>}<Button disabled={busy || !email}>{busy ? 'ADDING…' : 'ADD TO FUND'}</Button></form>}
   </Modal>;
 }

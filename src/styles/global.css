@@ -252,3 +252,10 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
 
 /* Keep Android's light status icons readable above every page and modal. */
 html.capacitor-native:before{content:'';position:fixed;z-index:5000;top:0;left:0;right:0;height:max(16px,calc(var(--safe-area-inset-top,env(safe-area-inset-top)) - 5px));background:var(--ink);pointer-events:none}
+
+/* Use the Activity screen's comic picker everywhere a choice menu is needed. */
+.modal .comic-select{margin-bottom:17px}.comic-select>button:disabled{opacity:.48;cursor:not-allowed}.comic-select.compact{margin:0}.comic-select.compact>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.comic-select.compact>button{min-height:34px;padding:5px 8px;font-size:11px}
+
+/* Money received uses the same tidy pencil/cross controls as ledger expenses. */
+.income-row>.income-actions{display:flex;flex-direction:row;justify-content:flex-end;gap:6px}.income-actions button{display:grid;place-items:center;width:34px;height:32px;padding:0;margin:0!important;font:900 18px/1 var(--display);transition:transform var(--fast),box-shadow var(--fast)}.income-actions button:active{transform:translate(2px,2px);box-shadow:0 0 0 var(--ink)}
+@media(max-width:800px){.modal .comic-select{margin-bottom:7px}.income-row>.income-actions{grid-column:2;justify-self:end;margin-top:4px}}
