@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export function Panel({ children, className = '', as: Tag = 'section', ...props }) {
@@ -28,6 +28,26 @@ export function Field({ label, error, children, className = '' }) {
 export function Modal({ title, onClose, children, wide = false }) {
   const dialogRef = useRef(null);
   const backdropRef = useRef(null);
+
+  useLayoutEffect(() => {
+    const dialog = dialogRef.current;
+    const backdrop = backdropRef.current;
+    if (!dialog) return undefined;
+
+    const resetToTop = () => {
+      dialog.scrollTop = 0;
+      if (backdrop) backdrop.scrollTop = 0;
+    };
+
+    resetToTop();
+    const frame = window.requestAnimationFrame(resetToTop);
+    const timer = window.setTimeout(resetToTop, 280);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
+  }, [title, wide]);
+
   useEffect(() => {
     const dialog = dialogRef.current;
     const previousFocus = document.activeElement;
