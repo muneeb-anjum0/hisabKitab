@@ -49,6 +49,7 @@ export function Modal({ title, onClose, children, wide = false }) {
       if (!viewport) return;
       backdropRef.current?.style.setProperty('--modal-viewport-height', `${viewport.height}px`);
       backdropRef.current?.style.setProperty('--modal-viewport-top', `${viewport.offsetTop}px`);
+      backdropRef.current?.classList.toggle('keyboard-open', viewport.height < window.innerHeight - 120);
       if (document.activeElement?.matches?.('input,textarea,select')) {
         window.requestAnimationFrame(() => document.activeElement?.scrollIntoView?.({ block: 'nearest' }));
       }
