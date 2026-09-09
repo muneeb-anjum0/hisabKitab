@@ -55,7 +55,7 @@ export function ComicSelect({ label, value, options, onChange, disabled = false,
       onChange(id);
       setOpen(false);
       setPicked(null);
-    }, 170);
+    }, 520);
   };
 
   const popover = open && createPortal(<div className="comic-options-layer" onPointerDown={(event) => event.target === event.currentTarget && setOpen(false)}><div className="comic-options" ref={menu} role="listbox" aria-label={label}>{options.map(([id, text], index) => <button type="button" data-comic-option role="option" aria-selected={id === value} className={picked === id ? 'comic-option-picked' : ''} style={{ '--option-index': index }} key={id} onClick={() => pick(id)}>{text}<b>{picked === id ? 'POW!' : id === value ? '✓' : ''}</b></button>)}</div></div>, document.body);
