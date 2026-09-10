@@ -22,6 +22,7 @@ export default function App() {
   const location = useLocation();
 
   useComicTouchFeedback();
+  useNativeLongPressGuard();
   useMobileNavigationGestures();
 
   useEffect(() => {
@@ -85,6 +86,26 @@ export default function App() {
     {quickAction && <Suspense fallback={null}><QuickAdd initial={quickAction} onClose={() => setQuickAction(null)}/></Suspense>}
     {data.toast && <div className={`toast ${data.toast.type}`} role="status">{data.toast.message}</div>}
   </div>;
+}
+
+function useNativeLongPressGuard() {
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.()) return undefined;
+    const isProtectedControl = (target) => target instanceof Element
+      && Boolean(target.closest('button, a[href], [role="button"], [role="menuitem"], [role="option"]'));
+    const stopLongPressMenu = (event) => {
+      if (isProtectedControl(event.target)) event.preventDefault();
+    };
+    const stopControlDrag = (event) => {
+      if (isProtectedControl(event.target)) event.preventDefault();
+    };
+    document.addEventListener('contextmenu', stopLongPressMenu, { capture: true });
+    document.addEventListener('dragstart', stopControlDrag, { capture: true });
+    return () => {
+      document.removeEventListener('contextmenu', stopLongPressMenu, { capture: true });
+      document.removeEventListener('dragstart', stopControlDrag, { capture: true });
+    };
+  }, []);
 }
 
 const comicControlSelector = 'button, a[href], [role="button"]';

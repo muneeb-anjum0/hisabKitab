@@ -252,6 +252,7 @@ html,body{overscroll-behavior:none}.month-carousel{min-width:0}.month-track{disp
 
 /* Keep Android's light status icons readable above every page and modal. */
 html.capacitor-native:before{content:'';position:fixed;z-index:5000;top:0;left:0;right:0;height:max(16px,calc(var(--safe-area-inset-top,env(safe-area-inset-top)) - 5px));background:var(--ink);pointer-events:none}
+.capacitor-native :is(button,a[href],[role="button"],[role="menuitem"],[role="option"]){-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
 /* Use the Activity screen's comic picker everywhere a choice menu is needed. */
 .modal .comic-select{margin-bottom:17px}.comic-select>button:disabled{opacity:.48;cursor:not-allowed}.comic-select.compact{margin:0}.comic-select.compact>span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.comic-select.compact>button{min-height:34px;padding:5px 8px;font-size:11px}
