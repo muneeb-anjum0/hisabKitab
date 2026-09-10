@@ -3,6 +3,7 @@ import { useAuth } from './auth';
 import { DataContext } from './data';
 import * as api from '../services/dataService';
 import { fundDeletionAssessment, patchFund } from '../lib/calculations';
+import { readLedgerCache, writeLedgerCache } from '../lib/ledgerCache';
 
 const EMPTY_DATA = {
   funds: [],
@@ -18,16 +19,6 @@ const SYSTEM_CATEGORIES = [
   ['bills', 'Bills', '⚡'],
   ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
-const cacheKey = (uid) => `hk-ledger-v2:${uid}`;
-const readSnapshot = (uid) => {
-  try {
-    const snapshot = JSON.parse(localStorage.getItem(cacheKey(uid)));
-    return snapshot?.data && Array.isArray(snapshot.data.funds) ? snapshot.data : null;
-  } catch {
-    return null;
-  }
-};
-
 function withTimeout(operation) {
   return Promise.race([
     operation,
@@ -64,7 +55,7 @@ export function DataProvider({ children }) {
       loadedUserIdRef.current = null;
       return;
     }
-    const cached = readSnapshot(user.uid);
+    const cached = readLedgerCache(user.uid);
     if (loadedUserIdRef.current !== user.uid && cached) {
       setData(cached);
       setLoadedUserId(user.uid);
@@ -97,13 +88,12 @@ export function DataProvider({ children }) {
   }, [refresh]);
   useEffect(() => {
     if (!user || loadedUserId !== user.uid) return undefined;
-    const timer = window.setTimeout(() => {
-      try {
-        localStorage.setItem(cacheKey(user.uid), JSON.stringify({ savedAt: Date.now(), data }));
-      } catch {
-        /* Storage can be unavailable or full; Firestore still keeps its IndexedDB cache. */
-      }
-    }, 180);
+    const save = () => writeLedgerCache(user.uid, data);
+    if ('requestIdleCallback' in window) {
+      const task = window.requestIdleCallback(save, { timeout: 1000 });
+      return () => window.cancelIdleCallback(task);
+    }
+    const timer = window.setTimeout(save, 250);
     return () => window.clearTimeout(timer);
   }, [data, loadedUserId, user]);
   useEffect(() => {

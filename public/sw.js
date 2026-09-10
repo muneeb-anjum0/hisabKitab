@@ -1,4 +1,4 @@
-const VERSION = 'v12';
+const VERSION = 'v13';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
 const FONT_CACHE = 'hisabkitab-fonts-v1';
@@ -10,6 +10,7 @@ const SHELL = [
   '/icon.svg',
   '/icon-192.png',
   '/icon-512.png',
+  '/icon-maskable-512.png',
   '/apple-touch-icon.png',
 ];
 
@@ -52,6 +53,10 @@ self.addEventListener('activate', (event) =>
   ),
 );
 
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') void self.skipWaiting();
+});
+
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
@@ -75,11 +80,15 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (event.request.mode === 'navigate') {
-    const fresh = fetch(event.request)
-      .then((response) => cacheResponse(SHELL_CACHE, '/index.html', response))
-      .catch(() => caches.match('/index.html'));
-    event.waitUntil(fresh.then(() => undefined));
-    event.respondWith(caches.match('/index.html').then((cached) => cached || fresh));
+    event.respondWith(
+      caches.match('/index.html').then((cached) => {
+        const fresh = fetch(event.request)
+          .then((response) => cacheResponse(SHELL_CACHE, '/index.html', response))
+          .catch(() => cached);
+        event.waitUntil(fresh.then(() => undefined));
+        return cached || fresh;
+      }),
+    );
     return;
   }
 
@@ -90,7 +99,10 @@ self.addEventListener('fetch', (event) => {
       cached.then(
         (response) =>
           response ||
-          fetch(event.request).then((fresh) => cacheResponse(ASSET_CACHE, event.request, fresh)),
+          fetch(event.request).then((fresh) => {
+            void trimCache(ASSET_CACHE, 60);
+            return cacheResponse(ASSET_CACHE, event.request, fresh);
+          }),
       ),
     );
     return;
