@@ -63,7 +63,7 @@ function ExpenseForm({ data, funds, edit, amountRef, busy, error, onBack, onSubm
   };
   return <Modal title={edit ? 'EDIT EXPENSE' : 'ADD EXPENSE'} onClose={onBack}>
     {!funds.length ? <NoFunds onCreate={() => onBack()}/> : <form onSubmit={save}>
-      <Field label="AMOUNT (PKR)"><input ref={amountRef} inputMode="decimal" type="number" min="1" step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })} placeholder="0" className="amount-input"/></Field>
+      <Field label="AMOUNT (PKR)"><input ref={amountRef} data-autofocus inputMode="decimal" type="number" min="1" step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })} placeholder="0" className="amount-input"/></Field>
       <div className="form-pair"><ComicSelect label="FUND" value={values.fundId} onChange={(fundId) => setValues({ ...values, fundId })} options={funds.map((fund) => [fund.id, fund.name])}/><ComicDatePicker label="DATE" value={values.date} onChange={(date) => setValues({ ...values, date })}/></div>
       <Field label="WHAT WAS IT?"><input required maxLength="80" value={values.description} onChange={(e) => setValues({ ...values, description: e.target.value })} placeholder="Groceries, fuel, chai…"/></Field>
       <ComicSelect label="CATEGORY" value={values.categoryId} onChange={(categoryId) => setValues({ ...values, categoryId })} options={data.categories.map((category) => [category.id, `${category.symbol} ${category.name}`])}/>
@@ -93,7 +93,7 @@ function RemittanceForm({ data, funds, editIncome, amountRef, busy, error, onBac
   return <Modal title={editIncome ? 'EDIT MONEY RECEIVED' : 'ADD MONEY'} onClose={onBack} wide><form onSubmit={save}>
     <div className="remit-layout"><div>
       <Field label="FROM"><input required maxLength="80" value={values.sender} onChange={(e) => setValues({ ...values, sender: e.target.value })} placeholder="Dad"/></Field>
-      <Field label="AMOUNT (PKR)"><input ref={amountRef} required type="number" min="1" step="1" inputMode="decimal" className="amount-input" value={values.totalAmount} onChange={(e) => setValues({ ...values, totalAmount: e.target.value })}/></Field>
+      <Field label="AMOUNT (PKR)"><input ref={amountRef} data-autofocus required type="number" min="1" step="1" inputMode="decimal" className="amount-input" value={values.totalAmount} onChange={(e) => setValues({ ...values, totalAmount: e.target.value })}/></Field>
       <ComicDatePicker label="DATE" value={values.receivedAt} onChange={(receivedAt) => setValues({ ...values, receivedAt })}/>
       <Field label="NOTE — OPTIONAL"><textarea maxLength="300" rows="2" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>
     </div><div className="split-box"><h3>GIVE IT A JOB</h3>
@@ -116,7 +116,7 @@ function TransferForm({ data, funds, amountRef, busy, error, onBack, onSubmit })
   const valid = isPositive(values.amount) && values.fromId && values.toId && values.fromId !== values.toId && Number(values.amount) <= available && consumption.uncovered === 0 && values.date;
   return <Modal title="TRANSFER" onClose={onBack}>
     {funds.length < 2 ? <NoFunds message="You need at least two active Funds to make a transfer."/> : <form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, amount: Number(values.amount), note: values.note.trim(), lotUsages: consumption.usages, sourceFundName: funds.find((fund) => fund.id === values.fromId)?.name || '' }); }}>
-      <Field label={`AMOUNT — ${money(available)} AVAILABLE`}><input ref={amountRef} className="amount-input" type="number" min="1" max={Math.max(0, available)} step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })}/></Field>
+      <Field label={`AMOUNT — ${money(available)} AVAILABLE`}><input ref={amountRef} data-autofocus className="amount-input" type="number" min="1" max={Math.max(0, available)} step="1" required value={values.amount} onChange={(e) => setValues({ ...values, amount: e.target.value })}/></Field>
       <div className="form-pair"><ComicSelect label="FROM" value={values.fromId} onChange={(fromId) => setValues({ ...values, fromId })} options={funds.map((fund) => [fund.id, fund.name])}/><ComicSelect label="TO" value={values.toId} onChange={(toId) => setValues({ ...values, toId })} options={funds.map((fund) => [fund.id, fund.name])}/></div>
       <ComicDatePicker label="DATE" value={values.date} onChange={(date) => setValues({ ...values, date })}/>
       <Field label="NOTE — OPTIONAL"><input maxLength="300" value={values.note} onChange={(e) => setValues({ ...values, note: e.target.value })}/></Field>

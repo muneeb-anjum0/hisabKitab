@@ -141,13 +141,24 @@ export function Modal({ title, onClose, children, wide = false }) {
 
   useEffect(() => {
     const dialog = dialogRef.current;
+    const settleTimers = [];
     const focusTimer = window.setTimeout(() => {
       const target = dialog?.querySelector('[data-autofocus]');
       if (!target || closingRef.current) return;
       target.focus({ preventScroll: true });
-      window.requestAnimationFrame(() => target.scrollIntoView?.({ block: 'nearest' }));
+      const keepOpeningAtTop = () => {
+        if (closingRef.current) return;
+        dialog.scrollTop = 0;
+        if (backdropRef.current) backdropRef.current.scrollTop = 0;
+      };
+      window.requestAnimationFrame(keepOpeningAtTop);
+      settleTimers.push(window.setTimeout(keepOpeningAtTop, 120));
+      settleTimers.push(window.setTimeout(keepOpeningAtTop, 300));
     }, 320);
-    return () => window.clearTimeout(focusTimer);
+    return () => {
+      window.clearTimeout(focusTimer);
+      settleTimers.forEach((timer) => window.clearTimeout(timer));
+    };
   }, [title]);
 
   useEffect(() => {
@@ -173,9 +184,6 @@ export function Modal({ title, onClose, children, wide = false }) {
       if (!viewport) return;
       backdropRef.current?.style.setProperty('--modal-viewport-height', `${viewport.height}px`);
       backdropRef.current?.style.setProperty('--modal-viewport-top', `${viewport.offsetTop}px`);
-      if (document.activeElement?.matches?.('input,textarea,select')) {
-        window.requestAnimationFrame(() => document.activeElement?.scrollIntoView?.({ block: 'nearest' }));
-      }
     };
     fitViewport();
     window.visualViewport?.addEventListener('resize', fitViewport);
