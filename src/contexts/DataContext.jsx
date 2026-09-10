@@ -6,10 +6,7 @@ import { fundDeletionAssessment, patchFund } from '../lib/calculations';
 const DataContext = createContext(null);
 const EMPTY_DATA = { funds: [], memberships: [], remittances: [], allocations: [], transactions: [], categories: [] };
 const SYSTEM_CATEGORIES = [
-  ['food', 'Food', '●'], ['groceries', 'Groceries', '▦'], ['fuel', 'Fuel', '▲'], ['bills', 'Bills', '⚡'],
-  ['internet', 'Internet', '@'], ['shopping', 'Shopping', '★'], ['university', 'University', '✎'],
-  ['transport', 'Transport', '➜'], ['medical', 'Medical', '+'], ['entertainment', 'Entertainment', '♪'],
-  ['home', 'Home', '⌂'], ['other', 'Other', '◆'],
+  ['food', 'Food', '●'], ['transport', 'Transport', '➜'], ['bills', 'Bills', '⚡'], ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
 const cacheKey = (uid) => `hk-ledger-v2:${uid}`;
 const readSnapshot = (uid) => {
@@ -87,7 +84,7 @@ export function DataProvider({ children }) {
 
   const categories = useMemo(() => {
     const customIds = new Set(data.categories.map((item) => item.id));
-    return [...SYSTEM_CATEGORIES.filter((item) => !customIds.has(item.id)), ...data.categories];
+    return [...SYSTEM_CATEGORIES.filter((item) => !customIds.has(item.id)), ...data.categories.filter((item) => !item.hidden)];
   }, [data.categories]);
 
   const value = {
@@ -141,6 +138,7 @@ export function DataProvider({ children }) {
       return write(() => api.addAllocation(enriched), (current, result) => ({ ...current, allocations: [...current.allocations, result] }), 'MONEY LOT CREATED.');
     },
     addCategory: (name) => write(() => api.addCategory(user.uid, name), (current, result) => ({ ...current, categories: [...current.categories, result] }), 'CATEGORY ADDED.'),
+    removeCategory: (category) => write(() => api.removeCategory(user.uid, category), (current, hidden) => ({ ...current, categories: hidden ? [...current.categories.filter((item) => item.id !== category.id), hidden] : current.categories.filter((item) => item.id !== category.id) }), 'CATEGORY DELETED.'),
     addMember: async (fundId, email, role) => { await api.addMember(fundId, email, role); await refresh(); setToast({ type: 'success', message: 'MEMBER ADDED.' }); },
     updateMember: async (id, role) => { await api.updateMember(id, role); setData((current) => ({ ...current, memberships: current.memberships.map((item) => item.id === id ? { ...item, role } : item) })); },
     removeMember: async (id) => { await api.removeMember(id); setData((current) => ({ ...current, memberships: current.memberships.filter((item) => item.id !== id) })); },

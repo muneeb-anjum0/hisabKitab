@@ -135,6 +135,15 @@ export function removeRemittance(id, allocations = []) {
 
 export function addAllocation(values) { const ref = doc(collection(db, 'allocations')); queueWrite(setDoc(ref, { ...values, createdAt: serverTimestamp() })); return Promise.resolve({ id: ref.id, ...values, createdAt: localNow() }); }
 export function addCategory(uid, name, symbol = '◆') { const ref = doc(collection(db, 'categories')); queueWrite(setDoc(ref, { userId: uid, name, symbol, createdAt: serverTimestamp() })); return Promise.resolve({ id: ref.id, userId: uid, name, symbol, createdAt: localNow() }); }
+export function removeCategory(uid, category) {
+  if (category.system) {
+    const hidden = { id: category.id, userId: uid, name: category.name, symbol: category.symbol, hidden: true, updatedAt: localNow() };
+    queueWrite(setDoc(doc(db, 'categories', category.id), { userId: uid, name: category.name, symbol: category.symbol, hidden: true, updatedAt: serverTimestamp() }));
+    return Promise.resolve(hidden);
+  }
+  queueWrite(deleteDoc(doc(db, 'categories', category.id)));
+  return Promise.resolve(null);
+}
 
 export async function addMember(fundId, email, role) {
   const profileSnapshot = await getDocs(query(collection(db, 'publicProfiles'), where('email', '==', email), limit(1)));
