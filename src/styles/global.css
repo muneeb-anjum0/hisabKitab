@@ -278,3 +278,6 @@ html.capacitor-native:before{content:'';position:fixed;z-index:5000;top:0;left:0
 
 /* Every category chip is editable, including the four starter categories. */
 .category-cloud span{display:inline-flex;align-items:center;gap:7px;padding:0 0 0 8px;overflow:hidden}.category-cloud span button{align-self:stretch;min-width:29px;border:0;border-left:2px solid var(--ink);background:var(--red);color:#fff;font:900 18px/1 var(--display)}.category-cloud span button:active{background:var(--yellow);color:var(--ink)}
+
+/* Popup close control owns a real heading cell instead of floating over content. */
+.modal-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}.modal-heading>div{min-width:0}.modal-heading .modal-close{position:relative;float:none;inset:auto;top:auto;right:auto;margin:0;width:42px;height:42px;display:grid;place-items:center;border:3px solid var(--ink);background:var(--white);font:900 30px/1 var(--display);z-index:1}.modal-heading .modal-close:active{background:var(--red);color:#fff;transform:translate(2px,2px)}.modal-heading h2{margin-right:0}@media(max-width:800px){.modal-heading{gap:8px}.modal-heading .modal-close{width:34px;height:34px;font-size:25px}.modal-heading h2{margin-right:0}}

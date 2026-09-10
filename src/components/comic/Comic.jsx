@@ -165,9 +165,7 @@ export function Modal({ title, onClose, children, wide = false }) {
 
   return createPortal(<div ref={backdropRef} className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
     <section ref={dialogRef} className={`modal panel ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <button className="modal-close" onClick={onClose} aria-label="Close">×</button>
-      <div className="torn-label">DO THE MATH</div>
-      <h2 id="modal-title">{title}</h2>
+      <header className="modal-heading"><div><div className="torn-label">DO THE MATH</div><h2 id="modal-title">{title}</h2></div><button className="modal-close" onClick={onClose} aria-label="Close">×</button></header>
       {children}
     </section>
   </div>, document.body);
