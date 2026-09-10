@@ -85,11 +85,29 @@ function MonthCard({ month, data, funds, onOpen }) {
 function MonthDetails({ month, data, funds, onClose }) {
   const summary = monthlyBreakdown(month, data.transactions, data.remittances, funds, data.categories);
   const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
-  const exportCsv = () => {
-    const blob = new Blob([monthlyCsv(month, summary, funds, data.categories)], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
-    anchor.href = url; anchor.download = `HisabKitab-${month}.csv`; anchor.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const exportCsv = async () => {
+    const filename = `HisabKitab-${month}.csv`;
+    const csv = `\uFEFF${monthlyCsv(month, summary, funds, data.categories)}`;
+    const file = new File([csv], filename, { type: 'text/csv;charset=utf-8' });
+    try {
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ title: `${label} ledger`, files: [file] });
+        data.setToast({ type: 'success', message: 'CSV READY. SEND IT SOMEWHERE SAFE!' });
+        return;
+      }
+      const url = URL.createObjectURL(file);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = filename;
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+      data.setToast({ type: 'success', message: 'CSV EXPORTED. THE NUMBERS ARE FREE!' });
+    } catch (error) {
+      if (error?.name !== 'AbortError') data.setToast({ type: 'error', message: "CSV WOULDN'T LEAVE THE BUILDING. TRY AGAIN." });
+    }
   };
   return <Modal title={label} onClose={onClose} wide><div className="month-detail-totals"><b>IN {money(summary.received)}</b><b>OUT {money(summary.spent)}</b><b>NET {money(summary.remaining)}</b></div><div className="month-detail-grid"><section><h3>BY FUND</h3>{summary.byFund.length ? summary.byFund.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section><section><h3>BY CATEGORY</h3>{summary.byCategory.length ? summary.byCategory.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section></div><Button onClick={exportCsv}>↓ EXPORT CSV</Button></Modal>;
 }
