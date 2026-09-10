@@ -1,6 +1,12 @@
 import {
-  GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail,
-  signInWithCredential, signInWithEmailAndPassword, signInWithPopup, signOut, updateProfile,
+  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  signInWithCredential,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updateProfile,
 } from 'firebase/auth';
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
@@ -21,15 +27,23 @@ async function syncUser(user) {
   const profileRef = doc(db, 'users', user.uid);
   const existing = await getDoc(profileRef);
   const profile = {
-    displayName: user.displayName || user.email.split('@')[0], email: user.email,
-    photoURL: user.photoURL || '', updatedAt: serverTimestamp(),
+    displayName: user.displayName || user.email.split('@')[0],
+    email: user.email,
+    photoURL: user.photoURL || '',
+    updatedAt: serverTimestamp(),
     ...(!existing.exists() ? { createdAt: serverTimestamp() } : {}),
   };
   const batch = writeBatch(db);
   batch.set(profileRef, profile, { merge: true });
-  batch.set(doc(db, 'publicProfiles', user.uid), {
-    displayName: profile.displayName, email: user.email, updatedAt: serverTimestamp(),
-  }, { merge: true });
+  batch.set(
+    doc(db, 'publicProfiles', user.uid),
+    {
+      displayName: profile.displayName,
+      email: user.email,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  );
   await batch.commit();
   return user;
 }
@@ -39,12 +53,17 @@ export async function emailSignup(name, email, password) {
     const credential = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(credential.user, { displayName: name });
     return await syncUser(credential.user);
-  } catch (error) { throw new Error(friendlyError(error)); }
+  } catch (error) {
+    throw new Error(friendlyError(error), { cause: error });
+  }
 }
 
 export async function emailLogin(email, password) {
-  try { return await syncUser((await signInWithEmailAndPassword(auth, email, password)).user); }
-  catch (error) { throw new Error(friendlyError(error)); }
+  try {
+    return await syncUser((await signInWithEmailAndPassword(auth, email, password)).user);
+  } catch (error) {
+    throw new Error(friendlyError(error), { cause: error });
+  }
 }
 
 export async function googleLogin() {
@@ -57,13 +76,17 @@ export async function googleLogin() {
       return await syncUser((await signInWithCredential(auth, credential)).user);
     }
     return await syncUser((await signInWithPopup(auth, new GoogleAuthProvider())).user);
+  } catch (error) {
+    throw new Error(friendlyError(error), { cause: error });
   }
-  catch (error) { throw new Error(friendlyError(error)); }
 }
 
 export async function resetPassword(email) {
-  try { await sendPasswordResetEmail(auth, email); }
-  catch (error) { throw new Error(friendlyError(error)); }
+  try {
+    await sendPasswordResetEmail(auth, email);
+  } catch (error) {
+    throw new Error(friendlyError(error), { cause: error });
+  }
 }
 
 export async function changeDisplayName(user, displayName) {

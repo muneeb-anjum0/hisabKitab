@@ -1,12 +1,36 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { closestCenter, DndContext, DragOverlay, KeyboardSensor, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
-import { arrayMove, rectSortingStrategy, SortableContext, sortableKeyboardCoordinates, useSortable } from '@dnd-kit/sortable';
+import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  rectSortingStrategy,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
-import { useData } from '../contexts/DataContext';
-import { useAuth } from '../contexts/AuthContext';
-import { fundCardState, fundTotals, ledgerMonths, moneyLotSummary, monthlyBreakdown, monthlyCsv, portfolioTotals, sortFunds, timestampMillis } from '../lib/calculations';
+import { useData } from '../contexts/data';
+import { useAuth } from '../contexts/auth';
+import {
+  fundCardState,
+  ledgerMonths,
+  moneyLotSummary,
+  monthlyBreakdown,
+  monthlyCsv,
+  portfolioTotals,
+  sortFunds,
+  timestampMillis,
+} from '../lib/calculations';
 import { money } from '../lib/currency';
 import { friendlyDate, monthKey } from '../lib/dates';
 import { Button, ComicSelect, Empty, Field, Modal } from '../components/comic/Comic';
@@ -14,77 +38,512 @@ import TransactionRow from '../components/common/TransactionRow';
 import FundManagement from '../components/common/FundManagement';
 import FundIconBadge from '../components/common/FundIconBadge';
 
-const greeting = () => { const hour = new Date().getHours(); return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'; };
+const greeting = () => {
+  const hour = new Date().getHours();
+  return hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+};
 export default function Dashboard({ onAction }) {
-  const data = useData(); const { user } = useAuth(); const navigate = useNavigate();
-  const [allocating, setAllocating] = useState(false); const [search, setSearch] = useState(''); const [rearranging, setRearranging] = useState(false); const [activeId, setActiveId] = useState(null); const [orderedFunds, setOrderedFunds] = useState([]);
+  const data = useData();
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [allocating, setAllocating] = useState(false);
+  const [search, setSearch] = useState('');
+  const [rearranging, setRearranging] = useState(false);
+  const [activeId, setActiveId] = useState(null);
+  const [orderedFunds, setOrderedFunds] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
-  const searchRef = useRef(null); const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
-  const canRearrange = activeFunds.length > 1 && activeFunds.every((fund) => data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner'));
-  const stableOrderRef = useRef([]); const orderedFundsRef = useRef([]); const saveVersionRef = useRef(0);
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }), useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
-  const enterRearrange = () => { if (rearranging) { setRearranging(false); setActiveId(null); return; } const snapshot = [...activeFunds]; stableOrderRef.current = snapshot; orderedFundsRef.current = snapshot; setOrderedFunds(snapshot); setRearranging(true); };
-  const moveDuringDrag = ({ active, over }) => { if (!over || active.id === over.id) return; setOrderedFunds((current) => { const oldIndex = current.findIndex((fund) => fund.id === active.id); const newIndex = current.findIndex((fund) => fund.id === over.id); if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return current; const next = arrayMove(current, oldIndex, newIndex); orderedFundsRef.current = next; return next; }); };
-  const finishReorder = () => { const before = stableOrderRef.current.map((fund) => fund.id); const after = orderedFundsRef.current.map((fund) => fund.id); const rollback = stableOrderRef.current; setActiveId(null); if (after.some((id, index) => id !== before[index])) { const version = ++saveVersionRef.current; void data.reorderFunds(after).catch(() => { if (version !== saveVersionRef.current) return; orderedFundsRef.current = rollback; setOrderedFunds(rollback); }); } };
-  const totals = useMemo(() => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances), [activeFunds, data.allocations, data.transactions, data.remittances]);
-  const displayedFunds = rearranging ? orderedFunds.map((fund) => totals.funds.find((item) => item.id === fund.id) || fund) : totals.funds.slice(0, 4);
+  const searchRef = useRef(null);
+  const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
+  const canRearrange =
+    activeFunds.length > 1 &&
+    activeFunds.every((fund) =>
+      data.memberships.some(
+        (item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner',
+      ),
+    );
+  const stableOrderRef = useRef([]);
+  const orderedFundsRef = useRef([]);
+  const saveVersionRef = useRef(0);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+  const enterRearrange = () => {
+    if (rearranging) {
+      setRearranging(false);
+      setActiveId(null);
+      return;
+    }
+    const snapshot = [...activeFunds];
+    stableOrderRef.current = snapshot;
+    orderedFundsRef.current = snapshot;
+    setOrderedFunds(snapshot);
+    setRearranging(true);
+  };
+  const moveDuringDrag = ({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    setOrderedFunds((current) => {
+      const oldIndex = current.findIndex((fund) => fund.id === active.id);
+      const newIndex = current.findIndex((fund) => fund.id === over.id);
+      if (oldIndex < 0 || newIndex < 0 || oldIndex === newIndex) return current;
+      const next = arrayMove(current, oldIndex, newIndex);
+      orderedFundsRef.current = next;
+      return next;
+    });
+  };
+  const finishReorder = () => {
+    const before = stableOrderRef.current.map((fund) => fund.id);
+    const after = orderedFundsRef.current.map((fund) => fund.id);
+    const rollback = stableOrderRef.current;
+    setActiveId(null);
+    if (after.some((id, index) => id !== before[index])) {
+      const version = ++saveVersionRef.current;
+      void data.reorderFunds(after).catch(() => {
+        if (version !== saveVersionRef.current) return;
+        orderedFundsRef.current = rollback;
+        setOrderedFunds(rollback);
+      });
+    }
+  };
+  const totals = useMemo(
+    () => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances),
+    [activeFunds, data.allocations, data.transactions, data.remittances],
+  );
+  const displayedFunds = rearranging
+    ? orderedFunds.map((fund) => totals.funds.find((item) => item.id === fund.id) || fund)
+    : totals.funds.slice(0, 4);
   const currentMonth = monthKey();
-  const months = useMemo(() => ledgerMonths(data.transactions, data.remittances, currentMonth), [data.transactions, data.remittances, currentMonth]);
-  const recentTransactions = useMemo(() => [...data.transactions].sort((a, b) => {
-    const byDate = String(b.date || '').localeCompare(String(a.date || ''));
-    if (byDate) return byDate;
-    return timestampMillis(b.createdAt) - timestampMillis(a.createdAt)
-      || String(b.id).localeCompare(String(a.id));
-  }).slice(0, 5), [data.transactions]);
-  const searchResults = search.trim() ? [
-    ...activeFunds.filter((fund) => fund.name.toLowerCase().includes(search.toLowerCase())).map((fund) => ({ id: fund.id, title: fund.name, meta: 'Fund', action: () => navigate(`/funds/${fund.id}`) })),
-    ...data.transactions.filter((item) => `${item.description} ${item.note || ''}`.toLowerCase().includes(search.toLowerCase())).slice(0, 6).map((item) => ({ id: item.id, title: item.description, meta: `${money(item.amount)} · ${friendlyDate(item.date)}`, action: () => navigate('/activity') })),
-    ...data.categories.filter((item) => item.name.toLowerCase().includes(search.toLowerCase())).slice(0, 3).map((item) => ({ id: `category-${item.id}`, title: item.name, meta: 'Category', action: () => navigate('/activity') })),
-  ].slice(0, 8) : [];
+  const months = useMemo(
+    () => ledgerMonths(data.transactions, data.remittances, currentMonth),
+    [data.transactions, data.remittances, currentMonth],
+  );
+  const recentTransactions = useMemo(
+    () =>
+      [...data.transactions]
+        .sort((a, b) => {
+          const byDate = String(b.date || '').localeCompare(String(a.date || ''));
+          if (byDate) return byDate;
+          return (
+            timestampMillis(b.createdAt) - timestampMillis(a.createdAt) ||
+            String(b.id).localeCompare(String(a.id))
+          );
+        })
+        .slice(0, 5),
+    [data.transactions],
+  );
+  const searchResults = search.trim()
+    ? [
+        ...activeFunds
+          .filter((fund) => fund.name.toLowerCase().includes(search.toLowerCase()))
+          .map((fund) => ({
+            id: fund.id,
+            title: fund.name,
+            meta: 'Fund',
+            action: () => navigate(`/funds/${fund.id}`),
+          })),
+        ...data.transactions
+          .filter((item) =>
+            `${item.description} ${item.note || ''}`.toLowerCase().includes(search.toLowerCase()),
+          )
+          .slice(0, 6)
+          .map((item) => ({
+            id: item.id,
+            title: item.description,
+            meta: `${money(item.amount)} · ${friendlyDate(item.date)}`,
+            action: () => navigate('/activity'),
+          })),
+        ...data.categories
+          .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
+          .slice(0, 3)
+          .map((item) => ({
+            id: `category-${item.id}`,
+            title: item.name,
+            meta: 'Category',
+            action: () => navigate('/activity'),
+          })),
+      ].slice(0, 8)
+    : [];
 
-  useEffect(() => { const shortcut = (event) => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') { event.preventDefault(); searchRef.current?.focus(); } }; document.addEventListener('keydown', shortcut); return () => document.removeEventListener('keydown', shortcut); }, []);
+  useEffect(() => {
+    const shortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        searchRef.current?.focus();
+      }
+    };
+    document.addEventListener('keydown', shortcut);
+    return () => document.removeEventListener('keydown', shortcut);
+  }, []);
 
-  return <div className="dashboard-page">
-    <header className="dash-header"><div className="dash-greeting"><small>{greeting()},</small><h1>{user?.displayName?.split(' ')[0] || 'Ledger keeper'}!</h1><span>DISCIPLINE TODAY. FREEDOM TOMORROW.</span></div><div className="global-search"><span>⌕</span><input ref={searchRef} value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search Funds, transactions, categories…"/><kbd>Ctrl K</kbd>{search && <div className="search-results">{searchResults.length ? searchResults.map((result) => <button key={result.id} onClick={() => { result.action(); setSearch(''); }}><b>{result.title}</b><small>{result.meta}</small></button>) : <p>No matches in your ledger.</p>}</div>}</div><div className="dash-date"><b>▣</b><span>{new Date().toLocaleDateString('en-PK', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span><Link to="/profile" className="header-avatar">{user?.displayName?.[0] || user?.email?.[0] || 'H'}</Link></div></header>
+  return (
+    <div className="dashboard-page">
+      <header className="dash-header">
+        <div className="dash-greeting">
+          <small>{greeting()},</small>
+          <h1>{user?.displayName?.split(' ')[0] || 'Ledger keeper'}!</h1>
+          <span>DISCIPLINE TODAY. FREEDOM TOMORROW.</span>
+        </div>
+        <div className="global-search">
+          <span>⌕</span>
+          <input
+            ref={searchRef}
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search Funds, transactions, categories…"
+          />
+          <kbd>Ctrl K</kbd>
+          {search && (
+            <div className="search-results">
+              {searchResults.length ? (
+                searchResults.map((result) => (
+                  <button
+                    key={result.id}
+                    onClick={() => {
+                      result.action();
+                      setSearch('');
+                    }}
+                  >
+                    <b>{result.title}</b>
+                    <small>{result.meta}</small>
+                  </button>
+                ))
+              ) : (
+                <p>No matches in your ledger.</p>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="dash-date">
+          <b>▣</b>
+          <span>
+            {new Date().toLocaleDateString('en-PK', {
+              weekday: 'short',
+              day: 'numeric',
+              month: 'short',
+              year: 'numeric',
+            })}
+          </span>
+          <Link to="/profile" className="header-avatar">
+            {user?.displayName?.[0] || user?.email?.[0] || 'H'}
+          </Link>
+        </div>
+      </header>
 
-    <div className="dashboard-grid">
-      <main className="dashboard-main">
-        <section className="comic-hero"><div className="hero-finance"><span className="hero-label">TOTAL AVAILABLE</span><strong>{money(totals.remaining + totals.unallocated)}</strong><div className="hero-mini two-stats"><span>TOTAL RECEIVED<b>{money(totals.received)}</b></span><span>TOTAL SPENT<b>{money(totals.spent)}</b></span></div></div><div className="speech-wrap"><div className="speech">SAME MONEY.<br/>A BRIGHTER YOU.</div></div><div className="hero-space"/><div className="hero-ink" aria-hidden="true"/><div className="hero-mantra">PLAN<br/>TRACK<br/>SPEND<br/><em>REPEAT</em></div></section>
+      <div className="dashboard-grid">
+        <main className="dashboard-main">
+          <section className="comic-hero">
+            <div className="hero-finance">
+              <span className="hero-label">TOTAL AVAILABLE</span>
+              <strong>{money(totals.remaining + totals.unallocated)}</strong>
+              <div className="hero-mini two-stats">
+                <span>
+                  TOTAL RECEIVED<b>{money(totals.received)}</b>
+                </span>
+                <span>
+                  TOTAL SPENT<b>{money(totals.spent)}</b>
+                </span>
+              </div>
+            </div>
+            <div className="speech-wrap">
+              <div className="speech">
+                SAME MONEY.
+                <br />A BRIGHTER YOU.
+              </div>
+            </div>
+            <div className="hero-space" />
+            <div className="hero-ink" aria-hidden="true" />
+            <div className="hero-mantra">
+              PLAN
+              <br />
+              TRACK
+              <br />
+              SPEND
+              <br />
+              <em>REPEAT</em>
+            </div>
+          </section>
 
-        <section className="dash-section fund-section"><header><h2>YOUR FUNDS</h2><span>{rearranging ? "MOVE 'EM AROUND" : 'SEPARATE POCKETS. ONE CLEAR LIFE.'}</span>{canRearrange && <button className={`rearrange-toggle ${rearranging ? 'active' : ''}`} onClick={enterRearrange}>{rearranging ? '✓ DONE' : '⠿ REARRANGE'}</button>}<Link to="/funds">View all →</Link></header><DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={({ active }) => { stableOrderRef.current = [...orderedFundsRef.current]; setActiveId(active.id); }} onDragOver={moveDuringDrag} onDragEnd={finishReorder} onDragCancel={() => { orderedFundsRef.current = stableOrderRef.current; setOrderedFunds(stableOrderRef.current); setActiveId(null); }}><SortableContext items={displayedFunds.map((fund) => fund.id)} strategy={rectSortingStrategy}><div className={`dashboard-funds ${rearranging ? 'is-rearranging' : ''}`}>{displayedFunds.map((fund, index) => <SortableFundCard key={fund.id} fund={fund} index={index} rearranging={rearranging} owner={data.memberships.some((item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner')} count={data.transactions.filter((item) => item.fundId === fund.id).length}/>) }{!rearranging && <button className="new-fund-card" onClick={() => onAction('fund')}><b>＋</b><span>NEW FUND</span></button>}</div></SortableContext>{createPortal(<DragOverlay>{activeId ? <FundCardView fund={displayedFunds.find((fund) => fund.id === activeId)} count={data.transactions.filter((item) => item.fundId === activeId).length} overlay/> : null}</DragOverlay>, document.body)}</DndContext></section>
+          <section className="dash-section fund-section">
+            <header>
+              <h2>YOUR FUNDS</h2>
+              <span>{rearranging ? "MOVE 'EM AROUND" : 'SEPARATE POCKETS. ONE CLEAR LIFE.'}</span>
+              {canRearrange && (
+                <button
+                  className={`rearrange-toggle ${rearranging ? 'active' : ''}`}
+                  onClick={enterRearrange}
+                >
+                  {rearranging ? '✓ DONE' : '⠿ REARRANGE'}
+                </button>
+              )}
+              <Link to="/funds">View all →</Link>
+            </header>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={({ active }) => {
+                stableOrderRef.current = [...orderedFundsRef.current];
+                setActiveId(active.id);
+              }}
+              onDragOver={moveDuringDrag}
+              onDragEnd={finishReorder}
+              onDragCancel={() => {
+                orderedFundsRef.current = stableOrderRef.current;
+                setOrderedFunds(stableOrderRef.current);
+                setActiveId(null);
+              }}
+            >
+              <SortableContext
+                items={displayedFunds.map((fund) => fund.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className={`dashboard-funds ${rearranging ? 'is-rearranging' : ''}`}>
+                  {displayedFunds.map((fund, index) => (
+                    <SortableFundCard
+                      key={fund.id}
+                      fund={fund}
+                      index={index}
+                      rearranging={rearranging}
+                      owner={data.memberships.some(
+                        (item) =>
+                          item.fundId === fund.id &&
+                          item.userId === user.uid &&
+                          item.role === 'owner',
+                      )}
+                      count={data.transactions.filter((item) => item.fundId === fund.id).length}
+                    />
+                  ))}
+                  {!rearranging && (
+                    <button className="new-fund-card" onClick={() => onAction('fund')}>
+                      <b>＋</b>
+                      <span>NEW FUND</span>
+                    </button>
+                  )}
+                </div>
+              </SortableContext>
+              {createPortal(
+                <DragOverlay>
+                  {activeId ? (
+                    <FundCardView
+                      fund={displayedFunds.find((fund) => fund.id === activeId)}
+                      count={data.transactions.filter((item) => item.fundId === activeId).length}
+                      overlay
+                    />
+                  ) : null}
+                </DragOverlay>,
+                document.body,
+              )}
+            </DndContext>
+          </section>
 
-        <section className="dashboard-lower"><div className="dash-section recent-block"><header><h2>RECENT ACTIVITY</h2><span>LATEST MOVES IN YOUR STORY.</span><Link to="/activity">View all →</Link></header><div className="compact-ledger">{recentTransactions.length ? recentTransactions.map((item) => <TransactionRow key={item.id} item={item} funds={data.funds} categories={data.categories} memberships={data.memberships}/>) : <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>}</div></div><div className="dash-section month-carousel"><header><h2>MONTHLY BOOKS</h2><span>SWIPE THROUGH TIME.</span></header><div className="month-track">{months.map((month) => <MonthCard key={month} month={month} data={data} funds={activeFunds} onOpen={() => setSelectedMonth(month)}/>)}</div></div></section>
-      </main>
+          <section className="dashboard-lower">
+            <div className="dash-section recent-block">
+              <header>
+                <h2>RECENT ACTIVITY</h2>
+                <span>LATEST MOVES IN YOUR STORY.</span>
+                <Link to="/activity">View all →</Link>
+              </header>
+              <div className="compact-ledger">
+                {recentTransactions.length ? (
+                  recentTransactions.map((item) => (
+                    <TransactionRow
+                      key={item.id}
+                      item={item}
+                      funds={data.funds}
+                      categories={data.categories}
+                      memberships={data.memberships}
+                    />
+                  ))
+                ) : (
+                  <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>
+                )}
+              </div>
+            </div>
+            <div className="dash-section month-carousel">
+              <header>
+                <h2>MONTHLY BOOKS</h2>
+                <span>SWIPE THROUGH TIME.</span>
+              </header>
+              <div className="month-track">
+                {months.map((month) => (
+                  <MonthCard
+                    key={month}
+                    month={month}
+                    data={data}
+                    funds={activeFunds}
+                    onOpen={() => setSelectedMonth(month)}
+                  />
+                ))}
+              </div>
+            </div>
+          </section>
+        </main>
 
-      <aside className="dashboard-aside"><div className="sticky-note"><b>IT ALL<br/>ADDS UP.</b></div><div className="direct-actions"><button className="primary" onClick={() => onAction('remittance')}>＋ ADD MONEY</button><button onClick={() => onAction('expense')}>＋ ADD EXPENSE</button><button onClick={() => onAction('transfer')}>⇄ TRANSFER MONEY</button><button onClick={() => onAction('fund')}>＋ CREATE FUND</button></div><Reminder totals={totals} funds={activeFunds} data={data}/><JourneyPanel/><div className="lot-watch"><small>MONEY LOT WATCH</small><b>{data.allocations.length} LOT{data.allocations.length !== 1 ? 'S' : ''} ON THE BOOKS</b><span>Oldest money is spent first unless you choose a specific lot.</span></div></aside>
+        <aside className="dashboard-aside">
+          <div className="sticky-note">
+            <b>
+              IT ALL
+              <br />
+              ADDS UP.
+            </b>
+          </div>
+          <div className="direct-actions">
+            <button className="primary" onClick={() => onAction('remittance')}>
+              ＋ ADD MONEY
+            </button>
+            <button onClick={() => onAction('expense')}>＋ ADD EXPENSE</button>
+            <button onClick={() => onAction('transfer')}>⇄ TRANSFER MONEY</button>
+            <button onClick={() => onAction('fund')}>＋ CREATE FUND</button>
+          </div>
+          <Reminder totals={totals} funds={activeFunds} data={data} />
+          <JourneyPanel />
+          <div className="lot-watch">
+            <small>MONEY LOT WATCH</small>
+            <b>
+              {data.allocations.length} LOT{data.allocations.length !== 1 ? 'S' : ''} ON THE BOOKS
+            </b>
+            <span>Oldest money is spent first unless you choose a specific lot.</span>
+          </div>
+        </aside>
+      </div>
+      {allocating && <AllocateMoney data={data} onClose={() => setAllocating(false)} />}
+      {selectedMonth && (
+        <MonthDetails
+          month={selectedMonth}
+          data={data}
+          funds={activeFunds}
+          onClose={() => setSelectedMonth(null)}
+        />
+      )}
     </div>
-    {allocating && <AllocateMoney data={data} onClose={() => setAllocating(false)}/>}
-    {selectedMonth && <MonthDetails month={selectedMonth} data={data} funds={activeFunds} onClose={() => setSelectedMonth(null)}/>}
-  </div>;
+  );
 }
 
 function SortableFundCard({ fund, index, rearranging, owner, count }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: fund.id, disabled: !rearranging });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: fund.id,
+    disabled: !rearranging,
+  });
   const state = fundCardState(fund);
-  return <article ref={setNodeRef} className={`dash-fund-card ${fund.accent} ${state.kind === 'overspent' ? 'is-overspent' : ''} ${isDragging ? 'is-dragging' : ''}`} style={{ '--delay': `${index * 55}ms`, transform: CSS.Transform.toString(transform), transition }}>{rearranging ? <button className="fund-sort-handle" type="button" aria-label={`Move ${fund.name}`} {...attributes} {...listeners}>⠿</button> : <FundManagement fund={fund} owner={owner}/>}<FundCardView fund={fund} count={count} rearranging={rearranging}/></article>;
+  return (
+    <article
+      ref={setNodeRef}
+      className={`dash-fund-card ${fund.accent} ${state.kind === 'overspent' ? 'is-overspent' : ''} ${isDragging ? 'is-dragging' : ''}`}
+      style={{
+        '--delay': `${index * 55}ms`,
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }}
+    >
+      {rearranging ? (
+        <button
+          className="fund-sort-handle"
+          type="button"
+          aria-label={`Move ${fund.name}`}
+          {...attributes}
+          {...listeners}
+        >
+          ⠿
+        </button>
+      ) : (
+        <FundManagement fund={fund} owner={owner} />
+      )}
+      <FundCardView fund={fund} count={count} rearranging={rearranging} />
+    </article>
+  );
 }
 
 function FundCardView({ fund, count, rearranging = false, overlay = false }) {
   if (!fund) return null;
   const state = fundCardState(fund);
-  const content = <><FundIconBadge name={fund.name}/><h3>{fund.name}</h3>{state.kind === 'overspent' && <span className="overspent-stamp">OVERSPENT</span>}<strong>{money(fund.remaining)}</strong><small>of {money(fund.allocated)}</small><div className="fund-card-progress"><div className="fund-meter"><span style={{ width: `${state.percentage ?? 0}%` }}/></div><b>{state.kind === 'overspent' ? `OVER BY ${money(state.overBy)}` : state.label}</b></div><footer>{count} TRANSACTION{count !== 1 ? 'S' : ''}</footer></>;
-  return overlay ? <article className={`dash-fund-card fund-drag-overlay ${fund.accent}`}><div className="fund-card-link">{content}</div></article> : <Link className="fund-card-link" draggable={false} to={`/funds/${fund.id}`} onClick={(event) => rearranging && event.preventDefault()}>{content}</Link>;
+  const content = (
+    <>
+      <FundIconBadge name={fund.name} />
+      <h3>{fund.name}</h3>
+      {state.kind === 'overspent' && <span className="overspent-stamp">OVERSPENT</span>}
+      <strong>{money(fund.remaining)}</strong>
+      <small>of {money(fund.allocated)}</small>
+      <div className="fund-card-progress">
+        <div className="fund-meter">
+          <span style={{ width: `${state.percentage ?? 0}%` }} />
+        </div>
+        <b>{state.kind === 'overspent' ? `OVER BY ${money(state.overBy)}` : state.label}</b>
+      </div>
+      <footer>
+        {count} TRANSACTION{count !== 1 ? 'S' : ''}
+      </footer>
+    </>
+  );
+  return overlay ? (
+    <article className={`dash-fund-card fund-drag-overlay ${fund.accent}`}>
+      <div className="fund-card-link">{content}</div>
+    </article>
+  ) : (
+    <Link
+      className="fund-card-link"
+      draggable={false}
+      to={`/funds/${fund.id}`}
+      onClick={(event) => rearranging && event.preventDefault()}
+    >
+      {content}
+    </Link>
+  );
 }
 
 function MonthCard({ month, data, funds, onOpen }) {
-  const summary = monthlyBreakdown(month, data.transactions, data.remittances, funds, data.categories);
-  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
-  return <button className="month-card" onClick={onOpen}><header><b>{label}</b><span>OPEN BOOK →</span></header><div className="month-totals"><p className="received"><span><i>↗</i> Received</span><b>{money(summary.received)}</b></p><p className="spent"><span><i>↘</i> Spent</span><b>{money(summary.spent)}</b></p><p className="month-remaining"><span><i>⊕</i> Net</span><b>{money(summary.remaining)}</b></p></div></button>;
+  const summary = monthlyBreakdown(
+    month,
+    data.transactions,
+    data.remittances,
+    funds,
+    data.categories,
+  );
+  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', {
+    month: 'long',
+    year: 'numeric',
+  });
+  return (
+    <button className="month-card" onClick={onOpen}>
+      <header>
+        <b>{label}</b>
+        <span>OPEN BOOK →</span>
+      </header>
+      <div className="month-totals">
+        <p className="received">
+          <span>
+            <i>↗</i> Received
+          </span>
+          <b>{money(summary.received)}</b>
+        </p>
+        <p className="spent">
+          <span>
+            <i>↘</i> Spent
+          </span>
+          <b>{money(summary.spent)}</b>
+        </p>
+        <p className="month-remaining">
+          <span>
+            <i>⊕</i> Net
+          </span>
+          <b>{money(summary.remaining)}</b>
+        </p>
+      </div>
+    </button>
+  );
 }
 
 function MonthDetails({ month, data, funds, onClose }) {
-  const summary = monthlyBreakdown(month, data.transactions, data.remittances, funds, data.categories);
-  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', { month: 'long', year: 'numeric' });
+  const summary = monthlyBreakdown(
+    month,
+    data.transactions,
+    data.remittances,
+    funds,
+    data.categories,
+  );
+  const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', {
+    month: 'long',
+    year: 'numeric',
+  });
   const exportCsv = async () => {
     const filename = `HisabKitab-${month}.csv`;
     const csv = `\uFEFF${monthlyCsv(month, summary, funds, data.categories)}`;
@@ -106,17 +565,166 @@ function MonthDetails({ month, data, funds, onClose }) {
       window.setTimeout(() => URL.revokeObjectURL(url), 10000);
       data.setToast({ type: 'success', message: 'CSV EXPORTED. THE NUMBERS ARE FREE!' });
     } catch (error) {
-      if (error?.name !== 'AbortError') data.setToast({ type: 'error', message: "CSV WOULDN'T LEAVE THE BUILDING. TRY AGAIN." });
+      if (error?.name !== 'AbortError')
+        data.setToast({ type: 'error', message: "CSV WOULDN'T LEAVE THE BUILDING. TRY AGAIN." });
     }
   };
-  return <Modal title={label} onClose={onClose} wide><div className="month-detail-totals"><b>IN {money(summary.received)}</b><b>OUT {money(summary.spent)}</b><b>NET {money(summary.remaining)}</b></div><div className="month-detail-grid"><section><h3>BY FUND</h3>{summary.byFund.length ? summary.byFund.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section><section><h3>BY CATEGORY</h3>{summary.byCategory.length ? summary.byCategory.map((item) => <p key={item.id}><span>{item.name}</span><b>{money(item.value)}</b></p>) : <p>No expenses.</p>}</section></div><Button onClick={exportCsv}>↓ EXPORT CSV</Button></Modal>;
+  return (
+    <Modal title={label} onClose={onClose} wide>
+      <div className="month-detail-totals">
+        <b>IN {money(summary.received)}</b>
+        <b>OUT {money(summary.spent)}</b>
+        <b>NET {money(summary.remaining)}</b>
+      </div>
+      <div className="month-detail-grid">
+        <section>
+          <h3>BY FUND</h3>
+          {summary.byFund.length ? (
+            summary.byFund.map((item) => (
+              <p key={item.id}>
+                <span>{item.name}</span>
+                <b>{money(item.value)}</b>
+              </p>
+            ))
+          ) : (
+            <p>No expenses.</p>
+          )}
+        </section>
+        <section>
+          <h3>BY CATEGORY</h3>
+          {summary.byCategory.length ? (
+            summary.byCategory.map((item) => (
+              <p key={item.id}>
+                <span>{item.name}</span>
+                <b>{money(item.value)}</b>
+              </p>
+            ))
+          ) : (
+            <p>No expenses.</p>
+          )}
+        </section>
+      </div>
+      <Button onClick={exportCsv}>↓ EXPORT CSV</Button>
+    </Modal>
+  );
 }
 
-function Reminder({ totals, funds, data }) { const lot = funds.map((fund) => ({ fund, ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions) })).flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name }))).find((item) => item.remaining > 0); return <div className="reminder-note"><b>REMEMBER:</b><p>☑ Small expenses matter</p><p>☑ Keep Funds separate</p><p>☑ {totals.unallocated > 0 ? `${money(totals.unallocated)} needs a job` : lot ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left` : 'Your ledger is ready'}</p></div>; }
-function JourneyPanel() { return <div className="journey-panel"><div className="journey-copy">SAME<br/>HABITS.<br/>BIGGER<br/>FREEDOM.</div><svg viewBox="0 0 220 280" aria-hidden="true"><circle cx="154" cy="190" r="60" fill="#f2cc46"/><path d="m0 280 66-88 35 34 38-70 81 124Z" fill="#111"/><path d="M107 251q8-54 18-66m0 0-14 12m14-12 8 16" stroke="white" strokeWidth="5" fill="none"/><path d="M166 69 176 45l8 22 24-8-13 21 17 15-26-2-10 23-5-25-25-5Z" fill="#f2cc46" stroke="#111" strokeWidth="4"/></svg></div>; }
+function Reminder({ totals, funds, data }) {
+  const lot = funds
+    .map((fund) => ({
+      fund,
+      ...moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions),
+    }))
+    .flatMap((entry) => entry.lots.map((item) => ({ ...item, fundName: entry.fund.name })))
+    .find((item) => item.remaining > 0);
+  return (
+    <div className="reminder-note">
+      <b>REMEMBER:</b>
+      <p>☑ Small expenses matter</p>
+      <p>☑ Keep Funds separate</p>
+      <p>
+        ☑{' '}
+        {totals.unallocated > 0
+          ? `${money(totals.unallocated)} needs a job`
+          : lot
+            ? `${lot.fundName} lot #${String(lot.number).padStart(2, '0')} has ${money(lot.remaining)} left`
+            : 'Your ledger is ready'}
+      </p>
+    </div>
+  );
+}
+function JourneyPanel() {
+  return (
+    <div className="journey-panel">
+      <div className="journey-copy">
+        SAME
+        <br />
+        HABITS.
+        <br />
+        BIGGER
+        <br />
+        FREEDOM.
+      </div>
+      <svg viewBox="0 0 220 280" aria-hidden="true">
+        <circle cx="154" cy="190" r="60" fill="#f2cc46" />
+        <path d="m0 280 66-88 35 34 38-70 81 124Z" fill="#111" />
+        <path
+          d="M107 251q8-54 18-66m0 0-14 12m14-12 8 16"
+          stroke="white"
+          strokeWidth="5"
+          fill="none"
+        />
+        <path
+          d="M166 69 176 45l8 22 24-8-13 21 17 15-26-2-10 23-5-25-25-5Z"
+          fill="#f2cc46"
+          stroke="#111"
+          strokeWidth="4"
+        />
+      </svg>
+    </div>
+  );
+}
 
 function AllocateMoney({ data, onClose }) {
-  const sources = data.remittances.map((item) => ({ ...item, left: Number(item.totalAmount) - data.allocations.filter((allocation) => allocation.remittanceId === item.id).reduce((total, allocation) => total + Number(allocation.amount), 0) })).filter((item) => item.left > 0);
-  const [values, setValues] = useState({ remittanceId: sources[0]?.id || '', fundId: data.funds.find((fund) => !fund.archived)?.id || '', amount: '' }); const [busy, setBusy] = useState(false); const source = sources.find((item) => item.id === values.remittanceId); const valid = Number(values.amount) > 0 && Number(values.amount) <= Number(source?.left) && values.fundId;
-  return <Modal title="GIVE IT A JOB" onClose={onClose}><form onSubmit={async (event) => { event.preventDefault(); if (!valid || busy) return; setBusy(true); try { await data.allocate({ ...values, amount: Number(values.amount) }); onClose(); } catch { setBusy(false); } }}><ComicSelect label="FROM REMITTANCE" value={values.remittanceId} onChange={(remittanceId) => setValues({ ...values, remittanceId })} options={sources.map((item) => [item.id, `${item.sender} · ${money(item.left)} left`])}/><ComicSelect label="PURPOSE / FUND" value={values.fundId} onChange={(fundId) => setValues({ ...values, fundId })} options={data.funds.filter((fund) => !fund.archived).map((fund) => [fund.id, fund.name])}/><Field label="AMOUNT"><input data-autofocus className="amount-input" type="number" min="1" max={source?.left} value={values.amount} onChange={(event) => setValues({ ...values, amount: event.target.value })}/></Field><Button disabled={!valid || busy}>{busy ? 'STAMPING LOT…' : 'CREATE MONEY LOT'}</Button></form></Modal>;
+  const sources = data.remittances
+    .map((item) => ({
+      ...item,
+      left:
+        Number(item.totalAmount) -
+        data.allocations
+          .filter((allocation) => allocation.remittanceId === item.id)
+          .reduce((total, allocation) => total + Number(allocation.amount), 0),
+    }))
+    .filter((item) => item.left > 0);
+  const [values, setValues] = useState({
+    remittanceId: sources[0]?.id || '',
+    fundId: data.funds.find((fund) => !fund.archived)?.id || '',
+    amount: '',
+  });
+  const [busy, setBusy] = useState(false);
+  const source = sources.find((item) => item.id === values.remittanceId);
+  const valid =
+    Number(values.amount) > 0 && Number(values.amount) <= Number(source?.left) && values.fundId;
+  return (
+    <Modal title="GIVE IT A JOB" onClose={onClose}>
+      <form
+        onSubmit={async (event) => {
+          event.preventDefault();
+          if (!valid || busy) return;
+          setBusy(true);
+          try {
+            await data.allocate({ ...values, amount: Number(values.amount) });
+            onClose();
+          } catch {
+            setBusy(false);
+          }
+        }}
+      >
+        <ComicSelect
+          label="FROM REMITTANCE"
+          value={values.remittanceId}
+          onChange={(remittanceId) => setValues({ ...values, remittanceId })}
+          options={sources.map((item) => [item.id, `${item.sender} · ${money(item.left)} left`])}
+        />
+        <ComicSelect
+          label="PURPOSE / FUND"
+          value={values.fundId}
+          onChange={(fundId) => setValues({ ...values, fundId })}
+          options={data.funds.filter((fund) => !fund.archived).map((fund) => [fund.id, fund.name])}
+        />
+        <Field label="AMOUNT">
+          <input
+            data-autofocus
+            className="amount-input"
+            type="number"
+            min="1"
+            max={source?.left}
+            value={values.amount}
+            onChange={(event) => setValues({ ...values, amount: event.target.value })}
+          />
+        </Field>
+        <Button disabled={!valid || busy}>{busy ? 'STAMPING LOT…' : 'CREATE MONEY LOT'}</Button>
+      </form>
+    </Modal>
+  );
 }

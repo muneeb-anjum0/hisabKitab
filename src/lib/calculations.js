@@ -1,6 +1,5 @@
-export const sum = (items, select = (item) => item) => items.reduce(
-  (total, item) => total + (Number(select(item)) || 0), 0,
-);
+export const sum = (items, select = (item) => item) =>
+  items.reduce((total, item) => total + (Number(select(item)) || 0), 0);
 
 export const timestampMillis = (value) => {
   if (!value) return 0;
@@ -10,38 +9,66 @@ export const timestampMillis = (value) => {
 };
 
 export function fundTotals(fundId, allocations, transactions) {
-  const allocated = sum(allocations.filter((item) => item.fundId === fundId), (item) => item.amount);
-  let spent = 0; let adjustments = 0;
-  transactions.filter((item) => item.fundId === fundId).forEach((item) => {
-    if (item.type === 'expense') spent += Number(item.amount);
-    if (item.type === 'adjustment' || item.type === 'transfer') adjustments += Number(item.amount);
-  });
+  const allocated = sum(
+    allocations.filter((item) => item.fundId === fundId),
+    (item) => item.amount,
+  );
+  let spent = 0;
+  let adjustments = 0;
+  transactions
+    .filter((item) => item.fundId === fundId)
+    .forEach((item) => {
+      if (item.type === 'expense') spent += Number(item.amount);
+      if (item.type === 'adjustment' || item.type === 'transfer')
+        adjustments += Number(item.amount);
+    });
   return { allocated, spent, adjustments, remaining: allocated - spent + adjustments };
 }
 
 export function fundCardState({ allocated, remaining, adjustments = 0 }) {
-  if (remaining < 0) return { kind: 'overspent', label: 'OVERSPENT', overBy: Math.abs(remaining), percentage: null };
-  if (allocated <= 0 && adjustments <= 0) return { kind: 'empty', label: 'NO MONEY YET', percentage: null };
+  if (remaining < 0)
+    return { kind: 'overspent', label: 'OVERSPENT', overBy: Math.abs(remaining), percentage: null };
+  if (allocated <= 0 && adjustments <= 0)
+    return { kind: 'empty', label: 'NO MONEY YET', percentage: null };
   const denominator = allocated + Math.max(0, adjustments);
-  if (denominator <= 0 || remaining > denominator) return { kind: 'inflow', label: 'TRANSFERRED IN', percentage: null };
-  const percentage = Math.round(Math.min(100, Math.max(0, remaining / denominator * 100)));
+  if (denominator <= 0 || remaining > denominator)
+    return { kind: 'inflow', label: 'TRANSFERRED IN', percentage: null };
+  const percentage = Math.round(Math.min(100, Math.max(0, (remaining / denominator) * 100)));
   return { kind: 'normal', label: `${percentage}% LEFT`, percentage };
 }
 
 export function fundDeletionAssessment(fundId, data) {
   const allocations = data.allocations.filter((item) => item.fundId === fundId);
-  const transactions = data.transactions.filter((item) => item.fundId === fundId || item.counterpartyFundId === fundId);
+  const transactions = data.transactions.filter(
+    (item) => item.fundId === fundId || item.counterpartyFundId === fundId,
+  );
   const memberships = data.memberships.filter((item) => item.fundId === fundId);
   const totals = fundTotals(fundId, data.allocations, data.transactions);
   const transferCount = transactions.filter((item) => item.type === 'transfer').length;
   const sharedMembers = memberships.filter((item) => item.role !== 'owner').length;
-  const moneyLots = allocations.length + transactions.filter((item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0).length;
-  const empty = allocations.length === 0 && transactions.length === 0 && sharedMembers === 0 && Math.abs(totals.remaining) < 0.005;
-  return { empty, totals, allocationCount: allocations.length, transactionCount: transactions.length, transferCount, sharedMembers, moneyLots };
+  const moneyLots =
+    allocations.length +
+    transactions.filter(
+      (item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0,
+    ).length;
+  const empty =
+    allocations.length === 0 &&
+    transactions.length === 0 &&
+    sharedMembers === 0 &&
+    Math.abs(totals.remaining) < 0.005;
+  return {
+    empty,
+    totals,
+    allocationCount: allocations.length,
+    transactionCount: transactions.length,
+    transferCount,
+    sharedMembers,
+    moneyLots,
+  };
 }
 
 export function patchFund(funds, id, values) {
-  return funds.map((fund) => fund.id === id ? { ...fund, ...values } : fund);
+  return funds.map((fund) => (fund.id === id ? { ...fund, ...values } : fund));
 }
 
 export function canDeleteRemittance(remittanceId, allocations) {
@@ -50,7 +77,9 @@ export function canDeleteRemittance(remittanceId, allocations) {
 
 export function sortFunds(funds) {
   return [...funds].sort((a, b) => {
-    const order = (Number.isFinite(a.sortOrder) ? a.sortOrder : Number.MAX_SAFE_INTEGER) - (Number.isFinite(b.sortOrder) ? b.sortOrder : Number.MAX_SAFE_INTEGER);
+    const order =
+      (Number.isFinite(a.sortOrder) ? a.sortOrder : Number.MAX_SAFE_INTEGER) -
+      (Number.isFinite(b.sortOrder) ? b.sortOrder : Number.MAX_SAFE_INTEGER);
     if (order) return order;
     const created = String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
     return created || String(a.id).localeCompare(String(b.id));
@@ -58,9 +87,12 @@ export function sortFunds(funds) {
 }
 
 export function moveFund(ids, id, direction) {
-  const from = ids.indexOf(id); const to = from + direction;
+  const from = ids.indexOf(id);
+  const to = from + direction;
   if (from < 0 || to < 0 || to >= ids.length) return ids;
-  const next = [...ids]; [next[from], next[to]] = [next[to], next[from]]; return next;
+  const next = [...ids];
+  [next[from], next[to]] = [next[to], next[from]];
+  return next;
 }
 
 export function placeFund(ids, draggedId, targetId) {
@@ -76,9 +108,12 @@ export function unallocatedTotal(remittances, allocations) {
 }
 
 export function portfolioTotals(funds, allocations, transactions, remittances = []) {
-  const rows = funds.filter((fund) => !fund.archived).map((fund) => ({
-    ...fund, ...fundTotals(fund.id, allocations, transactions),
-  }));
+  const rows = funds
+    .filter((fund) => !fund.archived)
+    .map((fund) => ({
+      ...fund,
+      ...fundTotals(fund.id, allocations, transactions),
+    }));
   return {
     funds: rows,
     allocated: sum(rows, (row) => row.allocated),
@@ -90,7 +125,9 @@ export function portfolioTotals(funds, allocations, transactions, remittances = 
 }
 
 export function monthlyTotals(month, transactions, remittances) {
-  const expenses = transactions.filter((item) => item.type === 'expense' && String(item.date).startsWith(month));
+  const expenses = transactions.filter(
+    (item) => item.type === 'expense' && String(item.date).startsWith(month),
+  );
   const income = remittances.filter((item) => String(item.receivedAt).startsWith(month));
   const received = sum(income, (item) => item.totalAmount);
   const spent = sum(expenses, (item) => item.amount);
@@ -98,25 +135,45 @@ export function monthlyTotals(month, transactions, remittances) {
 }
 
 export function ledgerMonths(transactions, remittances, fallback = '') {
-  const months = new Set([
-    ...transactions.map((item) => item.date),
-    ...remittances.map((item) => item.receivedAt),
-    fallback,
-  ].filter(Boolean).map((value) => String(value).slice(0, 7)).filter((value) => /^\d{4}-\d{2}$/.test(value)));
+  const months = new Set(
+    [
+      ...transactions.map((item) => item.date),
+      ...remittances.map((item) => item.receivedAt),
+      fallback,
+    ]
+      .filter(Boolean)
+      .map((value) => String(value).slice(0, 7))
+      .filter((value) => /^\d{4}-\d{2}$/.test(value)),
+  );
   return [...months].sort().reverse();
 }
 
 export function monthlyBreakdown(month, transactions, remittances, funds = [], categories = []) {
-  const expenses = transactions.filter((item) => item.type === 'expense' && String(item.date).startsWith(month));
+  const expenses = transactions.filter(
+    (item) => item.type === 'expense' && String(item.date).startsWith(month),
+  );
   const income = remittances.filter((item) => String(item.receivedAt).startsWith(month));
   const totals = monthlyTotals(month, transactions, remittances);
-  const group = (items, key, labels) => [...items.reduce((map, item) => {
-    const id = item[key] || 'other'; map.set(id, (map.get(id) || 0) + Number(item.amount || 0)); return map;
-  }, new Map())].map(([id, value]) => ({ id, name: labels.get(id) || 'Other', value })).sort((a, b) => b.value - a.value);
+  const group = (items, key, labels) =>
+    [
+      ...items.reduce((map, item) => {
+        const id = item[key] || 'other';
+        map.set(id, (map.get(id) || 0) + Number(item.amount || 0));
+        return map;
+      }, new Map()),
+    ]
+      .map(([id, value]) => ({ id, name: labels.get(id) || 'Other', value }))
+      .sort((a, b) => b.value - a.value);
   return {
-    ...totals, expenses, income,
+    ...totals,
+    expenses,
+    income,
     byFund: group(expenses, 'fundId', new Map(funds.map((item) => [item.id, item.name]))),
-    byCategory: group(expenses, 'categoryId', new Map(categories.map((item) => [item.id, item.name]))),
+    byCategory: group(
+      expenses,
+      'categoryId',
+      new Map(categories.map((item) => [item.id, item.name])),
+    ),
   };
 }
 
@@ -125,57 +182,110 @@ export function monthlyCsv(month, breakdown, funds = [], categories = []) {
   const fundNames = new Map(funds.map((item) => [item.id, item.name]));
   const categoryNames = new Map(categories.map((item) => [item.id, item.name]));
   const rows = [['Date', 'Type', 'Description', 'Fund', 'Category', 'Amount', 'Note']];
-  breakdown.income.forEach((item) => rows.push([item.receivedAt, 'Money received', item.sender || 'Money received', '', '', item.totalAmount, item.note || '']));
-  breakdown.expenses.forEach((item) => rows.push([item.date, 'Expense', item.description, fundNames.get(item.fundId) || '', categoryNames.get(item.categoryId) || 'Other', item.amount, item.note || '']));
-  rows.push([], ['Month', month], ['Total received', breakdown.received], ['Total spent', breakdown.spent], ['Net', breakdown.remaining]);
+  breakdown.income.forEach((item) =>
+    rows.push([
+      item.receivedAt,
+      'Money received',
+      item.sender || 'Money received',
+      '',
+      '',
+      item.totalAmount,
+      item.note || '',
+    ]),
+  );
+  breakdown.expenses.forEach((item) =>
+    rows.push([
+      item.date,
+      'Expense',
+      item.description,
+      fundNames.get(item.fundId) || '',
+      categoryNames.get(item.categoryId) || 'Other',
+      item.amount,
+      item.note || '',
+    ]),
+  );
+  rows.push(
+    [],
+    ['Month', month],
+    ['Total received', breakdown.received],
+    ['Total spent', breakdown.spent],
+    ['Net', breakdown.remaining],
+  );
   return rows.map((row) => row.map(csvCell).join(',')).join('\n');
 }
 
 /** Existing allocations are canonical Money Lots. Positive transfers are derived transfer lots. */
 export function buildMoneyLots(fundId, allocations, remittances, transactions) {
   const remittanceMap = new Map(remittances.map((item) => [item.id, item]));
-  const allocationLots = allocations.filter((item) => item.fundId === fundId).map((allocation) => {
-    const remittance = remittanceMap.get(allocation.remittanceId) || {};
-    return {
-      id: allocation.id,
-      allocationId: allocation.id,
+  const allocationLots = allocations
+    .filter((item) => item.fundId === fundId)
+    .map((allocation) => {
+      const remittance = remittanceMap.get(allocation.remittanceId) || {};
+      return {
+        id: allocation.id,
+        allocationId: allocation.id,
+        fundId,
+        remittanceId: allocation.remittanceId,
+        source: remittance.sender || allocation.source || 'Money received',
+        receivedAt: remittance.receivedAt || allocation.receivedAt || '',
+        createdAt: allocation.createdAt,
+        originalAmount: Number(allocation.amount) || 0,
+        kind: 'allocation',
+      };
+    });
+  const transferLots = transactions
+    .filter((item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0)
+    .map((item) => ({
+      id: `transfer:${item.id}`,
       fundId,
-      remittanceId: allocation.remittanceId,
-      source: remittance.sender || allocation.source || 'Money received',
-      receivedAt: remittance.receivedAt || allocation.receivedAt || '',
-      createdAt: allocation.createdAt,
-      originalAmount: Number(allocation.amount) || 0,
-      kind: 'allocation',
-    };
-  });
-  const transferLots = transactions.filter((item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0).map((item) => ({
-    id: `transfer:${item.id}`,
-    fundId,
-    transferId: item.linkId,
-    source: item.sourceFundName ? `Transfer from ${item.sourceFundName}` : 'Fund transfer',
-    receivedAt: item.date,
-    createdAt: item.createdAt,
-    originalAmount: Number(item.amount) || 0,
-    kind: 'transfer',
-  }));
-  const lots = [...allocationLots, ...transferLots].sort((a, b) => {
-    const dateDifference = String(a.receivedAt).localeCompare(String(b.receivedAt));
-    return dateDifference || timestampMillis(a.createdAt) - timestampMillis(b.createdAt) || a.id.localeCompare(b.id);
-  }).map((lot, index) => ({ ...lot, number: index + 1, spent: 0, remaining: lot.originalAmount }));
+      transferId: item.linkId,
+      source: item.sourceFundName ? `Transfer from ${item.sourceFundName}` : 'Fund transfer',
+      receivedAt: item.date,
+      createdAt: item.createdAt,
+      originalAmount: Number(item.amount) || 0,
+      kind: 'transfer',
+    }));
+  const lots = [...allocationLots, ...transferLots]
+    .sort((a, b) => {
+      const dateDifference = String(a.receivedAt).localeCompare(String(b.receivedAt));
+      return (
+        dateDifference ||
+        timestampMillis(a.createdAt) - timestampMillis(b.createdAt) ||
+        a.id.localeCompare(b.id)
+      );
+    })
+    .map((lot, index) => ({ ...lot, number: index + 1, spent: 0, remaining: lot.originalAmount }));
 
   const lotMap = new Map(lots.map((lot) => [lot.id, lot]));
-  const outgoing = transactions.filter((item) => item.fundId === fundId && (item.type === 'expense' || (item.type === 'transfer' && Number(item.amount) < 0))).sort((a, b) => String(a.date).localeCompare(String(b.date)) || timestampMillis(a.createdAt) - timestampMillis(b.createdAt));
+  const outgoing = transactions
+    .filter(
+      (item) =>
+        item.fundId === fundId &&
+        (item.type === 'expense' || (item.type === 'transfer' && Number(item.amount) < 0)),
+    )
+    .sort(
+      (a, b) =>
+        String(a.date).localeCompare(String(b.date)) ||
+        timestampMillis(a.createdAt) - timestampMillis(b.createdAt),
+    );
   outgoing.forEach((transaction) => {
-    const amount = transaction.type === 'transfer' ? Math.abs(Number(transaction.amount)) : Number(transaction.amount);
+    const amount =
+      transaction.type === 'transfer'
+        ? Math.abs(Number(transaction.amount))
+        : Number(transaction.amount);
     let outstanding = amount;
-    const applyUsages = (usages) => usages.forEach((usage) => {
-      const lot = lotMap.get(usage.lotId);
-      if (!lot) return;
-      const used = Math.min(outstanding, lot.remaining, Number(usage.amount) || 0);
-      lot.spent += used; lot.remaining -= used; outstanding -= used;
-    });
+    const applyUsages = (usages) =>
+      usages.forEach((usage) => {
+        const lot = lotMap.get(usage.lotId);
+        if (!lot) return;
+        const used = Math.min(outstanding, lot.remaining, Number(usage.amount) || 0);
+        lot.spent += used;
+        lot.remaining -= used;
+        outstanding -= used;
+      });
     if (transaction.lotUsages?.length) applyUsages(transaction.lotUsages);
-    if (outstanding > 0) applyUsages(consumeMoneyLots(lots, outstanding, transaction.preferredLotId).usages);
+    if (outstanding > 0)
+      applyUsages(consumeMoneyLots(lots, outstanding, transaction.preferredLotId).usages);
   });
   return lots;
 }
@@ -184,18 +294,27 @@ export function buildMoneyLots(fundId, allocations, remittances, transactions) {
 export function consumeMoneyLots(lots, requestedAmount, preferredLotId = null) {
   let outstanding = Math.max(0, Number(requestedAmount) || 0);
   const ordered = preferredLotId
-    ? [...lots.filter((lot) => lot.id === preferredLotId), ...lots.filter((lot) => lot.id !== preferredLotId)]
+    ? [
+        ...lots.filter((lot) => lot.id === preferredLotId),
+        ...lots.filter((lot) => lot.id !== preferredLotId),
+      ]
     : lots;
   const usages = [];
   ordered.forEach((lot) => {
     if (!outstanding || lot.remaining <= 0) return;
     const amount = Math.min(outstanding, lot.remaining);
-    usages.push({ lotId: lot.id, amount }); outstanding -= amount;
+    usages.push({ lotId: lot.id, amount });
+    outstanding -= amount;
   });
   return { usages, uncovered: outstanding };
 }
 
 export function moneyLotSummary(fundId, allocations, remittances, transactions) {
   const lots = buildMoneyLots(fundId, allocations, remittances, transactions);
-  return { lots, original: sum(lots, (lot) => lot.originalAmount), spent: sum(lots, (lot) => lot.spent), remaining: sum(lots, (lot) => lot.remaining) };
+  return {
+    lots,
+    original: sum(lots, (lot) => lot.originalAmount),
+    spent: sum(lots, (lot) => lot.spent),
+    remaining: sum(lots, (lot) => lot.remaining),
+  };
 }
