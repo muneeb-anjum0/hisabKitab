@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 export function Panel({ children, className = '', as: Tag = 'section', ...props }) {
@@ -105,6 +105,20 @@ export function ComicDatePicker({ label, value, onChange, mode = 'date', allowCl
 export function Modal({ title, onClose, children, wide = false }) {
   const dialogRef = useRef(null);
   const backdropRef = useRef(null);
+  const closeTimerRef = useRef(null);
+  const closingRef = useRef(false);
+  const onCloseRef = useRef(onClose);
+  const [closing, setClosing] = useState(false);
+
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
+  const requestClose = useCallback(() => {
+    if (closingRef.current) return;
+    closingRef.current = true;
+    if (document.activeElement?.matches?.('input, textarea, select')) document.activeElement.blur();
+    setClosing(true);
+    closeTimerRef.current = window.setTimeout(() => onCloseRef.current(), 220);
+  }, []);
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
@@ -127,12 +141,24 @@ export function Modal({ title, onClose, children, wide = false }) {
 
   useEffect(() => {
     const dialog = dialogRef.current;
+    const focusTimer = window.setTimeout(() => {
+      const target = dialog?.querySelector('[data-autofocus]');
+      if (!target || closingRef.current) return;
+      target.focus({ preventScroll: true });
+      window.requestAnimationFrame(() => target.scrollIntoView?.({ block: 'nearest' }));
+    }, 320);
+    return () => window.clearTimeout(focusTimer);
+  }, [title]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
     const previousFocus = document.activeElement;
     const focusable = () => [...dialog.querySelectorAll('button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]')];
-    const first = focusable()[0];
-    window.setTimeout(() => first?.focus(), 20);
+    const focusTimer = window.setTimeout(() => {
+      if (!dialog.querySelector('[data-autofocus]')) focusable()[0]?.focus?.({ preventScroll: true });
+    }, 320);
     const onKeyDown = (event) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') requestClose();
       if (event.key !== 'Tab') return;
       const items = focusable();
       if (!items.length) return;
@@ -142,6 +168,7 @@ export function Modal({ title, onClose, children, wide = false }) {
     };
     document.body.classList.add('modal-open');
     const fitViewport = () => {
+      if (closingRef.current) return;
       const viewport = window.visualViewport;
       if (!viewport) return;
       backdropRef.current?.style.setProperty('--modal-viewport-height', `${viewport.height}px`);
@@ -155,17 +182,19 @@ export function Modal({ title, onClose, children, wide = false }) {
     window.visualViewport?.addEventListener('scroll', fitViewport);
     document.addEventListener('keydown', onKeyDown);
     return () => {
+      window.clearTimeout(focusTimer);
+      window.clearTimeout(closeTimerRef.current);
       document.body.classList.remove('modal-open');
       window.visualViewport?.removeEventListener('resize', fitViewport);
       window.visualViewport?.removeEventListener('scroll', fitViewport);
       document.removeEventListener('keydown', onKeyDown);
       previousFocus?.focus?.();
     };
-  }, [onClose]);
+  }, [requestClose]);
 
-  return createPortal(<div ref={backdropRef} className="modal-backdrop" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+  return createPortal(<div ref={backdropRef} className={`modal-backdrop ${closing ? 'is-closing' : ''}`} onMouseDown={(event) => event.target === event.currentTarget && requestClose()}>
     <section ref={dialogRef} className={`modal panel ${wide ? 'wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
-      <header className="modal-heading"><div><div className="torn-label">DO THE MATH</div><h2 id="modal-title">{title}</h2></div><button className="modal-close" onClick={onClose} aria-label="Close">×</button></header>
+      <header className="modal-heading"><div><div className="torn-label">DO THE MATH</div><h2 id="modal-title">{title}</h2></div><button className="modal-close" onClick={requestClose} aria-label="Close">×</button></header>
       {children}
     </section>
   </div>, document.body);

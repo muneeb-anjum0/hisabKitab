@@ -281,3 +281,13 @@ html.capacitor-native:before{content:'';position:fixed;z-index:5000;top:0;left:0
 
 /* Popup close control owns a real heading cell instead of floating over content. */
 .modal-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:12px}.modal-heading>div{min-width:0}.modal-heading .modal-close{position:relative;float:none;inset:auto;top:auto;right:auto;margin:0;width:42px;height:42px;display:grid;place-items:center;border:3px solid var(--ink);background:var(--white);font:900 30px/1 var(--display);z-index:1}.modal-heading .modal-close:active{background:var(--red);color:#fff;transform:translate(2px,2px)}.modal-heading h2{margin-right:0}@media(max-width:800px){.modal-heading{gap:8px}.modal-heading .modal-close{width:34px;height:34px;font-size:25px}.modal-heading h2{margin-right:0}}
+
+/* Let sheets finish moving before focus summons the keyboard, and before dismissal unmounts them. */
+.modal-backdrop.is-closing{pointer-events:none;animation:modal-backdrop-out 220ms ease-in both}
+.modal-backdrop.is-closing .modal{animation:modal-card-out 220ms cubic-bezier(.55,0,1,.45) both!important}
+@keyframes modal-backdrop-out{to{background-color:transparent;opacity:0}}
+@keyframes modal-card-out{to{opacity:0;transform:translateY(24px) scale(.985)}}
+@media(max-width:800px){
+  .modal-backdrop.is-closing .modal{animation:modal-sheet-out 220ms cubic-bezier(.55,0,1,.45) both!important}
+  @keyframes modal-sheet-out{to{opacity:.7;transform:translateY(100%)}}
+}

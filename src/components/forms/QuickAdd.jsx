@@ -18,7 +18,9 @@ export default function QuickAdd({ onClose, initial = 'menu', edit = null, editI
   ));
 
   useEffect(() => {
-    if (mode !== 'menu') window.setTimeout(() => amountRef.current?.focus(), 80);
+    if (mode === 'menu') return undefined;
+    const timer = window.setTimeout(() => amountRef.current?.focus({ preventScroll: true }), 320);
+    return () => window.clearTimeout(timer);
   }, [mode]);
 
   const submit = async (operation) => {
@@ -130,7 +132,7 @@ function FundForm({ busy, error, onBack, onSubmit }) {
   const [values, setValues] = useState({ name: '', type: 'personal', accent: 'blue' });
   const valid = values.name.trim().length > 0;
   return <Modal title="CREATE FUND" onClose={onBack}><form onSubmit={(event) => { event.preventDefault(); if (valid && !busy) onSubmit({ ...values, name: values.name.trim() }); }}>
-    <Field label="NAME"><input autoFocus required maxLength="35" value={values.name} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Personal, House…"/></Field>
+    <Field label="NAME"><input data-autofocus required maxLength="35" value={values.name} onChange={(e) => setValues({ ...values, name: e.target.value })} placeholder="Personal, House…"/></Field>
     <ComicSelect label="TYPE" value={values.type} onChange={(type) => setValues({ ...values, type })} options={[["personal", "Personal"], ["shared", "Shared"]]}/>
     <fieldset className="swatches"><legend>ACCENT</legend>{['blue', 'red', 'green', 'purple', 'yellow'].map((accent) => <button type="button" aria-label={accent} className={`${accent} ${values.accent === accent ? 'active' : ''}`} onClick={() => setValues({ ...values, accent })} key={accent}/>)}</fieldset>
     {error && <p className="form-error" role="alert">{error}</p>}
