@@ -1,11 +1,12 @@
 {
   "name": "hisab-kitab",
   "private": true,
-  "version": "1.2.2",
+  "version": "1.2.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:android": "vite build --mode android",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

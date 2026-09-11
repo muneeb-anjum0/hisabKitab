@@ -1,8 +1,30 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { rmSync } from 'node:fs';
+import { resolve } from 'node:path';
 
-export default defineConfig({
-  plugins: [react()],
+const nativeOnlyAssets = [
+  'apple-touch-icon.png',
+  'icon-192.png',
+  'icon-512.png',
+  'icon-maskable-512.png',
+  'manifest.webmanifest',
+  'sw.js',
+];
+
+const trimNativeBundle = () => ({
+  name: 'trim-native-bundle',
+  transformIndexHtml: (html) =>
+    html
+      .replace(/\s*<link rel="apple-touch-icon"[^>]*>/, '')
+      .replace(/\s*<link rel="manifest"[^>]*>/, ''),
+  closeBundle() {
+    nativeOnlyAssets.forEach((asset) => rmSync(resolve('dist', asset), { force: true }));
+  },
+});
+
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), mode === 'android' && trimNativeBundle()].filter(Boolean),
   build: {
     target: 'es2020',
     sourcemap: false,
@@ -19,4 +41,4 @@ export default defineConfig({
       },
     },
   },
-});
+}));

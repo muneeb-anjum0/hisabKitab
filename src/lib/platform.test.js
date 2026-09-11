@@ -78,6 +78,22 @@ describe('application contracts', () => {
     expect(exporter).toContain('files: [saved.uri]');
   });
 
+  it('hardens release signing, WebView storage, transport, and shared files', () => {
+    const gradle = read('android/app/build.gradle');
+    const androidManifest = read('android/app/src/main/AndroidManifest.xml');
+    const activity = read('android/app/src/main/java/com/muneebanjum/hisabkitab/MainActivity.java');
+    const filePaths = read('android/app/src/main/res/xml/file_paths.xml');
+    expect(gradle).toContain('signingConfig signingConfigs.release');
+    expect(gradle).not.toContain('signingConfig signingConfigs.debug');
+    expect(androidManifest).toContain('android:allowBackup="false"');
+    expect(androidManifest).toContain('android:usesCleartextTraffic="false"');
+    expect(activity).toContain('ApplicationInfo.FLAG_DEBUGGABLE');
+    expect(activity).toContain('WebView.setWebContentsDebuggingEnabled(debuggable)');
+    expect(activity).toContain('WebSettings.MIXED_CONTENT_NEVER_ALLOW');
+    expect(filePaths).toContain('<cache-path');
+    expect(filePaths).not.toContain('<external-path');
+  });
+
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
     const worker = read('public/sw.js');
     const service = read('src/services/dataService.js');
