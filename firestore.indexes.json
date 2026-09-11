@@ -7,15 +7,49 @@
         { "fieldPath": "fundId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
-    },
-    {
-      "collectionGroup": "fundMembers",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "userId", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
     }
   ],
-  "fieldOverrides": []
+  "fieldOverrides": [
+    { "collectionGroup": "funds", "fieldPath": "name", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "type", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "accent", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "archived", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "sortOrder", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "funds", "fieldPath": "updatedAt", "indexes": [] },
+    { "collectionGroup": "fundMembers", "fieldPath": "role", "indexes": [] },
+    { "collectionGroup": "fundMembers", "fieldPath": "displayName", "indexes": [] },
+    { "collectionGroup": "fundMembers", "fieldPath": "email", "indexes": [] },
+    { "collectionGroup": "fundMembers", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "amount", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "description", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "note", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "categoryId", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "preferredLotId", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "lotUsages", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "sourceFundName", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "linkId", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "counterpartyId", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "counterpartyFundId", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "transactions", "fieldPath": "updatedAt", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "sender", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "totalAmount", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "receivedAt", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "note", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "currency", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "remittances", "fieldPath": "updatedAt", "indexes": [] },
+    { "collectionGroup": "allocations", "fieldPath": "amount", "indexes": [] },
+    { "collectionGroup": "allocations", "fieldPath": "source", "indexes": [] },
+    { "collectionGroup": "allocations", "fieldPath": "receivedAt", "indexes": [] },
+    { "collectionGroup": "allocations", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "allocations", "fieldPath": "updatedAt", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "name", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "symbol", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "hidden", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "systemId", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "createdAt", "indexes": [] },
+    { "collectionGroup": "categories", "fieldPath": "updatedAt", "indexes": [] }
+  ]
 }

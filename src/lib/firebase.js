@@ -5,6 +5,7 @@ import {
   initializeFirestore,
   persistentLocalCache,
   persistentMultipleTabManager,
+  persistentSingleTabManager,
 } from 'firebase/firestore';
 const config = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -25,8 +26,12 @@ if (firebaseConfigured) {
   auth = getAuth(app);
   setPersistence(auth, browserLocalPersistence).catch(console.warn);
   try {
+    const native = window.Capacitor?.isNativePlatform?.() === true;
     db = initializeFirestore(app, {
-      localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+      localCache: persistentLocalCache({
+        tabManager: native ? persistentSingleTabManager() : persistentMultipleTabManager(),
+      }),
+      experimentalAutoDetectLongPolling: native,
     });
   } catch {
     db = getFirestore(app);

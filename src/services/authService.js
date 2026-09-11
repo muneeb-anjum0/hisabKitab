@@ -13,6 +13,9 @@ import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
+const PROFILE_SYNC_TTL = 24 * 60 * 60 * 1000;
+const profileSyncKey = (uid) => `hk-profile-synced:${uid}`;
+
 function friendlyError(error) {
   const code = error?.code || '';
   if (code.includes('email-already')) return 'That email already has an account.';
@@ -23,7 +26,10 @@ function friendlyError(error) {
   return 'Could not complete authentication. Check your connection and try again.';
 }
 
-async function syncUser(user) {
+async function syncUser(user, force = false) {
+  const native = Capacitor.isNativePlatform();
+  const lastSync = native ? Number(localStorage.getItem(profileSyncKey(user.uid))) || 0 : 0;
+  if (!force && native && Date.now() - lastSync < PROFILE_SYNC_TTL) return user;
   const profileRef = doc(db, 'users', user.uid);
   const existing = await getDoc(profileRef);
   const profile = {
@@ -45,6 +51,7 @@ async function syncUser(user) {
     { merge: true },
   );
   await batch.commit();
+  if (native) localStorage.setItem(profileSyncKey(user.uid), String(Date.now()));
   return user;
 }
 
@@ -92,7 +99,7 @@ export async function resetPassword(email) {
 export async function changeDisplayName(user, displayName) {
   await updateProfile(user, { displayName });
   await user.reload();
-  await syncUser(user);
+  await syncUser(user, true);
 }
 
 export const logout = () => signOut(auth);

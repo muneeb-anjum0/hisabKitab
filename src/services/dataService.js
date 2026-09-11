@@ -23,6 +23,29 @@ const withTimestamps = (values) => ({
 });
 const documents = (snapshot) => snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
 const localNow = () => new Date().toISOString();
+const DEDUPE_WINDOW_MS = 2500;
+const recentMutations = new Map();
+const fingerprint = (kind, input) => {
+  const serialized = `${kind}:${JSON.stringify(input)}`;
+  let hash = 2166136261;
+  for (let index = 0; index < serialized.length; index += 1) {
+    hash ^= serialized.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `${kind}:${hash >>> 0}`;
+};
+const dedupeMutation = (kind, input, operation) => {
+  const key = fingerprint(kind, input);
+  const now = Date.now();
+  const previous = recentMutations.get(key);
+  if (previous && now - previous.createdAt < DEDUPE_WINDOW_MS) return previous.promise;
+  const promise = Promise.resolve().then(operation);
+  recentMutations.set(key, { createdAt: now, promise });
+  for (const [candidate, entry] of recentMutations) {
+    if (now - entry.createdAt >= DEDUPE_WINDOW_MS) recentMutations.delete(candidate);
+  }
+  return promise;
+};
 const queueWrite = (promise) => {
   promise.catch((error) =>
     window.dispatchEvent(new CustomEvent('hk-sync-error', { detail: error })),
@@ -91,32 +114,34 @@ export async function loadUserData(uid) {
 }
 
 export function createFund(uid, values) {
-  const fundRef = doc(collection(db, 'funds'));
-  const batch = writeBatch(db);
-  batch.set(fundRef, withTimestamps({ ...values, ownerId: uid, archived: false }));
-  batch.set(doc(db, 'fundMembers', `${fundRef.id}_${uid}`), {
-    fundId: fundRef.id,
-    userId: uid,
-    role: 'owner',
-    createdAt: serverTimestamp(),
-  });
-  queueWrite(batch.commit());
-  return Promise.resolve({
-    fund: {
-      id: fundRef.id,
-      ...values,
-      ownerId: uid,
-      archived: false,
-      createdAt: localNow(),
-      updatedAt: localNow(),
-    },
-    membership: {
-      id: `${fundRef.id}_${uid}`,
+  return dedupeMutation('create-fund', { uid, values }, () => {
+    const fundRef = doc(collection(db, 'funds'));
+    const batch = writeBatch(db);
+    batch.set(fundRef, withTimestamps({ ...values, ownerId: uid, archived: false }));
+    batch.set(doc(db, 'fundMembers', `${fundRef.id}_${uid}`), {
       fundId: fundRef.id,
       userId: uid,
       role: 'owner',
-      createdAt: localNow(),
-    },
+      createdAt: serverTimestamp(),
+    });
+    queueWrite(batch.commit());
+    return {
+      fund: {
+        id: fundRef.id,
+        ...values,
+        ownerId: uid,
+        archived: false,
+        createdAt: localNow(),
+        updatedAt: localNow(),
+      },
+      membership: {
+        id: `${fundRef.id}_${uid}`,
+        fundId: fundRef.id,
+        userId: uid,
+        role: 'owner',
+        createdAt: localNow(),
+      },
+    };
   });
 }
 
@@ -141,16 +166,18 @@ export function removeEmptyFund(id, uid) {
   return Promise.resolve(id);
 }
 export function addTransaction(uid, values) {
-  const ref = doc(collection(db, 'transactions'));
-  const createdAt = localNow();
-  queueWrite(setDoc(ref, withTimestamps({ ...values, userId: uid })));
-  return Promise.resolve({
-    id: ref.id,
-    ...values,
-    userId: uid,
-    createdAt,
-    updatedAt: createdAt,
-    pendingSync: true,
+  return dedupeMutation('add-transaction', { uid, values }, () => {
+    const ref = doc(collection(db, 'transactions'));
+    const createdAt = localNow();
+    queueWrite(setDoc(ref, withTimestamps({ ...values, userId: uid })));
+    return {
+      id: ref.id,
+      ...values,
+      userId: uid,
+      createdAt,
+      updatedAt: createdAt,
+      pendingSync: true,
+    };
   });
 }
 export function updateTransaction(id, values) {
@@ -172,108 +199,113 @@ export function createTransfer(
   lotUsages = [],
   sourceFundName = '',
 ) {
-  const batch = writeBatch(db);
-  const linkId = doc(collection(db, 'transactions')).id;
-  const outRef = doc(db, 'transactions', `${linkId}_out`);
-  const inRef = doc(db, 'transactions', `${linkId}_in`);
-  batch.set(
-    outRef,
-    withTimestamps({
-      fundId: fromId,
-      counterpartyFundId: toId,
-      counterpartyId: inRef.id,
-      userId: uid,
-      type: 'transfer',
-      amount: -amount,
-      description: 'Transfer out',
-      date,
-      note,
-      linkId,
-      lotUsages,
-    }),
-  );
-  batch.set(
-    inRef,
-    withTimestamps({
-      fundId: toId,
-      counterpartyFundId: fromId,
-      counterpartyId: outRef.id,
-      userId: uid,
-      type: 'transfer',
-      amount,
-      description: 'Transfer in',
-      date,
-      note,
-      linkId,
-      sourceFundName,
-    }),
-  );
-  queueWrite(batch.commit());
-  const createdAt = localNow();
-  return Promise.resolve([
-    {
-      id: outRef.id,
-      fundId: fromId,
-      counterpartyFundId: toId,
-      counterpartyId: inRef.id,
-      userId: uid,
-      type: 'transfer',
-      amount: -amount,
-      description: 'Transfer out',
-      date,
-      note,
-      linkId,
-      lotUsages,
-      createdAt,
-    },
-    {
-      id: inRef.id,
-      fundId: toId,
-      counterpartyFundId: fromId,
-      counterpartyId: outRef.id,
-      userId: uid,
-      type: 'transfer',
-      amount,
-      description: 'Transfer in',
-      date,
-      note,
-      linkId,
-      sourceFundName,
-      createdAt,
-    },
-  ]);
+  const input = { uid, fromId, toId, amount, date, note, lotUsages, sourceFundName };
+  return dedupeMutation('create-transfer', input, () => {
+    const batch = writeBatch(db);
+    const linkId = doc(collection(db, 'transactions')).id;
+    const outRef = doc(db, 'transactions', `${linkId}_out`);
+    const inRef = doc(db, 'transactions', `${linkId}_in`);
+    batch.set(
+      outRef,
+      withTimestamps({
+        fundId: fromId,
+        counterpartyFundId: toId,
+        counterpartyId: inRef.id,
+        userId: uid,
+        type: 'transfer',
+        amount: -amount,
+        description: 'Transfer out',
+        date,
+        note,
+        linkId,
+        lotUsages,
+      }),
+    );
+    batch.set(
+      inRef,
+      withTimestamps({
+        fundId: toId,
+        counterpartyFundId: fromId,
+        counterpartyId: outRef.id,
+        userId: uid,
+        type: 'transfer',
+        amount,
+        description: 'Transfer in',
+        date,
+        note,
+        linkId,
+        sourceFundName,
+      }),
+    );
+    queueWrite(batch.commit());
+    const createdAt = localNow();
+    return [
+      {
+        id: outRef.id,
+        fundId: fromId,
+        counterpartyFundId: toId,
+        counterpartyId: inRef.id,
+        userId: uid,
+        type: 'transfer',
+        amount: -amount,
+        description: 'Transfer out',
+        date,
+        note,
+        linkId,
+        lotUsages,
+        createdAt,
+      },
+      {
+        id: inRef.id,
+        fundId: toId,
+        counterpartyFundId: fromId,
+        counterpartyId: outRef.id,
+        userId: uid,
+        type: 'transfer',
+        amount,
+        description: 'Transfer in',
+        date,
+        note,
+        linkId,
+        sourceFundName,
+        createdAt,
+      },
+    ];
+  });
 }
 
 export function createRemittance(uid, values, allocations) {
-  const remittanceRef = doc(collection(db, 'remittances'));
-  const batch = writeBatch(db);
-  batch.set(remittanceRef, withTimestamps({ ...values, ownerId: uid, currency: 'PKR' }));
-  const allocationRows = allocations
-    .filter((item) => item.amount > 0)
-    .map((item) => ({ ref: doc(collection(db, 'allocations')), item }));
-  allocationRows.forEach(({ ref, item }) =>
-    batch.set(ref, {
-      remittanceId: remittanceRef.id,
-      fundId: item.fundId,
-      amount: Number(item.amount),
-      source: values.sender,
-      receivedAt: values.receivedAt,
-      createdAt: serverTimestamp(),
-    }),
-  );
-  queueWrite(batch.commit());
-  const createdAt = localNow();
-  return Promise.resolve({
-    remittance: { id: remittanceRef.id, ...values, ownerId: uid, currency: 'PKR', createdAt },
-    allocations: allocationRows.map(({ ref, item }) => ({
-      id: ref.id,
-      remittanceId: remittanceRef.id,
-      fundId: item.fundId,
-      amount: Number(item.amount),
-      source: values.sender,
-      receivedAt: values.receivedAt,
-      createdAt,
-    })),
+  return dedupeMutation('create-remittance', { uid, values, allocations }, () => {
+    const remittanceRef = doc(collection(db, 'remittances'));
+    const batch = writeBatch(db);
+    batch.set(remittanceRef, withTimestamps({ ...values, ownerId: uid, currency: 'PKR' }));
+    const allocationRows = allocations
+      .filter((item) => item.amount > 0)
+      .map((item) => ({ ref: doc(collection(db, 'allocations')), item }));
+    allocationRows.forEach(({ ref, item }) =>
+      batch.set(ref, {
+        remittanceId: remittanceRef.id,
+        fundId: item.fundId,
+        amount: Number(item.amount),
+        source: values.sender,
+        receivedAt: values.receivedAt,
+        createdAt: serverTimestamp(),
+      }),
+    );
+    queueWrite(batch.commit());
+    const createdAt = localNow();
+    return {
+      remittance: { id: remittanceRef.id, ...values, ownerId: uid, currency: 'PKR', createdAt },
+      allocations: allocationRows.map(({ ref, item }) => ({
+        id: ref.id,
+        remittanceId: remittanceRef.id,
+        fundId: item.fundId,
+        amount: Number(item.amount),
+        source: values.sender,
+        receivedAt: values.receivedAt,
+        createdAt,
+      })),
+    };
   });
 }
 
@@ -326,19 +358,25 @@ export function removeRemittance(id, allocations = []) {
 }
 
 export function addAllocation(values) {
-  const ref = doc(collection(db, 'allocations'));
-  queueWrite(setDoc(ref, { ...values, createdAt: serverTimestamp() }));
-  return Promise.resolve({ id: ref.id, ...values, createdAt: localNow() });
+  return dedupeMutation('add-allocation', values, () => {
+    const ref = doc(collection(db, 'allocations'));
+    queueWrite(setDoc(ref, { ...values, createdAt: serverTimestamp() }));
+    return { id: ref.id, ...values, createdAt: localNow() };
+  });
 }
 export function addCategory(uid, name, symbol = '◆') {
-  const ref = doc(collection(db, 'categories'));
-  queueWrite(setDoc(ref, { userId: uid, name, symbol, createdAt: serverTimestamp() }));
-  return Promise.resolve({ id: ref.id, userId: uid, name, symbol, createdAt: localNow() });
+  return dedupeMutation('add-category', { uid, name, symbol }, () => {
+    const ref = doc(collection(db, 'categories'));
+    queueWrite(setDoc(ref, { userId: uid, name, symbol, createdAt: serverTimestamp() }));
+    return { id: ref.id, userId: uid, name, symbol, createdAt: localNow() };
+  });
 }
 export function removeCategory(uid, category) {
   if (category.system) {
+    const id = `${uid}_${category.id}`;
     const hidden = {
-      id: category.id,
+      id,
+      systemId: category.id,
       userId: uid,
       name: category.name,
       symbol: category.symbol,
@@ -346,7 +384,8 @@ export function removeCategory(uid, category) {
       updatedAt: localNow(),
     };
     queueWrite(
-      setDoc(doc(db, 'categories', category.id), {
+      setDoc(doc(db, 'categories', id), {
+        systemId: category.id,
         userId: uid,
         name: category.name,
         symbol: category.symbol,

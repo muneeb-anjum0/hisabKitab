@@ -3,7 +3,7 @@ import { useAuth } from './auth';
 import { DataContext } from './data';
 import * as api from '../services/dataService';
 import { fundDeletionAssessment, patchFund } from '../lib/calculations';
-import { readLedgerCache, writeLedgerCache } from '../lib/ledgerCache';
+import { readLedgerCacheEntry, writeLedgerCache } from '../lib/ledgerCache';
 
 const EMPTY_DATA = {
   funds: [],
@@ -19,6 +19,16 @@ const SYSTEM_CATEGORIES = [
   ['bills', 'Bills', '⚡'],
   ['other', 'Other', '◆'],
 ].map(([id, name, symbol]) => ({ id, name, symbol, system: true }));
+const NATIVE_REFRESH_TTL = 3 * 60 * 1000;
+const upsert = (items, item, prepend = false) => {
+  const existing = items.findIndex((candidate) => candidate.id === item.id);
+  if (existing < 0) return prepend ? [item, ...items] : [...items, item];
+  return items.map((candidate, index) =>
+    index === existing ? { ...candidate, ...item } : candidate,
+  );
+};
+const upsertMany = (items, additions, prepend = false) =>
+  additions.reduce((current, item) => upsert(current, item, prepend), items);
 function withTimeout(operation) {
   return Promise.race([
     operation,
@@ -47,45 +57,67 @@ export function DataProvider({ children }) {
   const reorderQueue = useRef(Promise.resolve());
   const reorderVersion = useRef(0);
   const refreshInFlight = useRef(null);
+  const remoteSyncedAt = useRef(0);
 
-  const refresh = useCallback(async () => {
-    if (!configured || !user) {
-      setData(EMPTY_DATA);
-      setLoading(false);
-      setLoadedUserId(null);
-      loadedUserIdRef.current = null;
-      return;
-    }
-    const cached = readLedgerCache(user.uid);
-    if (loadedUserIdRef.current !== user.uid && cached) {
-      setData(cached);
-      setLoadedUserId(user.uid);
-      loadedUserIdRef.current = user.uid;
-      setLoading(false);
-    }
-    if (!navigator.onLine) {
-      setLoadedUserId(user.uid);
-      loadedUserIdRef.current = user.uid;
-      setLoading(false);
-      return;
-    }
-    if (!cached && loadedUserIdRef.current !== user.uid) setLoading(true);
-    if (refreshInFlight.current) return refreshInFlight.current;
-    const request = withTimeout(api.loadUserData(user.uid));
-    refreshInFlight.current = request;
-    try {
-      setData(await request);
-      setError('');
-    } catch (loadError) {
-      console.error(loadError);
-      setError(loadError.message || 'Could not load your ledger.');
-    } finally {
-      if (refreshInFlight.current === request) refreshInFlight.current = null;
-      setLoadedUserId(user.uid);
-      loadedUserIdRef.current = user.uid;
-      setLoading(false);
-    }
-  }, [configured, user]);
+  const refresh = useCallback(
+    async (options = {}) => {
+      const forceServer = options === true || options?.forceServer === true;
+      if (!configured || !user) {
+        setData(EMPTY_DATA);
+        setLoading(false);
+        setLoadedUserId(null);
+        loadedUserIdRef.current = null;
+        remoteSyncedAt.current = 0;
+        return;
+      }
+      const cacheEntry = readLedgerCacheEntry(user.uid);
+      const cached = cacheEntry?.data;
+      remoteSyncedAt.current = Math.max(
+        remoteSyncedAt.current,
+        Number(cacheEntry?.remoteSyncedAt) || 0,
+      );
+      if (loadedUserIdRef.current !== user.uid && cached) {
+        setData(cached);
+        setLoadedUserId(user.uid);
+        loadedUserIdRef.current = user.uid;
+        setLoading(false);
+      }
+      if (!navigator.onLine) {
+        setLoadedUserId(user.uid);
+        loadedUserIdRef.current = user.uid;
+        setLoading(false);
+        return;
+      }
+      const native = window.Capacitor?.isNativePlatform?.() === true;
+      if (
+        !forceServer &&
+        native &&
+        cached &&
+        Date.now() - remoteSyncedAt.current < NATIVE_REFRESH_TTL
+      )
+        return;
+      if (!cached && loadedUserIdRef.current !== user.uid) setLoading(true);
+      if (refreshInFlight.current) return refreshInFlight.current;
+      const request = withTimeout(api.loadUserData(user.uid));
+      refreshInFlight.current = request;
+      try {
+        const freshData = await request;
+        remoteSyncedAt.current = Date.now();
+        setData(freshData);
+        writeLedgerCache(user.uid, freshData, remoteSyncedAt.current);
+        setError('');
+      } catch (loadError) {
+        console.error(loadError);
+        setError(loadError.message || 'Could not load your ledger.');
+      } finally {
+        if (refreshInFlight.current === request) refreshInFlight.current = null;
+        setLoadedUserId(user.uid);
+        loadedUserIdRef.current = user.uid;
+        setLoading(false);
+      }
+    },
+    [configured, user],
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => void refresh(), 0);
@@ -93,7 +125,7 @@ export function DataProvider({ children }) {
   }, [refresh]);
   useEffect(() => {
     if (!user || loadedUserId !== user.uid) return undefined;
-    const save = () => writeLedgerCache(user.uid, data);
+    const save = () => writeLedgerCache(user.uid, data, remoteSyncedAt.current);
     if ('requestIdleCallback' in window) {
       const task = window.requestIdleCallback(save, { timeout: 1000 });
       return () => window.cancelIdleCallback(task);
@@ -107,7 +139,7 @@ export function DataProvider({ children }) {
       api
         .finishQueuedWrites()
         .catch(() => {})
-        .finally(() => void refresh());
+        .finally(() => void refresh({ forceServer: true }));
     };
     const syncError = (event) => {
       setToast({
@@ -121,6 +153,14 @@ export function DataProvider({ children }) {
       window.removeEventListener('online', reconnect);
       window.removeEventListener('hk-sync-error', syncError);
     };
+  }, [refresh]);
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.()) return undefined;
+    const resume = () => {
+      if (document.visibilityState === 'visible') void refresh();
+    };
+    document.addEventListener('visibilitychange', resume);
+    return () => document.removeEventListener('visibilitychange', resume);
   }, [refresh]);
   useEffect(() => {
     if (!toast) return undefined;
@@ -146,7 +186,7 @@ export function DataProvider({ children }) {
   };
 
   const categories = useMemo(() => {
-    const customIds = new Set(data.categories.map((item) => item.id));
+    const customIds = new Set(data.categories.map((item) => item.systemId || item.id));
     return [
       ...SYSTEM_CATEGORIES.filter((item) => !customIds.has(item.id)),
       ...data.categories.filter((item) => !item.hidden),
@@ -174,8 +214,8 @@ export function DataProvider({ children }) {
         () => api.createFund(user.uid, orderedValues),
         (current, result) => ({
           ...current,
-          funds: [...current.funds, result.fund],
-          memberships: [...current.memberships, result.membership],
+          funds: upsert(current.funds, result.fund),
+          memberships: upsert(current.memberships, result.membership),
         }),
         'NEW FUND. STAMPED IN.',
       );
@@ -237,7 +277,10 @@ export function DataProvider({ children }) {
     addTransaction: (values) =>
       write(
         () => api.addTransaction(user.uid, values),
-        (current, result) => ({ ...current, transactions: [result, ...current.transactions] }),
+        (current, result) => ({
+          ...current,
+          transactions: upsert(current.transactions, result, true),
+        }),
         'SPENT. SAVED.',
       ),
     updateTransaction: (id, values) =>
@@ -265,8 +308,8 @@ export function DataProvider({ children }) {
         () => api.createRemittance(user.uid, values, allocations),
         (current, result) => ({
           ...current,
-          remittances: [result.remittance, ...current.remittances],
-          allocations: [...current.allocations, ...result.allocations],
+          remittances: upsert(current.remittances, result.remittance, true),
+          allocations: upsertMany(current.allocations, result.allocations),
         }),
         'KA-CHING. MONEY ADDED.',
       ),
@@ -312,7 +355,10 @@ export function DataProvider({ children }) {
             values.lotUsages,
             values.sourceFundName,
           ),
-        (current, result) => ({ ...current, transactions: [...result, ...current.transactions] }),
+        (current, result) => ({
+          ...current,
+          transactions: upsertMany(current.transactions, result, true),
+        }),
         'TRANSFER COMPLETE.',
       ),
     allocate: (values) => {
@@ -324,14 +370,14 @@ export function DataProvider({ children }) {
       };
       return write(
         () => api.addAllocation(enriched),
-        (current, result) => ({ ...current, allocations: [...current.allocations, result] }),
+        (current, result) => ({ ...current, allocations: upsert(current.allocations, result) }),
         'MONEY LOT CREATED.',
       );
     },
     addCategory: (name) =>
       write(
         () => api.addCategory(user.uid, name),
-        (current, result) => ({ ...current, categories: [...current.categories, result] }),
+        (current, result) => ({ ...current, categories: upsert(current.categories, result) }),
         'CATEGORY ADDED.',
       ),
     removeCategory: (category) =>
@@ -347,7 +393,7 @@ export function DataProvider({ children }) {
       ),
     addMember: async (fundId, email, role) => {
       await api.addMember(fundId, email, role);
-      await refresh();
+      await refresh({ forceServer: true });
       setToast({ type: 'success', message: 'MEMBER ADDED.' });
     },
     updateMember: async (id, role) => {
