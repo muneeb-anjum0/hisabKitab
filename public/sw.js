@@ -1,8 +1,7 @@
-const VERSION = 'v13';
+const VERSION = 'v14';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
-const FONT_CACHE = 'hisabkitab-fonts-v1';
-const OWNED_CACHES = [SHELL_CACHE, ASSET_CACHE, FONT_CACHE];
+const OWNED_CACHES = [SHELL_CACHE, ASSET_CACHE];
 const SHELL = [
   '/',
   '/index.html',
@@ -60,22 +59,6 @@ self.addEventListener('message', (event) => {
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const url = new URL(event.request.url);
-
-  if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-    event.respondWith(
-      caches.match(event.request).then(
-        (cached) =>
-          cached ||
-          fetch(event.request)
-            .then((response) => cacheResponse(FONT_CACHE, event.request, response))
-            .then((response) => {
-              void trimCache(FONT_CACHE, 20);
-              return response;
-            }),
-      ),
-    );
-    return;
-  }
 
   if (url.origin !== self.location.origin) return;
 

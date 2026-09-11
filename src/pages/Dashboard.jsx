@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import {
   closestCenter,
   DndContext,
@@ -33,6 +33,7 @@ import {
 } from '../lib/calculations';
 import { money } from '../lib/currency';
 import { friendlyDate, monthKey } from '../lib/dates';
+import { exportCsvFile } from '../lib/fileExport';
 import { Button, ComicSelect, Empty, Field, Modal } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
 import FundManagement from '../components/common/FundManagement';
@@ -53,14 +54,29 @@ export default function Dashboard({ onAction }) {
   const [orderedFunds, setOrderedFunds] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
   const searchRef = useRef(null);
-  const activeFunds = sortFunds(data.funds.filter((fund) => !fund.archived));
-  const canRearrange =
-    activeFunds.length > 1 &&
-    activeFunds.every((fund) =>
-      data.memberships.some(
-        (item) => item.fundId === fund.id && item.userId === user.uid && item.role === 'owner',
+  const deferredSearch = useDeferredValue(search);
+  const activeFunds = useMemo(
+    () => sortFunds(data.funds.filter((fund) => !fund.archived)),
+    [data.funds],
+  );
+  const ownerFundIds = useMemo(
+    () =>
+      new Set(
+        data.memberships
+          .filter((item) => item.userId === user.uid && item.role === 'owner')
+          .map((item) => item.fundId),
       ),
+    [data.memberships, user.uid],
+  );
+  const transactionCounts = useMemo(() => {
+    const counts = new Map();
+    data.transactions.forEach((item) =>
+      counts.set(item.fundId, (counts.get(item.fundId) || 0) + 1),
     );
+    return counts;
+  }, [data.transactions]);
+  const canRearrange =
+    activeFunds.length > 1 && activeFunds.every((fund) => ownerFundIds.has(fund.id));
   const stableOrderRef = useRef([]);
   const orderedFundsRef = useRef([]);
   const saveVersionRef = useRef(0);
@@ -110,13 +126,31 @@ export default function Dashboard({ onAction }) {
     () => portfolioTotals(activeFunds, data.allocations, data.transactions, data.remittances),
     [activeFunds, data.allocations, data.transactions, data.remittances],
   );
-  const displayedFunds = rearranging
-    ? orderedFunds.map((fund) => totals.funds.find((item) => item.id === fund.id) || fund)
-    : totals.funds.slice(0, 4);
+  const displayedFunds = useMemo(() => {
+    if (!rearranging) return totals.funds.slice(0, 4);
+    const totalsById = new Map(totals.funds.map((fund) => [fund.id, fund]));
+    return orderedFunds.map((fund) => totalsById.get(fund.id) || fund);
+  }, [orderedFunds, rearranging, totals.funds]);
   const currentMonth = monthKey();
   const months = useMemo(
     () => ledgerMonths(data.transactions, data.remittances, currentMonth),
     [data.transactions, data.remittances, currentMonth],
+  );
+  const monthlySummaries = useMemo(
+    () =>
+      new Map(
+        months.map((month) => [
+          month,
+          monthlyBreakdown(
+            month,
+            data.transactions,
+            data.remittances,
+            activeFunds,
+            data.categories,
+          ),
+        ]),
+      ),
+    [activeFunds, data.categories, data.remittances, data.transactions, months],
   );
   const recentTransactions = useMemo(
     () =>
@@ -132,38 +166,38 @@ export default function Dashboard({ onAction }) {
         .slice(0, 5),
     [data.transactions],
   );
-  const searchResults = search.trim()
-    ? [
-        ...activeFunds
-          .filter((fund) => fund.name.toLowerCase().includes(search.toLowerCase()))
-          .map((fund) => ({
-            id: fund.id,
-            title: fund.name,
-            meta: 'Fund',
-            action: () => navigate(`/funds/${fund.id}`),
-          })),
-        ...data.transactions
-          .filter((item) =>
-            `${item.description} ${item.note || ''}`.toLowerCase().includes(search.toLowerCase()),
-          )
-          .slice(0, 6)
-          .map((item) => ({
-            id: item.id,
-            title: item.description,
-            meta: `${money(item.amount)} · ${friendlyDate(item.date)}`,
-            action: () => navigate('/activity'),
-          })),
-        ...data.categories
-          .filter((item) => item.name.toLowerCase().includes(search.toLowerCase()))
-          .slice(0, 3)
-          .map((item) => ({
-            id: `category-${item.id}`,
-            title: item.name,
-            meta: 'Category',
-            action: () => navigate('/activity'),
-          })),
-      ].slice(0, 8)
-    : [];
+  const searchResults = useMemo(() => {
+    const query = deferredSearch.trim().toLowerCase();
+    if (!query) return [];
+    return [
+      ...activeFunds
+        .filter((fund) => fund.name.toLowerCase().includes(query))
+        .map((fund) => ({
+          id: fund.id,
+          title: fund.name,
+          meta: 'Fund',
+          action: () => navigate(`/funds/${fund.id}`),
+        })),
+      ...data.transactions
+        .filter((item) => `${item.description} ${item.note || ''}`.toLowerCase().includes(query))
+        .slice(0, 6)
+        .map((item) => ({
+          id: item.id,
+          title: item.description,
+          meta: `${money(item.amount)} · ${friendlyDate(item.date)}`,
+          action: () => navigate('/activity'),
+        })),
+      ...data.categories
+        .filter((item) => item.name.toLowerCase().includes(query))
+        .slice(0, 3)
+        .map((item) => ({
+          id: `category-${item.id}`,
+          title: item.name,
+          meta: 'Category',
+          action: () => navigate('/activity'),
+        })),
+    ].slice(0, 8);
+  }, [activeFunds, data.categories, data.transactions, deferredSearch, navigate]);
 
   useEffect(() => {
     const shortcut = (event) => {
@@ -304,13 +338,8 @@ export default function Dashboard({ onAction }) {
                       fund={fund}
                       index={index}
                       rearranging={rearranging}
-                      owner={data.memberships.some(
-                        (item) =>
-                          item.fundId === fund.id &&
-                          item.userId === user.uid &&
-                          item.role === 'owner',
-                      )}
-                      count={data.transactions.filter((item) => item.fundId === fund.id).length}
+                      owner={ownerFundIds.has(fund.id)}
+                      count={transactionCounts.get(fund.id) || 0}
                     />
                   ))}
                   {!rearranging && (
@@ -326,7 +355,7 @@ export default function Dashboard({ onAction }) {
                   {activeId ? (
                     <FundCardView
                       fund={displayedFunds.find((fund) => fund.id === activeId)}
-                      count={data.transactions.filter((item) => item.fundId === activeId).length}
+                      count={transactionCounts.get(activeId) || 0}
                       overlay
                     />
                   ) : null}
@@ -369,9 +398,8 @@ export default function Dashboard({ onAction }) {
                   <MonthCard
                     key={month}
                     month={month}
-                    data={data}
-                    funds={activeFunds}
-                    onOpen={() => setSelectedMonth(month)}
+                    summary={monthlySummaries.get(month)}
+                    onOpen={setSelectedMonth}
                   />
                 ))}
               </div>
@@ -459,7 +487,9 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
   const content = (
     <>
       <FundIconBadge name={fund.name} />
-      <h3>{fund.name}</h3>
+      <span className="fund-card-title" title={fund.name}>
+        {fund.name}
+      </span>
       {state.kind === 'overspent' && <span className="overspent-stamp">OVERSPENT</span>}
       <strong>{money(fund.remaining)}</strong>
       <small>of {money(fund.allocated)}</small>
@@ -490,20 +520,13 @@ function FundCardView({ fund, count, rearranging = false, overlay = false }) {
   );
 }
 
-function MonthCard({ month, data, funds, onOpen }) {
-  const summary = monthlyBreakdown(
-    month,
-    data.transactions,
-    data.remittances,
-    funds,
-    data.categories,
-  );
+const MonthCard = memo(function MonthCard({ month, summary, onOpen }) {
   const label = new Date(`${month}-15T12:00:00`).toLocaleDateString('en-PK', {
     month: 'long',
     year: 'numeric',
   });
   return (
-    <button className="month-card" onClick={onOpen}>
+    <button className="month-card" onClick={() => onOpen(month)}>
       <header>
         <b>{label}</b>
         <span>OPEN BOOK →</span>
@@ -530,7 +553,7 @@ function MonthCard({ month, data, funds, onOpen }) {
       </div>
     </button>
   );
-}
+});
 
 function MonthDetails({ month, data, funds, onClose }) {
   const summary = monthlyBreakdown(
@@ -547,23 +570,15 @@ function MonthDetails({ month, data, funds, onClose }) {
   const exportCsv = async () => {
     const filename = `HisabKitab-${month}.csv`;
     const csv = `\uFEFF${monthlyCsv(month, summary, funds, data.categories)}`;
-    const file = new File([csv], filename, { type: 'text/csv;charset=utf-8' });
     try {
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: `${label} ledger`, files: [file] });
-        data.setToast({ type: 'success', message: 'CSV READY. SEND IT SOMEWHERE SAFE!' });
-        return;
-      }
-      const url = URL.createObjectURL(file);
-      const anchor = document.createElement('a');
-      anchor.href = url;
-      anchor.download = filename;
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
-      window.setTimeout(() => URL.revokeObjectURL(url), 10000);
-      data.setToast({ type: 'success', message: 'CSV EXPORTED. THE NUMBERS ARE FREE!' });
+      const result = await exportCsvFile(filename, csv, `${label} ledger`);
+      data.setToast({
+        type: 'success',
+        message:
+          result === 'shared'
+            ? 'CSV READY. SAVE IT OR SEND IT!'
+            : 'CSV EXPORTED. THE NUMBERS ARE FREE!',
+      });
     } catch (error) {
       if (error?.name !== 'AbortError')
         data.setToast({ type: 'error', message: "CSV WOULDN'T LEAVE THE BUILDING. TRY AGAIN." });

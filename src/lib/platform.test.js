@@ -70,6 +70,14 @@ describe('application contracts', () => {
     });
   });
 
+  it('uses native file storage and sharing for Android CSV exports', () => {
+    const exporter = read('src/lib/fileExport.js');
+    expect(exporter).toContain("import('@capacitor/filesystem')");
+    expect(exporter).toContain("import('@capacitor/share')");
+    expect(exporter).toContain('Filesystem.writeFile');
+    expect(exporter).toContain('files: [saved.uri]');
+  });
+
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
     const worker = read('public/sw.js');
     const service = read('src/services/dataService.js');

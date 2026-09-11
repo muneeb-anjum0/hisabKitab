@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import { useData } from '../contexts/data';
 import { useAuth } from '../contexts/auth';
 import TransactionRow from '../components/common/TransactionRow';
@@ -11,10 +11,16 @@ import { timestampMillis } from '../lib/calculations';
 export default function Activity() {
   const data = useData();
   const { user } = useAuth();
-  const editableFundIds = new Set(
-    data.memberships
-      .filter((member) => member.userId === user.uid && ['owner', 'editor'].includes(member.role))
-      .map((member) => member.fundId),
+  const editableFundIds = useMemo(
+    () =>
+      new Set(
+        data.memberships
+          .filter(
+            (member) => member.userId === user.uid && ['owner', 'editor'].includes(member.role),
+          )
+          .map((member) => member.fundId),
+      ),
+    [data.memberships, user.uid],
   );
   const [filters, setFilters] = useState({
     search: '',
@@ -28,7 +34,10 @@ export default function Activity() {
   const [editingIncome, setEditingIncome] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const [deletingIncome, setDeletingIncome] = useState(null);
+  const deferredSearch = useDeferredValue(filters.search);
+  const { fund: fundFilter, category: categoryFilter, type: typeFilter, month } = filters;
   const items = useMemo(() => {
+    const search = deferredSearch.toLowerCase();
     const transactionItems = data.transactions.map((item) => ({
       ...item,
       activityDate: item.date,
@@ -46,11 +55,11 @@ export default function Activity() {
       .filter((item) => {
         const text = `${item.description || ''} ${item.note || ''}`.toLowerCase();
         return (
-          (filters.fund === 'all' || item.fundId === filters.fund) &&
-          (filters.category === 'all' || item.categoryId === filters.category) &&
-          (filters.type === 'all' || item.type === filters.type) &&
-          (!filters.month || item.activityDate?.startsWith(filters.month)) &&
-          text.includes(filters.search.toLowerCase())
+          (fundFilter === 'all' || item.fundId === fundFilter) &&
+          (categoryFilter === 'all' || item.categoryId === categoryFilter) &&
+          (typeFilter === 'all' || item.type === typeFilter) &&
+          (!month || item.activityDate?.startsWith(month)) &&
+          text.includes(search)
         );
       })
       .sort(
@@ -59,7 +68,15 @@ export default function Activity() {
           timestampMillis(b.createdAt) - timestampMillis(a.createdAt) ||
           String(b.id).localeCompare(String(a.id)),
       );
-  }, [data.transactions, data.remittances, filters]);
+  }, [
+    categoryFilter,
+    data.transactions,
+    data.remittances,
+    deferredSearch,
+    fundFilter,
+    month,
+    typeFilter,
+  ]);
   const set = (key, value) => setFilters((current) => ({ ...current, [key]: value }));
   const activeCount =
     Object.entries(filters).filter(([key, value]) => value && value !== 'all' && key !== 'search')

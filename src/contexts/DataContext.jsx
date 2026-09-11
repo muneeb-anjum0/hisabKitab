@@ -46,6 +46,7 @@ export function DataProvider({ children }) {
   const loadedUserIdRef = useRef(null);
   const reorderQueue = useRef(Promise.resolve());
   const reorderVersion = useRef(0);
+  const refreshInFlight = useRef(null);
 
   const refresh = useCallback(async () => {
     if (!configured || !user) {
@@ -69,13 +70,17 @@ export function DataProvider({ children }) {
       return;
     }
     if (!cached && loadedUserIdRef.current !== user.uid) setLoading(true);
+    if (refreshInFlight.current) return refreshInFlight.current;
+    const request = withTimeout(api.loadUserData(user.uid));
+    refreshInFlight.current = request;
     try {
-      setData(await withTimeout(api.loadUserData(user.uid)));
+      setData(await request);
       setError('');
     } catch (loadError) {
       console.error(loadError);
       setError(loadError.message || 'Could not load your ledger.');
     } finally {
+      if (refreshInFlight.current === request) refreshInFlight.current = null;
       setLoadedUserId(user.uid);
       loadedUserIdRef.current = user.uid;
       setLoading(false);

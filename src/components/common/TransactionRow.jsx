@@ -1,14 +1,8 @@
+import { memo } from 'react';
 import { money } from '../../lib/currency';
 import { friendlyDate } from '../../lib/dates';
 
-export default function TransactionRow({
-  item,
-  funds,
-  categories,
-  memberships = [],
-  onEdit,
-  onDelete,
-}) {
+function TransactionRow({ item, funds, categories, memberships = [], onEdit, onDelete }) {
   const fund = funds.find((entry) => entry.id === item.fundId);
   const category = categories.find((entry) => entry.id === item.categoryId);
   const creator = memberships.find(
@@ -52,3 +46,5 @@ export default function TransactionRow({
     </article>
   );
 }
+
+export default memo(TransactionRow);

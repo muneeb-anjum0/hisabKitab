@@ -105,7 +105,7 @@ export default function Auth() {
         <div className="auth-logo">
           <img src="/icon.svg" alt="HisabKitab" />
         </div>
-        <div className="pow">₹</div>
+        <div className="pow">₨</div>
         <h1>
           MONEY.
           <br />
