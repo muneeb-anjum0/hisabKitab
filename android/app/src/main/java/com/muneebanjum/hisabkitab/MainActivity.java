@@ -12,6 +12,11 @@ public class MainActivity extends BridgeActivity {
         super.onCreate(savedInstanceState);
         WebView webView = getBridge().getWebView();
         webView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        webView.setScrollBarStyle(View.SCROLLBARS_INSIDE_OVERLAY);
+        webView.setVerticalScrollBarEnabled(true);
+        webView.setScrollbarFadingEnabled(true);
+        webView.setScrollBarDefaultDelayBeforeFade(300);
+        webView.setScrollBarFadeDuration(180);
         boolean debuggable = (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
         WebView.setWebContentsDebuggingEnabled(debuggable);
         WebSettings settings = webView.getSettings();

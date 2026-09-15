@@ -94,6 +94,17 @@ describe('application contracts', () => {
     expect(filePaths).not.toContain('<external-path');
   });
 
+  it('uses a thin black native scrollbar in the Android WebView', () => {
+    const activity = read('android/app/src/main/java/com/muneebanjum/hisabkitab/MainActivity.java');
+    const styles = read('android/app/src/main/res/values/styles.xml');
+    const scrollbarThumb = read('android/app/src/main/res/drawable/webview_scrollbar_thumb.xml');
+    expect(activity).toContain('View.SCROLLBARS_INSIDE_OVERLAY');
+    expect(activity).toContain('setVerticalScrollBarEnabled(true)');
+    expect(styles).toContain('<item name="android:scrollbarSize">2dp</item>');
+    expect(styles).toContain('@drawable/webview_scrollbar_thumb');
+    expect(scrollbarThumb).toContain('<solid android:color="#111111" />');
+  });
+
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
     const worker = read('public/sw.js');
     const service = read('src/services/dataService.js');
