@@ -37,7 +37,7 @@
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 900;
   src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-900-normal.woff2')
     format('woff2');
@@ -54,7 +54,7 @@
 @font-face {
   font-family: 'DM Mono';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 500;
   src: url('@fontsource/dm-mono/files/dm-mono-latin-500-normal.woff2') format('woff2');
 }
