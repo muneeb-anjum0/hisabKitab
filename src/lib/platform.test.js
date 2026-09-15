@@ -85,6 +85,7 @@ describe('application contracts', () => {
     const filePaths = read('android/app/src/main/res/xml/file_paths.xml');
     expect(gradle).toContain('signingConfig signingConfigs.release');
     expect(gradle).not.toContain('signingConfig signingConfigs.debug');
+    expect(gradle).toContain('releaseBuildRequested && !signingPropertiesFile.exists()');
     expect(androidManifest).toContain('android:allowBackup="false"');
     expect(androidManifest).toContain('android:usesCleartextTraffic="false"');
     expect(activity).toContain('ApplicationInfo.FLAG_DEBUGGABLE');

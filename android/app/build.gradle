@@ -2,6 +2,9 @@ apply plugin: 'com.android.application'
 
 def signingProperties = new Properties()
 def signingPropertiesFile = file(System.getProperty('user.home') + '/.config/hisabkitab/signing.properties')
+def releaseBuildRequested = gradle.startParameter.taskNames.any { taskName ->
+    taskName.toLowerCase().contains('release')
+}
 if (signingPropertiesFile.exists()) {
     signingPropertiesFile.withInputStream { signingProperties.load(it) }
 }
@@ -36,10 +39,12 @@ android {
         release {
             minifyEnabled true
             shrinkResources true
-            if (!signingPropertiesFile.exists()) {
+            if (releaseBuildRequested && !signingPropertiesFile.exists()) {
                 throw new GradleException('Missing ~/.config/hisabkitab/signing.properties for release signing.')
             }
-            signingConfig signingConfigs.release
+            if (signingPropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
