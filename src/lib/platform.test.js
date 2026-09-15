@@ -70,7 +70,7 @@ describe('application contracts', () => {
     });
   });
 
-  it('uses native file storage and sharing for Android CSV exports', () => {
+  it('uses native file storage and sharing for Android XLSX exports', () => {
     const exporter = read('src/lib/fileExport.js');
     expect(exporter).toContain("import('@capacitor/filesystem')");
     expect(exporter).toContain("import('@capacitor/share')");

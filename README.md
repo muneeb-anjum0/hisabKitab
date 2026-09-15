@@ -23,7 +23,7 @@ approve installation from your browser or file manager when Android asks.
 - Separate money into color-coded Funds.
 - Record money received, expenses, and transfers.
 - See recent activity and month-by-month breakdowns.
-- Export monthly records as CSV files.
+- Export styled monthly and per-Fund Excel workbooks.
 - Continue working offline and sync changes when the connection returns.
 - Share selected Funds with other registered users.
 - Add, edit, reorder, archive, and remove Funds and categories.
@@ -35,7 +35,7 @@ Your ledger is tied to your account and synchronized through Firebase. Offline
 changes are cached on your device and queued for synchronization. Shared Funds are
 visible only to the members added to them.
 
-For safety, keep a copy of important monthly records using the CSV export option.
+For safety, keep a copy of important records using the Excel export option.
 
 ## Support
 

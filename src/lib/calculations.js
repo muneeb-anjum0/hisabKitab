@@ -177,8 +177,7 @@ export function monthlyBreakdown(month, transactions, remittances, funds = [], c
   };
 }
 
-const csvCell = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`;
-export function monthlyCsv(month, breakdown, funds = [], categories = []) {
+export function monthlyExportRows(month, breakdown, funds = [], categories = []) {
   const fundNames = new Map(funds.map((item) => [item.id, item.name]));
   const categoryNames = new Map(categories.map((item) => [item.id, item.name]));
   const rows = [['Date', 'Type', 'Description', 'Fund', 'Category', 'Amount', 'Note']];
@@ -211,7 +210,47 @@ export function monthlyCsv(month, breakdown, funds = [], categories = []) {
     ['Total spent', breakdown.spent],
     ['Net', breakdown.remaining],
   );
-  return rows.map((row) => row.map(csvCell).join(',')).join('\n');
+  return rows;
+}
+
+export function fundExportRows(fund, allocations, transactions, remittances, categories = []) {
+  const fundAllocations = allocations.filter((item) => item.fundId === fund.id);
+  const fundTransactions = transactions.filter((item) => item.fundId === fund.id);
+  const remittanceNames = new Map(remittances.map((item) => [item.id, item]));
+  const categoryNames = new Map(categories.map((item) => [item.id, item.name]));
+  const totals = fundTotals(fund.id, allocations, transactions);
+  const rows = [['Date', 'Type', 'Description', 'Category', 'Amount (PKR)', 'Note']];
+
+  fundAllocations.forEach((item) => {
+    const remittance = remittanceNames.get(item.remittanceId) || {};
+    rows.push([
+      remittance.receivedAt || item.receivedAt || '',
+      'Money allocated',
+      remittance.sender || item.source || 'Money received',
+      '',
+      item.amount,
+      remittance.note || item.note || '',
+    ]);
+  });
+  fundTransactions.forEach((item) =>
+    rows.push([
+      item.date || '',
+      item.type === 'expense' ? 'Expense' : item.type === 'transfer' ? 'Transfer' : 'Adjustment',
+      item.description || item.note || item.type,
+      categoryNames.get(item.categoryId) || '',
+      item.amount,
+      item.note || '',
+    ]),
+  );
+  rows.push(
+    [],
+    ['Fund', fund.name],
+    ['Allocated', totals.allocated],
+    ['Spent', totals.spent],
+    ['Transfer / adjustments', totals.adjustments],
+    ['Available', totals.remaining],
+  );
+  return rows;
 }
 
 /** Existing allocations are canonical Money Lots. Positive transfers are derived transfer lots. */

@@ -1,4 +1,4 @@
-const VERSION = 'v16';
+const VERSION = 'v17';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
 const OWNED_CACHES = [SHELL_CACHE, ASSET_CACHE];

@@ -9,7 +9,8 @@ import {
   ledgerMonths,
   moneyLotSummary,
   monthlyBreakdown,
-  monthlyCsv,
+  monthlyExportRows,
+  fundExportRows,
   monthlyTotals,
   moveFund,
   patchFund,
@@ -112,7 +113,7 @@ describe('financial ledger', () => {
     });
   });
 
-  it('builds month breakdowns and safely escaped CSV exports', () => {
+  it('builds month breakdowns and preserves spreadsheet cell values', () => {
     const transactions = [
       {
         type: 'expense',
@@ -133,15 +134,35 @@ describe('financial ledger', () => {
     );
     expect(breakdown.byFund).toEqual([{ id: 'house', name: 'House', value: 75 }]);
     expect(breakdown.byCategory).toEqual([{ id: 'food', name: 'Food', value: 75 }]);
-    const csv = monthlyCsv(
+    const rows = monthlyExportRows(
       '2026-09',
       breakdown,
       [{ id: 'house', name: 'House' }],
       [{ id: 'food', name: 'Food' }],
     );
-    expect(csv).toContain('"Tea, milk"');
-    expect(csv).toContain('"He said ""yes"""');
-    expect(csv).toContain('"Total spent","75"');
+    expect(rows).toContainEqual([
+      '2026-09-02',
+      'Expense',
+      'Tea, milk',
+      'House',
+      'Food',
+      75,
+      'He said "yes"',
+    ]);
+    expect(rows).toContainEqual(['Total spent', 75]);
+  });
+
+  it('builds a complete per-Fund workbook ledger', () => {
+    const rows = fundExportRows(
+      { id: 'house', name: 'House' },
+      allocations,
+      [{ fundId: 'house', type: 'expense', amount: 75, date: '2026-09-02', description: 'Tea' }],
+      [{ id: 'r1', sender: 'Dad', totalAmount: 30000, receivedAt: '2026-09-01' }],
+      [],
+    );
+    expect(rows).toContainEqual(['2026-09-01', 'Money allocated', 'Dad', '', 15000, '']);
+    expect(rows).toContainEqual(['2026-09-02', 'Expense', 'Tea', '', 75, '']);
+    expect(rows).toContainEqual(['Available', 14925]);
   });
 
   it('preserves the requested end-to-end money journey', () => {

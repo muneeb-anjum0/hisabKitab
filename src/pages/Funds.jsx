@@ -25,8 +25,8 @@ export default function Funds() {
         className={`fund-strip ${fund.accent} ${fund.archived ? 'archived' : ''}`}
         key={fund.id}
       >
-        <b className="fund-index">{String(index + 1).padStart(2, '0')}</b>
         <Link className="fund-strip-link" to={`/funds/${fund.id}`}>
+          <b className="fund-index">{String(index + 1).padStart(2, '0')}</b>
           <div className="fund-strip-title">
             <FundIconBadge name={fund.name} />
             <div>

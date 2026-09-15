@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { useData } from '../contexts/data';
-import { fundTotals, moneyLotSummary } from '../lib/calculations';
+import { fundExportRows, fundTotals, moneyLotSummary } from '../lib/calculations';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
 import { Button, ComicSelect, Modal, Field, Progress, Empty } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
 import FundManagement from '../components/common/FundManagement';
 import QuickAdd from '../components/forms/QuickAdd';
+import { exportXlsxFile } from '../lib/fileExport';
 
 export default function FundDetail() {
   const { id } = useParams();
@@ -38,6 +39,35 @@ export default function FundDetail() {
   const currentMembership = members.find((item) => item.userId === user.uid);
   const owner = currentMembership?.role === 'owner';
   const canEdit = ['owner', 'editor'].includes(currentMembership?.role);
+  const exportFund = async () => {
+    const safeName =
+      fund.name
+        .trim()
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-|-$/g, '') || 'Fund';
+    const rows = fundExportRows(
+      fund,
+      data.allocations,
+      data.transactions,
+      data.remittances,
+      data.categories,
+    );
+    try {
+      const result = await exportXlsxFile(
+        `HisabKitab-${safeName}.xlsx`,
+        rows,
+        `${fund.name} ledger`,
+        fund.name,
+      );
+      data.setToast({
+        type: 'success',
+        message: result === 'shared' ? 'FUND BOOK READY. SEND THE RECEIPTS!' : 'FUND EXPORTED!',
+      });
+    } catch (error) {
+      if (error?.name !== 'AbortError')
+        data.setToast({ type: 'error', message: "FUND BOOK WOULDN'T LEAVE THE BUILDING." });
+    }
+  };
   return (
     <>
       <button className="back-link" onClick={() => navigate('/funds')}>
@@ -72,6 +102,9 @@ export default function FundDetail() {
       </section>
       <div className="detail-actions">
         <FundManagement fund={fund} owner={owner} detail />
+        <Button variant="paper" onClick={exportFund}>
+          ↓ EXPORT
+        </Button>
         {fund.type === 'shared' && (
           <Button variant="paper" onClick={() => setShowMembers(true)}>
             MEMBERS ({members.length})

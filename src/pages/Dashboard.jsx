@@ -26,14 +26,14 @@ import {
   ledgerMonths,
   moneyLotSummary,
   monthlyBreakdown,
-  monthlyCsv,
+  monthlyExportRows,
   portfolioTotals,
   sortFunds,
   timestampMillis,
 } from '../lib/calculations';
 import { money } from '../lib/currency';
 import { friendlyDate, monthKey } from '../lib/dates';
-import { exportCsvFile } from '../lib/fileExport';
+import { exportXlsxFile } from '../lib/fileExport';
 import { Button, ComicSelect, Empty, Field, Modal } from '../components/comic/Comic';
 import TransactionRow from '../components/common/TransactionRow';
 import FundManagement from '../components/common/FundManagement';
@@ -567,21 +567,24 @@ function MonthDetails({ month, data, funds, onClose }) {
     month: 'long',
     year: 'numeric',
   });
-  const exportCsv = async () => {
-    const filename = `HisabKitab-${month}.csv`;
-    const csv = `\uFEFF${monthlyCsv(month, summary, funds, data.categories)}`;
+  const exportBook = async () => {
+    const filename = `HisabKitab-${month}.xlsx`;
+    const rows = monthlyExportRows(month, summary, funds, data.categories);
     try {
-      const result = await exportCsvFile(filename, csv, `${label} ledger`);
+      const result = await exportXlsxFile(filename, rows, `${label} ledger`, label);
       data.setToast({
         type: 'success',
         message:
           result === 'shared'
-            ? 'CSV READY. SAVE IT OR SEND IT!'
-            : 'CSV EXPORTED. THE NUMBERS ARE FREE!',
+            ? 'BOOK READY. SAVE IT OR SEND IT!'
+            : 'BOOK EXPORTED. THE NUMBERS ARE FREE!',
       });
     } catch (error) {
       if (error?.name !== 'AbortError')
-        data.setToast({ type: 'error', message: "CSV WOULDN'T LEAVE THE BUILDING. TRY AGAIN." });
+        data.setToast({
+          type: 'error',
+          message: "THE BOOK WOULDN'T LEAVE THE BUILDING. TRY AGAIN.",
+        });
     }
   };
   return (
@@ -619,7 +622,7 @@ function MonthDetails({ month, data, funds, onClose }) {
           )}
         </section>
       </div>
-      <Button onClick={exportCsv}>↓ EXPORT CSV</Button>
+      <Button onClick={exportBook}>↓ EXPORT</Button>
     </Modal>
   );
 }

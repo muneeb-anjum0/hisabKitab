@@ -4636,6 +4636,77 @@ html body {
   background: var(--paper);
 }
 
+/* Fund cards are one complete target; management controls remain layered above the link. */
+.fund-strip-link {
+  grid-column: 1/-1;
+  grid-template-columns: 70px minmax(260px, 1fr) minmax(220px, 1fr) auto 35px;
+  min-height: 99px;
+  margin: -20px;
+  padding: 20px;
+}
+.fund-strip-numbers span {
+  font-size: 13px;
+}
+.fund-strip-numbers b {
+  font-size: 18px;
+}
+
+/* Money Lots always stay on one ledger strip and scroll horizontally. */
+.money-lots {
+  display: flex;
+  grid-template-columns: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 24px;
+  overscroll-behavior-inline: contain;
+}
+.money-lot {
+  flex: 0 0 min(420px, calc(100vw - 210px));
+  scroll-snap-align: start;
+}
+
+@media (max-width: 800px) {
+  .fund-strip-link {
+    grid-column: 1/-1;
+    grid-template-columns: 34px minmax(0, 1fr);
+    min-height: 76px;
+    margin: -10px;
+    padding: 10px;
+  }
+  .fund-strip-link .fund-index {
+    grid-column: 1;
+    grid-row: 1/5;
+    align-self: center;
+  }
+  .fund-strip-link .fund-strip-title,
+  .fund-strip-link .fund-strip-numbers,
+  .fund-strip-link > strong {
+    grid-column: 2;
+  }
+  .fund-strip-link .fund-strip-numbers {
+    margin-top: 10px;
+  }
+  .fund-strip-link > i {
+    display: none;
+  }
+  .fund-strip-numbers span {
+    font-size: 9px;
+  }
+  .fund-strip-numbers b {
+    font-size: 13px;
+  }
+  .money-lots {
+    width: calc(100% - 8px);
+    margin-inline: 4px;
+    padding: 12px 18px 20px;
+    scroll-padding-inline: 18px;
+  }
+  .money-lot {
+    flex-basis: min(74vw, 330px);
+  }
+}
+
 .income-actions {
   display: flex;
   gap: 8px;
