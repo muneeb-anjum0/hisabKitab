@@ -20,6 +20,27 @@
 html {
   background: var(--paper);
 }
+
+@media (min-width: 801px) {
+  html {
+    scrollbar-color: var(--ink) transparent;
+    scrollbar-width: thin;
+  }
+
+  html::-webkit-scrollbar {
+    width: 3px;
+  }
+
+  html::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  html::-webkit-scrollbar-thumb {
+    background: var(--ink);
+    border-radius: 1px;
+  }
+}
+
 body {
   margin: 0;
   color: var(--ink);

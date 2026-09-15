@@ -105,6 +105,14 @@ describe('application contracts', () => {
     expect(scrollbarThumb).toContain('<solid android:color="#111111" />');
   });
 
+  it('uses a thin black page scrollbar on the desktop website', () => {
+    const styles = read('src/styles/global.css');
+    expect(styles).toContain('html::-webkit-scrollbar');
+    expect(styles).toContain('width: 3px');
+    expect(styles).toContain('scrollbar-color: var(--ink) transparent');
+    expect(styles).toContain('scrollbar-width: thin');
+  });
+
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
     const worker = read('public/sw.js');
     const service = read('src/services/dataService.js');
