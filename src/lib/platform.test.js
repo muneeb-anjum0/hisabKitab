@@ -98,7 +98,8 @@ describe('application contracts', () => {
     const worker = read('public/sw.js');
     const service = read('src/services/dataService.js');
     expect(worker).toContain("caches.match('/index.html')");
-    expect(worker).toContain('cached || fresh');
+    expect(worker).toContain('fetch(event.request)');
+    expect(worker).toContain(".catch(() => caches.match('/index.html'))");
     expect(service).toContain('waitForPendingWrites(db)');
     expect(service).toContain('pendingSync: true');
   });

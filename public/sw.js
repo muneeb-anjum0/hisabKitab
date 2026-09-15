@@ -1,4 +1,4 @@
-const VERSION = 'v14';
+const VERSION = 'v15';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
 const OWNED_CACHES = [SHELL_CACHE, ASSET_CACHE];
@@ -64,13 +64,9 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      caches.match('/index.html').then((cached) => {
-        const fresh = fetch(event.request)
-          .then((response) => cacheResponse(SHELL_CACHE, '/index.html', response))
-          .catch(() => cached);
-        event.waitUntil(fresh.then(() => undefined));
-        return cached || fresh;
-      }),
+      fetch(event.request)
+        .then((response) => cacheResponse(SHELL_CACHE, '/index.html', response))
+        .catch(() => caches.match('/index.html')),
     );
     return;
   }
