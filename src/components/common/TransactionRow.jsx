@@ -15,7 +15,7 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
   const destinationFund = funds.find((entry) => entry.id === endpoints.destinationFundId);
   const title =
     item.type === 'transfer'
-      ? `Sent from ${sourceFund?.name || 'unknown fund'} to ${destinationFund?.name || 'unknown fund'}`
+      ? `Sent ${money(Math.abs(item.amount))} from ${sourceFund?.name || 'unknown fund'} to ${destinationFund?.name || 'unknown fund'}${item.note ? ` — ${item.note}` : ''}`
       : item.description;
   return (
     <article
@@ -33,7 +33,7 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
             {creator?.displayName ? ` · ${creator.displayName}` : ''}
           </span>
         </span>
-        {item.note && <small>{item.note}</small>}
+        {item.note && item.type !== 'transfer' && <small>{item.note}</small>}
       </div>
       <div className={`ledger-amount ${incomingTransfer ? 'positive' : ''}`}>
         {item.type === 'expense' ? '-' : ''}
