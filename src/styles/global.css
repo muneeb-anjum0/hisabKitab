@@ -423,18 +423,15 @@ h3 {
   color: #08773a;
 }
 .ledger-row.ledger-transfer {
-  margin: 5px 0;
-  padding: 7px 9px;
-  border: 2px solid var(--ink);
-  border-left: 8px solid var(--blue);
-  background: #edf4fb;
-  box-shadow: 3px 3px 0 var(--yellow);
+  padding-left: 8px;
+  border-left: 3px solid var(--blue);
+  background: linear-gradient(90deg, rgb(43 111 174 / 9%), transparent 38%);
 }
 .ledger-row.ledger-transfer .ledger-symbol {
-  border-radius: 50%;
-  background: var(--blue);
-  color: white;
-  transform: rotate(-7deg);
+  background: white;
+  color: var(--blue);
+  border-color: var(--blue);
+  transform: rotate(-3deg);
 }
 .ledger-row.ledger-transfer .ledger-main strong {
   letter-spacing: 0.015em;
@@ -446,11 +443,12 @@ h3 {
   border: 3px solid;
 }
 .ledger-row.ledger-transfer.major {
-  margin: 5px 0;
-  padding: 7px 9px;
-  border: 2px solid var(--ink);
-  border-left: 8px solid var(--blue);
-  background: #edf4fb;
+  margin: 0;
+  padding: 6px 10px 6px 8px;
+  border: 0;
+  border-bottom: 2px dashed #19171355;
+  border-left: 3px solid var(--blue);
+  background: linear-gradient(90deg, rgb(43 111 174 / 9%), transparent 38%);
 }
 .row-actions {
   display: flex;
