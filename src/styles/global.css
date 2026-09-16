@@ -428,6 +428,10 @@ h3 {
   border-bottom: 2px dashed #19171355;
   background: linear-gradient(90deg, rgb(43 111 174 / 9%), transparent 38%);
 }
+.ledger-panel .ledger-row.ledger-transfer {
+  margin-left: calc(-20px - var(--line));
+  padding-left: calc(28px + var(--line));
+}
 .ledger-row.ledger-transfer .ledger-symbol {
   background: white;
   color: var(--blue);
@@ -444,12 +448,15 @@ h3 {
   border: 3px solid;
 }
 .ledger-row.ledger-transfer.major {
-  margin: 0;
   padding: 6px 10px 6px 8px;
   border: 0;
   border-bottom: 2px dashed #19171355;
   border-left: 3px solid var(--blue);
   background: linear-gradient(90deg, rgb(43 111 174 / 9%), transparent 38%);
+}
+.ledger-panel .ledger-row.ledger-transfer.major {
+  margin-left: calc(-20px - var(--line));
+  padding-left: calc(28px + var(--line));
 }
 .row-actions {
   display: flex;
