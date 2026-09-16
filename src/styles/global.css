@@ -425,6 +425,7 @@ h3 {
 .ledger-row.ledger-transfer {
   padding-left: 8px;
   border-left: 3px solid var(--blue);
+  border-bottom: 2px dashed #19171355;
   background: linear-gradient(90deg, rgb(43 111 174 / 9%), transparent 38%);
 }
 .ledger-row.ledger-transfer .ledger-symbol {

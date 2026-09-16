@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { money } from '../../lib/currency';
 import { friendlyDate } from '../../lib/dates';
-import { isTransferIn, transferFundIds } from '../../lib/calculations';
+import { transferFundIds } from '../../lib/calculations';
 
 function TransactionRow({ item, funds, categories, memberships = [], onEdit, onDelete }) {
   const fund = funds.find((entry) => entry.id === item.fundId);
@@ -9,7 +9,6 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
   const creator = memberships.find(
     (entry) => entry.fundId === item.fundId && entry.userId === item.userId,
   );
-  const incomingTransfer = isTransferIn(item);
   const endpoints = transferFundIds(item);
   const sourceFund = funds.find((entry) => entry.id === endpoints.sourceFundId);
   const destinationFund = funds.find((entry) => entry.id === endpoints.destinationFundId);
@@ -35,10 +34,12 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
         </span>
         {item.note && item.type !== 'transfer' && <small>{item.note}</small>}
       </div>
-      <div className={`ledger-amount ${incomingTransfer ? 'positive' : ''}`}>
-        {item.type === 'expense' ? '-' : ''}
-        {money(item.amount)}
-      </div>
+      {item.type !== 'transfer' && (
+        <div className="ledger-amount">
+          {item.type === 'expense' ? '-' : ''}
+          {money(item.amount)}
+        </div>
+      )}
       {(onEdit || onDelete) && (
         <div className="row-actions">
           {onEdit && (
