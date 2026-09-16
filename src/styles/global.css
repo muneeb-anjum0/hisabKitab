@@ -2823,7 +2823,8 @@ body {
   z-index: 1;
   overflow: visible;
 }
-.fund-strip:focus-within {
+.fund-strip:focus-within,
+.fund-strip.has-open-fund-menu {
   z-index: 40;
 }
 .fund-strip-link {

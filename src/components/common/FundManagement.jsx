@@ -16,6 +16,12 @@ export default function FundManagement({ fund, owner, detail = false }) {
   const menuRef = useRef(null);
   const triggerRef = useRef(null);
   useEffect(() => {
+    const card = menuRef.current?.closest('.fund-strip, .dash-fund-card');
+    if (!card) return undefined;
+    card.classList.toggle('has-open-fund-menu', menu);
+    return () => card.classList.remove('has-open-fund-menu');
+  }, [menu]);
+  useEffect(() => {
     if (!menu) return undefined;
     const close = (event) => {
       if (event.key === 'Escape') {
