@@ -10,13 +10,26 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
     (entry) => entry.fundId === item.fundId && entry.userId === item.userId,
   );
   const incomingTransfer = isTransferIn(item);
+  const counterpartyFund =
+    item.type === 'transfer'
+      ? funds.find(
+          (entry) =>
+            entry.id ===
+            (item.counterpartyFundId ||
+              (incomingTransfer ? item.sourceFundId : item.destinationFundId)),
+        )
+      : null;
+  const title =
+    item.type === 'transfer'
+      ? `${incomingTransfer ? 'Received from' : 'Sent to'} ${counterpartyFund?.name || 'another fund'}`
+      : item.description;
   return (
     <article className={`ledger-row ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}>
       <div className="ledger-symbol">
         {item.type === 'transfer' ? '⇄' : category?.symbol || '◆'}
       </div>
       <div className="ledger-main">
-        <strong>{item.description}</strong>
+        <strong>{title}</strong>
         <span className="ledger-meta">
           <b className={`ledger-fund-tag ${fund?.accent || ''}`}>{fund?.name || 'Unknown fund'}</b>
           <span>
@@ -33,12 +46,12 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
       {(onEdit || onDelete) && (
         <div className="row-actions">
           {onEdit && (
-            <button onClick={() => onEdit(item)} aria-label={`Edit ${item.description}`}>
+            <button onClick={() => onEdit(item)} aria-label={`Edit ${title}`}>
               ✎
             </button>
           )}
           {onDelete && (
-            <button onClick={() => onDelete(item)} aria-label={`Delete ${item.description}`}>
+            <button onClick={() => onDelete(item)} aria-label={`Delete ${title}`}>
               ×
             </button>
           )}
