@@ -12,13 +12,29 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
   const endpoints = transferFundIds(item);
   const sourceFund = funds.find((entry) => entry.id === endpoints.sourceFundId);
   const destinationFund = funds.find((entry) => entry.id === endpoints.destinationFundId);
-  const title =
+  const titleText =
     item.type === 'transfer'
       ? `Sent ${money(Math.abs(item.amount))} from ${sourceFund?.name || 'unknown fund'} to ${destinationFund?.name || 'unknown fund'}${item.note ? ` — ${item.note}` : ''}`
       : item.description;
+  const title =
+    item.type === 'transfer' ? (
+      <>
+        Sent {money(Math.abs(item.amount))} from{' '}
+        <b className={`ledger-fund-tag ${sourceFund?.accent || ''}`}>
+          {sourceFund?.name || 'Unknown fund'}
+        </b>{' '}
+        to{' '}
+        <b className={`ledger-fund-tag ${destinationFund?.accent || ''}`}>
+          {destinationFund?.name || 'Unknown fund'}
+        </b>
+        {item.note ? ` ~ ${item.note}` : ''}
+      </>
+    ) : (
+      item.description
+    );
   return (
     <article
-      className={`ledger-row ${item.type === 'transfer' ? 'ledger-transfer' : ''} ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}
+      className={`ledger-row ${item.type === 'transfer' ? 'ledger-transfer' : ''} ${item.type !== 'transfer' && Math.abs(item.amount) >= 10000 ? 'major' : ''}`}
     >
       <div className="ledger-symbol">
         {item.type === 'transfer' ? '⇄' : category?.symbol || '◆'}
@@ -26,7 +42,11 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
       <div className="ledger-main">
         <strong>{title}</strong>
         <span className="ledger-meta">
-          <b className={`ledger-fund-tag ${fund?.accent || ''}`}>{fund?.name || 'Unknown fund'}</b>
+          {item.type !== 'transfer' && (
+            <b className={`ledger-fund-tag ${fund?.accent || ''}`}>
+              {fund?.name || 'Unknown fund'}
+            </b>
+          )}
           <span>
             {friendlyDate(item.date)}
             {creator?.displayName ? ` · ${creator.displayName}` : ''}
@@ -43,12 +63,12 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
       {(onEdit || onDelete) && (
         <div className="row-actions">
           {onEdit && (
-            <button onClick={() => onEdit(item)} aria-label={`Edit ${title}`}>
+            <button onClick={() => onEdit(item)} aria-label={`Edit ${titleText}`}>
               ✎
             </button>
           )}
           {onDelete && (
-            <button onClick={() => onDelete(item)} aria-label={`Delete ${title}`}>
+            <button onClick={() => onDelete(item)} aria-label={`Delete ${titleText}`}>
               ×
             </button>
           )}
