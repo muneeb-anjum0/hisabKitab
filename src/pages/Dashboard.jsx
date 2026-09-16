@@ -53,6 +53,7 @@ export default function Dashboard({ onAction }) {
   const [activeId, setActiveId] = useState(null);
   const [orderedFunds, setOrderedFunds] = useState([]);
   const [selectedMonth, setSelectedMonth] = useState(null);
+  const [now, setNow] = useState(() => new Date());
   const searchRef = useRef(null);
   const deferredSearch = useDeferredValue(search);
   const activeFunds = useMemo(
@@ -200,6 +201,11 @@ export default function Dashboard({ onAction }) {
   }, [activeFunds, data.categories, data.transactions, deferredSearch, navigate]);
 
   useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30_000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const shortcut = (event) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -249,9 +255,11 @@ export default function Dashboard({ onAction }) {
           )}
         </div>
         <div className="dash-date">
-          <b>▣</b>
+          <b className="dash-clock" aria-label="Current time">
+            {now.toLocaleTimeString('en-PK', { hour: 'numeric', minute: '2-digit' })}
+          </b>
           <span>
-            {new Date().toLocaleDateString('en-PK', {
+            {now.toLocaleDateString('en-PK', {
               weekday: 'short',
               day: 'numeric',
               month: 'short',

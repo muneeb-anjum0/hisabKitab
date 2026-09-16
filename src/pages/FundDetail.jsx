@@ -39,6 +39,14 @@ export default function FundDetail() {
   const currentMembership = members.find((item) => item.userId === user.uid);
   const owner = currentMembership?.role === 'owner';
   const canEdit = ['owner', 'editor'].includes(currentMembership?.role);
+  const editableFundIds = new Set(
+    data.memberships
+      .filter(
+        (membership) =>
+          membership.userId === user.uid && ['owner', 'editor'].includes(membership.role),
+      )
+      .map((membership) => membership.fundId),
+  );
   const exportFund = async () => {
     const safeName =
       fund.name
@@ -169,7 +177,14 @@ export default function FundDetail() {
                 categories={data.categories}
                 memberships={data.memberships}
                 onEdit={canEdit && item.type === 'expense' ? setEditing : null}
-                onDelete={canEdit && item.type === 'expense' ? setDeleting : null}
+                onDelete={
+                  (item.type === 'expense' && canEdit) ||
+                  (item.type === 'transfer' &&
+                    editableFundIds.has(item.fundId) &&
+                    editableFundIds.has(item.counterpartyFundId))
+                    ? setDeleting
+                    : null
+                }
               />
               {item.lotUsages?.length > 0 && (
                 <small className="paid-from">
@@ -200,7 +215,8 @@ export default function FundDetail() {
           item={deleting}
           onClose={() => setDeleting(null)}
           onDelete={async () => {
-            await data.removeTransaction(deleting.id);
+            if (deleting.type === 'transfer') await data.removeTransfer(deleting);
+            else await data.removeTransaction(deleting.id);
             setDeleting(null);
           }}
         />
@@ -213,12 +229,19 @@ function DeleteExpense({ item, onClose, onDelete }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   return (
-    <Modal title="DELETE THIS EXPENSE?" onClose={onClose}>
+    <Modal
+      title={item.type === 'transfer' ? 'REVERSE THIS TRANSFER?' : 'DELETE THIS EXPENSE?'}
+      onClose={onClose}
+    >
       <div className="delete-preview">
         <strong>{money(item.amount)}</strong>
         <span>{item.description}</span>
       </div>
-      <p>The Fund balance and Money Lot history will be recalculated immediately.</p>
+      <p>
+        {item.type === 'transfer'
+          ? 'Both Transfer In and Transfer Out will be removed. Balances and Money Lots will return to their pre-transfer state.'
+          : 'The Fund balance and Money Lot history will be recalculated immediately.'}
+      </p>
       {error && (
         <p className="form-error" role="alert">
           {error}
@@ -241,7 +264,13 @@ function DeleteExpense({ item, onClose, onDelete }) {
           }}
           disabled={busy}
         >
-          {busy ? 'DELETING…' : 'DELETE EXPENSE'}
+          {busy
+            ? item.type === 'transfer'
+              ? 'REVERSING…'
+              : 'DELETING…'
+            : item.type === 'transfer'
+              ? 'REVERSE TRANSFER'
+              : 'DELETE EXPENSE'}
         </Button>
       </div>
     </Modal>

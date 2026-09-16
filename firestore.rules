@@ -39,6 +39,15 @@ service cloud.firestore {
         && pair.data.fundId == data.counterpartyFundId
         && pair.data.counterpartyFundId == data.fundId && pair.data.amount == -data.amount;
     }
+    function validTransferDeletion(data, transactionId) {
+      let pairPath = /databases/$(database)/documents/transactions/$(data.counterpartyId);
+      let pair = get(pairPath);
+      return data.type == 'transfer' && canEdit(data.fundId) && canEdit(data.counterpartyFundId)
+        && pair.data.type == 'transfer' && pair.data.counterpartyId == transactionId
+        && pair.data.linkId == data.linkId && pair.data.fundId == data.counterpartyFundId
+        && pair.data.counterpartyFundId == data.fundId && pair.data.amount == -data.amount
+        && !existsAfter(pairPath);
+    }
     function validRemittance(data) {
       return data.ownerId == request.auth.uid
         && positiveMoney(data.totalAmount)
@@ -136,7 +145,7 @@ service cloud.firestore {
           'preferredLotId', 'lotUsages', 'updatedAt'
         ]);
       allow delete: if signedIn() && canEdit(resource.data.fundId)
-        && resource.data.type == 'expense';
+        && (resource.data.type == 'expense' || validTransferDeletion(resource.data, id));
     }
     match /categories/{id} {
       allow read: if signedIn() && resource.data.userId == request.auth.uid;

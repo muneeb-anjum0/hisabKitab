@@ -303,6 +303,20 @@ export function DataProvider({ children }) {
         }),
         'EXPENSE DELETED.',
       ),
+    removeTransfer: (transaction) =>
+      write(
+        () => api.removeTransfer(transaction),
+        (current, result) => {
+          const ids = new Set(result.ids);
+          return {
+            ...current,
+            transactions: current.transactions.filter(
+              (item) => !ids.has(item.id) && (!result.linkId || item.linkId !== result.linkId),
+            ),
+          };
+        },
+        'TRANSFER REVERSED. BOTH SIDES AND ITS MONEY LOT ARE GONE.',
+      ),
     createRemittance: (values, allocations) =>
       write(
         () => api.createRemittance(user.uid, values, allocations),

@@ -167,7 +167,12 @@ export default function Activity() {
                   item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null
                 }
                 onDelete={
-                  item.type === 'expense' && editableFundIds.has(item.fundId) ? setDeleting : null
+                  (item.type === 'expense' && editableFundIds.has(item.fundId)) ||
+                  (item.type === 'transfer' &&
+                    editableFundIds.has(item.fundId) &&
+                    editableFundIds.has(item.counterpartyFundId))
+                    ? setDeleting
+                    : null
                 }
               />
             ),
@@ -187,7 +192,8 @@ export default function Activity() {
           item={deleting}
           onClose={() => setDeleting(null)}
           onDelete={async () => {
-            await data.removeTransaction(deleting.id);
+            if (deleting.type === 'transfer') await data.removeTransfer(deleting);
+            else await data.removeTransaction(deleting.id);
             setDeleting(null);
           }}
         />
@@ -278,11 +284,22 @@ function DeleteExpense({ item, onClose, onDelete }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   return (
-    <Modal title="DELETE THIS EXPENSE?" onClose={onClose}>
+    <Modal
+      title={item.type === 'transfer' ? 'REVERSE THIS TRANSFER?' : 'DELETE THIS EXPENSE?'}
+      onClose={onClose}
+    >
       <div className="delete-preview">
         <strong>{money(item.amount)}</strong>
         <span>{item.description}</span>
       </div>
+      {item.type === 'transfer' && (
+        <div className="history-warning">
+          <b>BOTH SIDES GO BACK.</b>
+          <p>
+            Transfer In, Transfer Out, and the transfer-created Money Lot will be removed together.
+          </p>
+        </div>
+      )}
       {error && <p className="form-error">{error}</p>}
       <Confirm
         busy={busy}
@@ -296,19 +313,20 @@ function DeleteExpense({ item, onClose, onDelete }) {
             setBusy(false);
           }
         }}
-        label="DELETE"
+        label={item.type === 'transfer' ? 'REVERSE TRANSFER' : 'DELETE'}
+        busyLabel={item.type === 'transfer' ? 'REVERSING…' : 'DELETING…'}
       />
     </Modal>
   );
 }
-function Confirm({ busy, onClose, onDelete, label }) {
+function Confirm({ busy, onClose, onDelete, label, busyLabel = 'DELETING…' }) {
   return (
     <div className="confirm-actions">
       <Button variant="paper" onClick={onClose} disabled={busy}>
         CANCEL
       </Button>
       <Button className="danger-button" onClick={onDelete} disabled={busy}>
-        {busy ? 'DELETING…' : label}
+        {busy ? busyLabel : label}
       </Button>
     </div>
   );

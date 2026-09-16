@@ -189,6 +189,19 @@ export function removeTransaction(id) {
   return Promise.resolve(id);
 }
 
+export function removeTransfer(transaction) {
+  if (transaction?.type !== 'transfer' || !transaction.id || !transaction.counterpartyId)
+    return Promise.reject(new Error('This transfer pair is incomplete and cannot be reversed.'));
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'transactions', transaction.id));
+  batch.delete(doc(db, 'transactions', transaction.counterpartyId));
+  queueWrite(batch.commit());
+  return Promise.resolve({
+    ids: [transaction.id, transaction.counterpartyId],
+    linkId: transaction.linkId,
+  });
+}
+
 export function createTransfer(
   uid,
   fromId,

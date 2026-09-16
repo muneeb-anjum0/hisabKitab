@@ -3028,13 +3028,15 @@ body {
   white-space: nowrap;
 }
 .dash-date > b {
-  width: 29px;
+  width: auto;
+  min-width: 48px;
   height: 29px;
   display: grid;
   place-items: center;
   background: #f4d431;
   border: 2px solid #111;
-  font: 900 17px var(--display);
+  padding: 0 5px;
+  font: 900 13px var(--display);
   transform: rotate(-3deg);
 }
 .dash-date > span {
@@ -4938,12 +4940,24 @@ html body {
     font-size: 38px;
   }
   .detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     margin: 19px 0;
     gap: 10px;
   }
+  .detail-actions .fund-header-controls {
+    display: contents;
+  }
+  .detail-actions .fund-header-controls button,
   .detail-actions .ink-button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
     font-size: 14px;
     padding: 9px 12px;
+  }
+  .detail-actions > .ink-button + .ink-button {
+    grid-column: 1 / -1;
   }
   .money-lots {
     padding: 12px;

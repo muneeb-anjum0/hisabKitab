@@ -124,6 +124,15 @@ describe('application contracts', () => {
     expect(service).toContain('pendingSync: true');
   });
 
+  it('reverses transfers as protected atomic pairs', () => {
+    const service = read('src/services/dataService.js');
+    const rules = read('firestore.rules');
+    expect(service).toContain('export function removeTransfer(transaction)');
+    expect(service).toContain("batch.delete(doc(db, 'transactions', transaction.counterpartyId))");
+    expect(rules).toContain('function validTransferDeletion(data, transactionId)');
+    expect(rules).toContain('!existsAfter(pairPath)');
+  });
+
   it('keeps Firebase Hosting configured as a single-page application', () => {
     expect(firebase.hosting.public).toBe('dist');
     expect(firebase.hosting.rewrites).toContainEqual({ source: '**', destination: '/index.html' });
