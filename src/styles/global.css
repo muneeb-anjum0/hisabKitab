@@ -2820,6 +2820,11 @@ body {
 }
 .fund-strip {
   position: relative;
+  z-index: 1;
+  overflow: visible;
+}
+.fund-strip:focus-within {
+  z-index: 40;
 }
 .fund-strip-link {
   grid-column: 2/-1;
