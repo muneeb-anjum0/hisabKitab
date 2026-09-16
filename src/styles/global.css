@@ -4830,6 +4830,10 @@ html body {
     min-height: 108px;
     padding: 10px;
   }
+  .fund-strip.has-open-fund-menu {
+    min-height: 160px;
+    align-items: start;
+  }
   .fund-strip-link {
     grid-column: 1/-1;
     grid-template-columns: 34px minmax(0, 1fr);
