@@ -19,6 +19,9 @@ import {
   sortFunds,
   sum,
   timestampMillis,
+  transferDirection,
+  isTransferIn,
+  isTransferOut,
   unallocatedTotal,
 } from './calculations';
 
@@ -30,6 +33,25 @@ const allocations = [
 ];
 
 describe('financial ledger', () => {
+  it('uses explicit fund direction instead of inferring transfer direction from the amount', () => {
+    const incoming = {
+      type: 'transfer',
+      fundId: 'house',
+      sourceFundId: 'personal',
+      destinationFundId: 'house',
+      transferDirection: 'in',
+      amount: -500,
+    };
+    expect(transferDirection(incoming)).toBe('in');
+    expect(isTransferIn(incoming)).toBe(true);
+    expect(isTransferOut(incoming)).toBe(false);
+  });
+
+  it('keeps old transfers readable through a legacy amount-sign fallback', () => {
+    expect(transferDirection({ type: 'transfer', amount: -500 })).toBe('out');
+    expect(transferDirection({ type: 'transfer', amount: 500 })).toBe('in');
+  });
+
   it('starts empty without NaN values', () => {
     expect(portfolioTotals([], [], [], [])).toEqual({
       funds: [],

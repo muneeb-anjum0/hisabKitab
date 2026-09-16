@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { money } from '../../lib/currency';
 import { friendlyDate } from '../../lib/dates';
+import { isTransferIn } from '../../lib/calculations';
 
 function TransactionRow({ item, funds, categories, memberships = [], onEdit, onDelete }) {
   const fund = funds.find((entry) => entry.id === item.fundId);
@@ -8,7 +9,7 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
   const creator = memberships.find(
     (entry) => entry.fundId === item.fundId && entry.userId === item.userId,
   );
-  const incomingTransfer = item.type === 'transfer' && item.amount > 0;
+  const incomingTransfer = isTransferIn(item);
   return (
     <article className={`ledger-row ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}>
       <div className="ledger-symbol">

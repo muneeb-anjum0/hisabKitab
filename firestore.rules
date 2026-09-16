@@ -32,10 +32,21 @@ service cloud.firestore {
       let pair = getAfter(/databases/$(database)/documents/transactions/$(data.counterpartyId));
       return data.type == 'transfer' && data.amount is number && data.amount != 0
         && data.amount > -1000000000000 && data.amount < 1000000000000
+        && data.transferDirection in ['in', 'out']
+        && data.sourceFundId != data.destinationFundId
+        && data.fundId == (data.transferDirection == 'out'
+          ? data.sourceFundId : data.destinationFundId)
+        && data.counterpartyFundId == (data.transferDirection == 'out'
+          ? data.destinationFundId : data.sourceFundId)
+        && ((data.transferDirection == 'out' && data.amount < 0)
+          || (data.transferDirection == 'in' && data.amount > 0))
         && data.userId == request.auth.uid && data.fundId != data.counterpartyFundId
         && canEdit(data.fundId) && canEdit(data.counterpartyFundId)
         && pair.data.type == 'transfer' && pair.data.counterpartyId == transactionId
         && pair.data.linkId == data.linkId && pair.data.userId == request.auth.uid
+        && pair.data.sourceFundId == data.sourceFundId
+        && pair.data.destinationFundId == data.destinationFundId
+        && pair.data.transferDirection != data.transferDirection
         && pair.data.fundId == data.counterpartyFundId
         && pair.data.counterpartyFundId == data.fundId && pair.data.amount == -data.amount;
     }

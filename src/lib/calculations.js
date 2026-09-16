@@ -8,6 +8,21 @@ export const timestampMillis = (value) => {
   return new Date(value).getTime() || 0;
 };
 
+export function transferDirection(item) {
+  if (item?.type !== 'transfer') return null;
+  if (item.transferDirection === 'in' || item.transferDirection === 'out')
+    return item.transferDirection;
+  if (item.sourceFundId && item.destinationFundId) {
+    if (item.fundId === item.sourceFundId) return 'out';
+    if (item.fundId === item.destinationFundId) return 'in';
+  }
+  // Compatibility for transfers created before explicit direction metadata existed.
+  return Number(item.amount) < 0 ? 'out' : 'in';
+}
+
+export const isTransferIn = (item) => transferDirection(item) === 'in';
+export const isTransferOut = (item) => transferDirection(item) === 'out';
+
 export function fundTotals(fundId, allocations, transactions) {
   const allocated = sum(
     allocations.filter((item) => item.fundId === fundId),
@@ -49,7 +64,7 @@ export function fundDeletionAssessment(fundId, data) {
   const moneyLots =
     allocations.length +
     transactions.filter(
-      (item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0,
+      (item) => item.fundId === fundId && item.type === 'transfer' && isTransferIn(item),
     ).length;
   const empty =
     allocations.length === 0 &&
@@ -235,7 +250,11 @@ export function fundExportRows(fund, allocations, transactions, remittances, cat
   fundTransactions.forEach((item) =>
     rows.push([
       item.date || '',
-      item.type === 'expense' ? 'Expense' : item.type === 'transfer' ? 'Transfer' : 'Adjustment',
+      item.type === 'expense'
+        ? 'Expense'
+        : item.type === 'transfer'
+          ? `Transfer ${transferDirection(item)}`
+          : 'Adjustment',
       item.description || item.note || item.type,
       categoryNames.get(item.categoryId) || '',
       item.amount,
@@ -273,7 +292,7 @@ export function buildMoneyLots(fundId, allocations, remittances, transactions) {
       };
     });
   const transferLots = transactions
-    .filter((item) => item.fundId === fundId && item.type === 'transfer' && Number(item.amount) > 0)
+    .filter((item) => item.fundId === fundId && item.type === 'transfer' && isTransferIn(item))
     .map((item) => ({
       id: `transfer:${item.id}`,
       fundId,
@@ -300,7 +319,7 @@ export function buildMoneyLots(fundId, allocations, remittances, transactions) {
     .filter(
       (item) =>
         item.fundId === fundId &&
-        (item.type === 'expense' || (item.type === 'transfer' && Number(item.amount) < 0)),
+        (item.type === 'expense' || (item.type === 'transfer' && isTransferOut(item))),
     )
     .sort(
       (a, b) =>

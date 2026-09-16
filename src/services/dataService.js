@@ -222,6 +222,9 @@ export function createTransfer(
       outRef,
       withTimestamps({
         fundId: fromId,
+        sourceFundId: fromId,
+        destinationFundId: toId,
+        transferDirection: 'out',
         counterpartyFundId: toId,
         counterpartyId: inRef.id,
         userId: uid,
@@ -238,6 +241,9 @@ export function createTransfer(
       inRef,
       withTimestamps({
         fundId: toId,
+        sourceFundId: fromId,
+        destinationFundId: toId,
+        transferDirection: 'in',
         counterpartyFundId: fromId,
         counterpartyId: outRef.id,
         userId: uid,
@@ -256,6 +262,9 @@ export function createTransfer(
       {
         id: outRef.id,
         fundId: fromId,
+        sourceFundId: fromId,
+        destinationFundId: toId,
+        transferDirection: 'out',
         counterpartyFundId: toId,
         counterpartyId: inRef.id,
         userId: uid,
@@ -271,6 +280,9 @@ export function createTransfer(
       {
         id: inRef.id,
         fundId: toId,
+        sourceFundId: fromId,
+        destinationFundId: toId,
+        transferDirection: 'in',
         counterpartyFundId: fromId,
         counterpartyId: outRef.id,
         userId: uid,
