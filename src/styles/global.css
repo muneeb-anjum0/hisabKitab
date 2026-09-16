@@ -2362,15 +2362,14 @@ body {
 .trace-row {
   position: relative;
 }
-.paid-from {
-  position: absolute;
-  right: 12px;
-  bottom: 4px;
+.ledger-main .ledger-detail {
+  align-self: flex-start;
   background: #ffe58a;
   border: 1px solid;
   padding: 2px 5px;
   font-size: 7px;
   font-weight: bold;
+  line-height: 1.1;
 }
 .route-loading {
   padding: 80px;
@@ -4228,9 +4227,6 @@ body {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 #111;
 }
-.trace-row:has(.row-actions) .paid-from {
-  right: 92px;
-}
 @media (max-width: 800px) {
   .money-lots {
     display: flex;
@@ -4252,11 +4248,6 @@ body {
     grid-column: 2/-1;
     justify-self: end;
     padding-bottom: 9px;
-  }
-  .trace-row:has(.row-actions) .paid-from {
-    right: auto;
-    left: 52px;
-    bottom: 10px;
   }
 }
 
