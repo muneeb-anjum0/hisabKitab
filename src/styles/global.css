@@ -4246,12 +4246,41 @@ body {
     font-size: 45px;
   }
   .trace-row .ledger-row {
-    grid-template-columns: 40px 1fr auto;
+    grid-template-columns: 40px minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+  }
+  .trace-row .ledger-symbol {
+    grid-column: 1;
+    grid-row: 1/3;
+    align-self: center;
+  }
+  .trace-row .ledger-main {
+    grid-column: 2;
+    grid-row: 1/3;
+    align-self: center;
+  }
+  .trace-row .ledger-amount {
+    grid-column: 3;
+    grid-row: 1;
+    align-self: end;
   }
   .trace-row .row-actions {
-    grid-column: 2/-1;
+    grid-column: 3;
+    grid-row: 2;
     justify-self: end;
-    padding-bottom: 9px;
+    align-self: start;
+    margin-left: 0;
+    padding-bottom: 0;
+  }
+  .trace-row .ledger-row.ledger-transfer .row-actions {
+    grid-column: 3;
+    grid-row: 1/3;
+    align-self: center;
+  }
+  .trace-row:has(.paid-from) .ledger-row {
+    min-height: 82px;
+    padding-bottom: 18px;
   }
   .trace-row:has(.row-actions) .paid-from {
     right: auto;
