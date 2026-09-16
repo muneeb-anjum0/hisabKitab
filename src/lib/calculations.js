@@ -23,6 +23,21 @@ export function transferDirection(item) {
 export const isTransferIn = (item) => transferDirection(item) === 'in';
 export const isTransferOut = (item) => transferDirection(item) === 'out';
 
+export function transferFundIds(item) {
+  if (item?.type !== 'transfer') return { sourceFundId: null, destinationFundId: null };
+  if (item.sourceFundId && item.destinationFundId) {
+    return {
+      sourceFundId: item.sourceFundId,
+      destinationFundId: item.destinationFundId,
+    };
+  }
+  const incoming = isTransferIn(item);
+  return {
+    sourceFundId: incoming ? item.counterpartyFundId : item.fundId,
+    destinationFundId: incoming ? item.fundId : item.counterpartyFundId,
+  };
+}
+
 export function fundTotals(fundId, allocations, transactions) {
   const allocated = sum(
     allocations.filter((item) => item.fundId === fundId),

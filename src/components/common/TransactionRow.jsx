@@ -1,7 +1,7 @@
 import { memo } from 'react';
 import { money } from '../../lib/currency';
 import { friendlyDate } from '../../lib/dates';
-import { isTransferIn } from '../../lib/calculations';
+import { isTransferIn, transferFundIds } from '../../lib/calculations';
 
 function TransactionRow({ item, funds, categories, memberships = [], onEdit, onDelete }) {
   const fund = funds.find((entry) => entry.id === item.fundId);
@@ -10,21 +10,17 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
     (entry) => entry.fundId === item.fundId && entry.userId === item.userId,
   );
   const incomingTransfer = isTransferIn(item);
-  const counterpartyFund =
-    item.type === 'transfer'
-      ? funds.find(
-          (entry) =>
-            entry.id ===
-            (item.counterpartyFundId ||
-              (incomingTransfer ? item.sourceFundId : item.destinationFundId)),
-        )
-      : null;
+  const endpoints = transferFundIds(item);
+  const sourceFund = funds.find((entry) => entry.id === endpoints.sourceFundId);
+  const destinationFund = funds.find((entry) => entry.id === endpoints.destinationFundId);
   const title =
     item.type === 'transfer'
-      ? `${incomingTransfer ? 'Received from' : 'Sent to'} ${counterpartyFund?.name || 'another fund'}`
+      ? `Sent from ${sourceFund?.name || 'unknown fund'} to ${destinationFund?.name || 'unknown fund'}`
       : item.description;
   return (
-    <article className={`ledger-row ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}>
+    <article
+      className={`ledger-row ${item.type === 'transfer' ? 'ledger-transfer' : ''} ${Math.abs(item.amount) >= 10000 ? 'major' : ''}`}
+    >
       <div className="ledger-symbol">
         {item.type === 'transfer' ? '⇄' : category?.symbol || '◆'}
       </div>

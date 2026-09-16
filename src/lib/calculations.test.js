@@ -20,6 +20,7 @@ import {
   sum,
   timestampMillis,
   transferDirection,
+  transferFundIds,
   isTransferIn,
   isTransferOut,
   unallocatedTotal,
@@ -50,6 +51,25 @@ describe('financial ledger', () => {
   it('keeps old transfers readable through a legacy amount-sign fallback', () => {
     expect(transferDirection({ type: 'transfer', amount: -500 })).toBe('out');
     expect(transferDirection({ type: 'transfer', amount: 500 })).toBe('in');
+  });
+
+  it('resolves the same source and destination from both sides of a transfer', () => {
+    expect(
+      transferFundIds({
+        type: 'transfer',
+        fundId: 'personal',
+        counterpartyFundId: 'house',
+        amount: -500,
+      }),
+    ).toEqual({ sourceFundId: 'personal', destinationFundId: 'house' });
+    expect(
+      transferFundIds({
+        type: 'transfer',
+        fundId: 'house',
+        counterpartyFundId: 'personal',
+        amount: 500,
+      }),
+    ).toEqual({ sourceFundId: 'personal', destinationFundId: 'house' });
   });
 
   it('starts empty without NaN values', () => {
