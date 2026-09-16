@@ -33,7 +33,13 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
             {destinationFund?.name || 'Unknown fund'}
           </b>
         </span>
-        {item.note && <span className="transfer-note">~ {item.note}</span>}
+        <span className="transfer-note">
+          {item.note && <>~ {item.note}</>}
+          <span className="transfer-date">
+            {item.note ? ' · ' : ''}
+            {friendlyDate(item.date)}
+          </span>
+        </span>
       </span>
     ) : (
       item.description
