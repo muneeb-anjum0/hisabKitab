@@ -176,15 +176,6 @@ export default function FundDetail() {
                 funds={data.funds}
                 categories={data.categories}
                 memberships={data.memberships}
-                detail={
-                  item.lotUsages?.length > 0
-                    ? `PAID FROM ${
-                        item.lotUsages.length === 1
-                          ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}`
-                          : `${item.lotUsages.length} MONEY LOTS`
-                      }`
-                    : null
-                }
                 onEdit={canEdit && item.type === 'expense' ? setEditing : null}
                 onDelete={
                   (item.type === 'expense' && canEdit) ||
@@ -195,6 +186,14 @@ export default function FundDetail() {
                     : null
                 }
               />
+              {item.lotUsages?.length > 0 && (
+                <small className="paid-from">
+                  PAID FROM{' '}
+                  {item.lotUsages.length === 1
+                    ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}`
+                    : `${item.lotUsages.length} MONEY LOTS`}
+                </small>
+              )}
             </div>
           ))
         ) : (
