@@ -431,7 +431,7 @@ h3 {
 .ledger-row.ledger-transfer .ledger-symbol {
   transform: rotate(-3deg);
 }
-.transfer-title {
+.ledger-main strong .transfer-title {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -439,18 +439,21 @@ h3 {
   font: inherit;
   color: inherit;
 }
-.transfer-title > span,
-.transfer-title .transfer-leg em {
+.ledger-main strong .transfer-title > span,
+.ledger-main strong .transfer-title .transfer-route em {
   font: inherit;
   color: inherit;
 }
-.transfer-leg {
+.transfer-route {
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
-.transfer-leg em {
+.transfer-route em {
   font-style: normal;
+}
+.transfer-arrow {
+  display: none;
 }
 .ledger-row.major {
   background: var(--yellow);
@@ -4277,24 +4280,39 @@ body {
     align-self: center;
   }
   .trace-row .transfer-title {
-    display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-    gap: 5px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
     line-height: 1.1;
   }
-  .trace-row .transfer-lead,
-  .trace-row .transfer-leg,
-  .trace-row .transfer-note {
-    grid-column: 1/-1;
+  .trace-row .transfer-lead {
+    font-size: 15px;
   }
-  .trace-row .transfer-leg {
-    display: grid;
-    grid-template-columns: 32px minmax(0, max-content);
+  .trace-row .transfer-route {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+  }
+  .trace-row .transfer-route > em:first-child,
+  .trace-row .transfer-to {
+    display: none;
+  }
+  .trace-row .transfer-route .ledger-fund-tag {
+    max-width: calc(50% - 12px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .trace-row .transfer-arrow {
+    display: inline;
+    font-size: 17px;
+    line-height: 1;
   }
   .trace-row .transfer-note {
     font-family: var(--utility);
-    font-size: 9px;
+    font-size: 8px;
     text-transform: none;
   }
   .trace-row .ledger-main {

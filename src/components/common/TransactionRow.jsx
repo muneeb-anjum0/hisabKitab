@@ -20,14 +20,15 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
     item.type === 'transfer' ? (
       <span className="transfer-title">
         <span className="transfer-lead">Sent {money(Math.abs(item.amount))}</span>
-        <span className="transfer-leg">
+        <span className="transfer-route">
           <em>from</em>
           <b className={`ledger-fund-tag ${sourceFund?.accent || ''}`}>
             {sourceFund?.name || 'Unknown fund'}
           </b>
-        </span>
-        <span className="transfer-leg">
-          <em>to</em>
+          <em className="transfer-to">to</em>
+          <em className="transfer-arrow" aria-hidden="true">
+            →
+          </em>
           <b className={`ledger-fund-tag ${destinationFund?.accent || ''}`}>
             {destinationFund?.name || 'Unknown fund'}
           </b>
