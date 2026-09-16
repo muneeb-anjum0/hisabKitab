@@ -431,6 +431,27 @@ h3 {
 .ledger-row.ledger-transfer .ledger-symbol {
   transform: rotate(-3deg);
 }
+.transfer-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font: inherit;
+  color: inherit;
+}
+.transfer-title > span,
+.transfer-title .transfer-leg em {
+  font: inherit;
+  color: inherit;
+}
+.transfer-leg {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.transfer-leg em {
+  font-style: normal;
+}
 .ledger-row.major {
   background: var(--yellow);
   margin: 5px -10px;
@@ -4254,6 +4275,27 @@ body {
     grid-column: 1;
     grid-row: 1/3;
     align-self: center;
+  }
+  .trace-row .transfer-title {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 5px 6px;
+    line-height: 1.1;
+  }
+  .trace-row .transfer-lead,
+  .trace-row .transfer-leg,
+  .trace-row .transfer-note {
+    grid-column: 1/-1;
+  }
+  .trace-row .transfer-leg {
+    display: grid;
+    grid-template-columns: 32px minmax(0, max-content);
+  }
+  .trace-row .transfer-note {
+    font-family: var(--utility);
+    font-size: 9px;
+    text-transform: none;
   }
   .trace-row .ledger-main {
     grid-column: 2;

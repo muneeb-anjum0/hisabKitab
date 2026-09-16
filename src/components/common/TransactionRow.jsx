@@ -18,17 +18,22 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
       : item.description;
   const title =
     item.type === 'transfer' ? (
-      <>
-        Sent {money(Math.abs(item.amount))} from{' '}
-        <b className={`ledger-fund-tag ${sourceFund?.accent || ''}`}>
-          {sourceFund?.name || 'Unknown fund'}
-        </b>{' '}
-        to{' '}
-        <b className={`ledger-fund-tag ${destinationFund?.accent || ''}`}>
-          {destinationFund?.name || 'Unknown fund'}
-        </b>
-        {item.note ? ` ~ ${item.note}` : ''}
-      </>
+      <span className="transfer-title">
+        <span className="transfer-lead">Sent {money(Math.abs(item.amount))}</span>
+        <span className="transfer-leg">
+          <em>from</em>
+          <b className={`ledger-fund-tag ${sourceFund?.accent || ''}`}>
+            {sourceFund?.name || 'Unknown fund'}
+          </b>
+        </span>
+        <span className="transfer-leg">
+          <em>to</em>
+          <b className={`ledger-fund-tag ${destinationFund?.accent || ''}`}>
+            {destinationFund?.name || 'Unknown fund'}
+          </b>
+        </span>
+        {item.note && <span className="transfer-note">~ {item.note}</span>}
+      </span>
     ) : (
       item.description
     );
