@@ -30,9 +30,7 @@ export default function Funds() {
           <div className="fund-strip-title">
             <FundIconBadge name={fund.name} />
             <div>
-              <small>
-                {fund.archived ? 'ARCHIVED' : fund.type === 'shared' ? 'SHARED' : 'PERSONAL'}
-              </small>
+              {fund.archived && <small>ARCHIVED</small>}
               <h2>{fund.name}</h2>
             </div>
           </div>

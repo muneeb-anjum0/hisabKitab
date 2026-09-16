@@ -4817,25 +4817,44 @@ html body {
 }
 
 @media (max-width: 800px) {
+  .fund-list {
+    gap: 16px;
+  }
+  .fund-strip {
+    min-height: 108px;
+    padding: 10px;
+  }
   .fund-strip-link {
     grid-column: 1/-1;
     grid-template-columns: 34px minmax(0, 1fr);
-    min-height: 76px;
+    grid-template-rows: auto auto;
+    gap: 6px 10px;
+    min-height: 88px;
     margin: -10px;
-    padding: 10px;
+    padding: 11px 48px 11px 10px;
   }
   .fund-strip-link .fund-index {
     grid-column: 1;
-    grid-row: 1/5;
+    grid-row: 1/3;
     align-self: center;
   }
-  .fund-strip-link .fund-strip-title,
-  .fund-strip-link .fund-strip-numbers,
-  .fund-strip-link > strong {
+  .fund-strip-link .fund-strip-title {
     grid-column: 2;
+    grid-row: 1;
+    gap: 9px;
   }
   .fund-strip-link .fund-strip-numbers {
-    margin-top: 10px;
+    grid-column: 2;
+    margin-top: 4px;
+  }
+  .fund-strip-link > strong {
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+    line-height: 0.9;
+  }
+  .fund-strip-link > strong small {
+    margin-top: 3px;
   }
   .fund-strip-link > i {
     display: none;
