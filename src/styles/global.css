@@ -6937,7 +6937,22 @@ html.capacitor-native:before {
   font: 900 17px/1 var(--display);
 }
 .activity-ledger .income-row {
+  min-height: 74px;
+  align-items: center;
+  padding-block: 9px;
   padding-right: 0;
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(31, 143, 76, 0.055) 0,
+    rgba(31, 143, 76, 0.055) 5px,
+    rgba(31, 143, 76, 0.012) 5px,
+    rgba(31, 143, 76, 0.012) 11px
+  );
+}
+.activity-ledger .income-row > div:first-child,
+.activity-ledger .income-row > .income-value-actions {
+  align-self: center;
+  justify-content: center;
 }
 
 .comic-options button {
