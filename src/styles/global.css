@@ -5300,8 +5300,9 @@ html body {
       transform 220ms ease;
   }
   .detail-actions.open .detail-actions-menu {
-    max-height: 180px;
+    max-height: 196px;
     margin-top: 9px;
+    padding: 0 5px 7px 0;
     opacity: 1;
     pointer-events: auto;
     transform: translateY(0);
