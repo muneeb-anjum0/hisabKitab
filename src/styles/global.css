@@ -6936,6 +6936,9 @@ html.capacitor-native:before {
   box-shadow: 2px 2px 0 #111;
   font: 900 17px/1 var(--display);
 }
+.activity-ledger .income-row {
+  padding-right: 0;
+}
 
 .comic-options button {
   position: relative;
