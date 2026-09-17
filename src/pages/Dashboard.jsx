@@ -392,7 +392,7 @@ export default function Dashboard({ onAction }) {
                 <span>LATEST MOVES IN YOUR STORY.</span>
                 <Link to="/activity">View all →</Link>
               </header>
-              <div className="panel ledger-panel">
+              <div className="panel ledger-panel recent-compact-ledger">
                 {recentTransactions.length ? (
                   recentTransactions.map((item) => {
                     const paidFromLabel = moneyLotUsageLabel(
