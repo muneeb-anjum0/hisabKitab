@@ -392,18 +392,28 @@ export default function Dashboard({ onAction }) {
                 <span>LATEST MOVES IN YOUR STORY.</span>
                 <Link to="/activity">View all →</Link>
               </header>
-              <div className="compact-ledger">
+              <div className="panel ledger-panel">
                 {recentTransactions.length ? (
-                  recentTransactions.map((item) => (
-                    <TransactionRow
-                      key={item.id}
-                      item={item}
-                      funds={data.funds}
-                      categories={data.categories}
-                      memberships={data.memberships}
-                      paidFromLabel={moneyLotUsageLabel(item, lotsByFund.get(item.fundId) || [])}
-                    />
-                  ))
+                  recentTransactions.map((item) => {
+                    const paidFromLabel = moneyLotUsageLabel(
+                      item,
+                      lotsByFund.get(item.fundId) || [],
+                    );
+                    return (
+                      <div key={item.id} className="trace-row">
+                        <TransactionRow
+                          item={item}
+                          funds={data.funds}
+                          categories={data.categories}
+                          memberships={data.memberships}
+                          paidFromLabel={paidFromLabel}
+                        />
+                        {item.type !== 'transfer' && paidFromLabel && (
+                          <small className="paid-from">{paidFromLabel}</small>
+                        )}
+                      </div>
+                    );
+                  })
                 ) : (
                   <Empty title="NOTHING'S MOVED YET.">Add money to begin your story.</Empty>
                 )}

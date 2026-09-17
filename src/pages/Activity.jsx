@@ -176,25 +176,36 @@ export default function Activity() {
                 onDelete={() => setDeletingIncome(item)}
               />
             ) : (
-              <TransactionRow
-                key={item.id}
-                item={item}
-                funds={data.funds}
-                categories={data.categories}
-                memberships={data.memberships}
-                paidFromLabel={moneyLotUsageLabel(item, lotsByFund.get(item.fundId) || [])}
-                onEdit={
-                  item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null
-                }
-                onDelete={
-                  (item.type === 'expense' && editableFundIds.has(item.fundId)) ||
-                  (item.type === 'transfer' &&
-                    editableFundIds.has(item.fundId) &&
-                    editableFundIds.has(item.counterpartyFundId))
-                    ? setDeleting
-                    : null
-                }
-              />
+              (() => {
+                const paidFromLabel = moneyLotUsageLabel(item, lotsByFund.get(item.fundId) || []);
+                return (
+                  <div key={item.id} className="trace-row">
+                    <TransactionRow
+                      item={item}
+                      funds={data.funds}
+                      categories={data.categories}
+                      memberships={data.memberships}
+                      paidFromLabel={paidFromLabel}
+                      onEdit={
+                        item.type === 'expense' && editableFundIds.has(item.fundId)
+                          ? setEditing
+                          : null
+                      }
+                      onDelete={
+                        (item.type === 'expense' && editableFundIds.has(item.fundId)) ||
+                        (item.type === 'transfer' &&
+                          editableFundIds.has(item.fundId) &&
+                          editableFundIds.has(item.counterpartyFundId))
+                          ? setDeleting
+                          : null
+                      }
+                    />
+                    {item.type !== 'transfer' && paidFromLabel && (
+                      <small className="paid-from">{paidFromLabel}</small>
+                    )}
+                  </div>
+                );
+              })()
             ),
           )
         ) : (
