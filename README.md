@@ -37,6 +37,26 @@ visible only to the members added to them.
 
 For safety, keep a copy of important records using the Excel export option.
 
+## Planned enhancements
+
+The goal is to keep HisabKitab focused and easy to use while making it more helpful
+for everyday Pakistani personal and household finance. These are planned ideas, not
+promises or release dates.
+
+- Recurring income, bills, subscriptions, and reminder notifications.
+- Fund budgets, spending limits, and friendly “you are close to the limit” alerts.
+- Clearer spending insights: category trends, monthly comparisons, and cash-flow views.
+- Receipt and bill attachments for important transactions.
+- Faster shared-Fund collaboration, member roles, and an easier way to settle up.
+- Search improvements, saved filters, tags, and smarter transaction suggestions.
+- Better onboarding with sample data and a guided first-budget setup.
+- Optional biometric/PIN app lock for an extra layer of privacy on a shared phone.
+- Backup, restore, and account-data export options that are easy to understand.
+- Home-screen widgets, quick-add shortcuts, and notification actions that make daily
+  logging quicker.
+- Accessibility improvements, including stronger contrast choices and larger-text support.
+- A smoother path to Play Store distribution and regular stable releases.
+
 ## Support
 
 If something behaves unexpectedly, open a
