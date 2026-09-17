@@ -6927,6 +6927,16 @@ html.capacitor-native:before {
   }
 }
 
+/* Money received and expense rows share one action-button footprint. */
+.activity-ledger .income-actions button {
+  width: 34px;
+  height: 31px;
+  border: 2px solid #111;
+  padding: 0;
+  box-shadow: 2px 2px 0 #111;
+  font: 900 17px/1 var(--display);
+}
+
 .comic-options button {
   position: relative;
   overflow: hidden;
