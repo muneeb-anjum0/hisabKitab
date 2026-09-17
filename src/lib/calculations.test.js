@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMoneyLots,
   canDeleteRemittance,
+  collapseTransferPairs,
   consumeMoneyLots,
   fundCardState,
   fundDeletionAssessment,
   fundTotals,
   ledgerMonths,
   moneyLotSummary,
+  moneyLotUsageLabel,
   monthlyBreakdown,
   monthlyExportRows,
   fundExportRows,
@@ -70,6 +72,34 @@ describe('financial ledger', () => {
         amount: 500,
       }),
     ).toEqual({ sourceFundId: 'personal', destinationFundId: 'house' });
+  });
+
+  it('collapses paired transfer documents into the outgoing activity record', () => {
+    const expense = { id: 'expense-1', type: 'expense' };
+    const incoming = {
+      id: 'transfer-1_in',
+      linkId: 'transfer-1',
+      type: 'transfer',
+      transferDirection: 'in',
+    };
+    const outgoing = {
+      id: 'transfer-1_out',
+      linkId: 'transfer-1',
+      type: 'transfer',
+      transferDirection: 'out',
+    };
+    expect(collapseTransferPairs([incoming, expense, outgoing])).toEqual([expense, outgoing]);
+  });
+
+  it('formats Money Lot usage consistently across transaction lists', () => {
+    expect(
+      moneyLotUsageLabel({ lotUsages: [{ lotId: 'lot-a', amount: 100 }] }, [
+        { id: 'lot-a', number: 3 },
+      ]),
+    ).toBe('PAID FROM LOT #03');
+    expect(moneyLotUsageLabel({ lotUsages: [{ lotId: 'lot-a' }, { lotId: 'lot-b' }] }, [])).toBe(
+      'PAID FROM 2 MONEY LOTS',
+    );
   });
 
   it('starts empty without NaN values', () => {

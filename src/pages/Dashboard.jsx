@@ -22,9 +22,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/data';
 import { useAuth } from '../contexts/auth';
 import {
+  collapseTransferPairs,
   fundCardState,
   ledgerMonths,
   moneyLotSummary,
+  moneyLotUsageLabel,
   monthlyBreakdown,
   monthlyExportRows,
   portfolioTotals,
@@ -155,7 +157,7 @@ export default function Dashboard({ onAction }) {
   );
   const recentTransactions = useMemo(
     () =>
-      [...data.transactions]
+      collapseTransferPairs(data.transactions)
         .sort((a, b) => {
           const byDate = String(b.date || '').localeCompare(String(a.date || ''));
           if (byDate) return byDate;
@@ -166,6 +168,16 @@ export default function Dashboard({ onAction }) {
         })
         .slice(0, 5),
     [data.transactions],
+  );
+  const lotsByFund = useMemo(
+    () =>
+      new Map(
+        data.funds.map((fund) => [
+          fund.id,
+          moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions).lots,
+        ]),
+      ),
+    [data.allocations, data.funds, data.remittances, data.transactions],
   );
   const searchResults = useMemo(() => {
     const query = deferredSearch.trim().toLowerCase();
@@ -389,6 +401,7 @@ export default function Dashboard({ onAction }) {
                       funds={data.funds}
                       categories={data.categories}
                       memberships={data.memberships}
+                      paidFromLabel={moneyLotUsageLabel(item, lotsByFund.get(item.fundId) || [])}
                     />
                   ))
                 ) : (

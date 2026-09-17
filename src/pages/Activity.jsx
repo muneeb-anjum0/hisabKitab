@@ -6,7 +6,13 @@ import QuickAdd from '../components/forms/QuickAdd';
 import { Button, ComicDatePicker, ComicSelect, Empty, Modal } from '../components/comic/Comic';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
-import { isTransferOut, timestampMillis, transferFundIds } from '../lib/calculations';
+import {
+  collapseTransferPairs,
+  moneyLotSummary,
+  moneyLotUsageLabel,
+  timestampMillis,
+  transferFundIds,
+} from '../lib/calculations';
 
 export default function Activity() {
   const data = useData();
@@ -36,21 +42,22 @@ export default function Activity() {
   const [deletingIncome, setDeletingIncome] = useState(null);
   const deferredSearch = useDeferredValue(filters.search);
   const { fund: fundFilter, category: categoryFilter, type: typeFilter, month } = filters;
+  const lotsByFund = useMemo(
+    () =>
+      new Map(
+        data.funds.map((fund) => [
+          fund.id,
+          moneyLotSummary(fund.id, data.allocations, data.remittances, data.transactions).lots,
+        ]),
+      ),
+    [data.allocations, data.funds, data.remittances, data.transactions],
+  );
   const items = useMemo(() => {
     const search = deferredSearch.toLowerCase();
-    const transferPairs = new Map();
-    const transactionItems = [];
-    data.transactions.forEach((item) => {
-      const activityItem = { ...item, activityDate: item.date };
-      if (item.type !== 'transfer') {
-        transactionItems.push(activityItem);
-        return;
-      }
-      const pairKey = item.linkId || [item.id, item.counterpartyId].sort().join(':');
-      const current = transferPairs.get(pairKey);
-      if (!current || isTransferOut(item)) transferPairs.set(pairKey, activityItem);
-    });
-    transactionItems.push(...transferPairs.values());
+    const transactionItems = collapseTransferPairs(data.transactions).map((item) => ({
+      ...item,
+      activityDate: item.date,
+    }));
     const remittanceItems = data.remittances.map((item) => ({
       ...item,
       id: `remittance-${item.id}`,
@@ -175,6 +182,7 @@ export default function Activity() {
                 funds={data.funds}
                 categories={data.categories}
                 memberships={data.memberships}
+                paidFromLabel={moneyLotUsageLabel(item, lotsByFund.get(item.fundId) || [])}
                 onEdit={
                   item.type === 'expense' && editableFundIds.has(item.fundId) ? setEditing : null
                 }

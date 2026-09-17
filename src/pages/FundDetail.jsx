@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuth } from '../contexts/auth';
 import { useData } from '../contexts/data';
-import { fundExportRows, fundTotals, moneyLotSummary } from '../lib/calculations';
+import {
+  fundExportRows,
+  fundTotals,
+  moneyLotSummary,
+  moneyLotUsageLabel,
+} from '../lib/calculations';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
 import { Button, ComicSelect, Modal, Field, Progress, Empty } from '../components/comic/Comic';
@@ -170,13 +175,7 @@ export default function FundDetail() {
       <section className="panel ledger-panel">
         {transactions.length ? (
           transactions.map((item) => {
-            const paidFromLabel = item.lotUsages?.length
-              ? `PAID FROM ${
-                  item.lotUsages.length === 1
-                    ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}`
-                    : `${item.lotUsages.length} MONEY LOTS`
-                }`
-              : '';
+            const paidFromLabel = moneyLotUsageLabel(item, lotSummary.lots);
 
             return (
               <div key={item.id} className="trace-row">

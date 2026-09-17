@@ -23,6 +23,31 @@ export function transferDirection(item) {
 export const isTransferIn = (item) => transferDirection(item) === 'in';
 export const isTransferOut = (item) => transferDirection(item) === 'out';
 
+/** Collapse the two ledger documents that represent one transfer into its outgoing record. */
+export function collapseTransferPairs(transactions) {
+  const regular = [];
+  const transfers = new Map();
+  transactions.forEach((item) => {
+    if (item.type !== 'transfer') {
+      regular.push(item);
+      return;
+    }
+    const pairKey =
+      item.linkId ||
+      (item.counterpartyId ? [item.id, item.counterpartyId].sort().join(':') : item.id);
+    const current = transfers.get(pairKey);
+    if (!current || isTransferOut(item)) transfers.set(pairKey, item);
+  });
+  return [...regular, ...transfers.values()];
+}
+
+export function moneyLotUsageLabel(item, lots) {
+  if (!item?.lotUsages?.length) return '';
+  if (item.lotUsages.length > 1) return `PAID FROM ${item.lotUsages.length} MONEY LOTS`;
+  const lotNumber = lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?';
+  return `PAID FROM LOT #${String(lotNumber).padStart(2, '0')}`;
+}
+
 export function transferFundIds(item) {
   if (item?.type !== 'transfer') return { sourceFundId: null, destinationFundId: null };
   if (item.sourceFundId && item.destinationFundId) {
