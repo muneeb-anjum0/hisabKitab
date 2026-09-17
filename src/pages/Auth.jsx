@@ -105,7 +105,12 @@ export default function Auth() {
         <div className="auth-logo">
           <img src="/icon.svg" alt="HisabKitab" />
         </div>
-        <div className="pow">₨</div>
+        <div className="auth-corner" aria-hidden="true">
+          <div className="pow">Rs.</div>
+          <span className="auth-corner-plus">+</span>
+          <span className="auth-corner-check">✓</span>
+          <span className="auth-corner-ledger">≡</span>
+        </div>
         <h1>
           MONEY.
           <br />

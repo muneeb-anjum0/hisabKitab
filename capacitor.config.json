@@ -5,7 +5,7 @@
   "plugins": {
     "SystemBars": {
       "insetsHandling": "css",
-      "style": "dark"
+      "style": "light"
     },
     "FirebaseAuthentication": {
       "skipNativeAuth": true,

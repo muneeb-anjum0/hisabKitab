@@ -54,7 +54,7 @@ describe('application contracts', () => {
       skipNativeAuth: true,
       providers: ['google.com'],
     });
-    expect(capacitor.plugins.SystemBars).toMatchObject({ insetsHandling: 'css', style: 'dark' });
+    expect(capacitor.plugins.SystemBars).toMatchObject({ insetsHandling: 'css', style: 'light' });
   });
 
   it('registers native back navigation and both Android quick-action widgets', () => {

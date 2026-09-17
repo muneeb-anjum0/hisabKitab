@@ -5524,7 +5524,7 @@ html body {
 }
 .auth-logo img {
   display: block;
-  width: clamp(92px, 10vw, 144px);
+  width: clamp(69px, 7.5vw, 108px);
   height: auto;
 }
 .setup-masthead img {
@@ -5759,6 +5759,106 @@ html body {
   .capacitor-native .auth-switch {
     margin-top: 13px;
   }
+}
+
+/* Login artwork: Pakistan-only currency mark with compact comic bookkeeping details. */
+.auth-corner {
+  position: absolute;
+  z-index: 2;
+  top: 9%;
+  right: 8%;
+  width: 150px;
+  height: 122px;
+}
+.auth-corner .pow {
+  inset: 12px 13px auto auto;
+  width: 96px;
+  height: 68px;
+  border: 4px solid var(--ink);
+  border-radius: 12px 3px 10px 4px;
+  clip-path: none;
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: 7px 7px 0 var(--red);
+  font: 900 42px/1 var(--display);
+  transform: rotate(3deg);
+}
+.auth-corner > span {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  font: 900 21px/1 var(--display);
+}
+.auth-corner-plus {
+  left: 1px;
+  top: 1px;
+  width: 38px;
+  height: 38px;
+  background: var(--red);
+  color: #fff;
+  transform: rotate(-8deg);
+}
+.auth-corner-check {
+  right: 0;
+  bottom: 0;
+  width: 36px;
+  height: 36px;
+  background: var(--blue);
+  color: #fff;
+  transform: rotate(7deg);
+}
+.auth-corner-ledger {
+  left: 27px;
+  bottom: 2px;
+  width: 43px;
+  height: 31px;
+  background: var(--white);
+  color: var(--ink);
+  transform: rotate(-3deg);
+}
+
+@media (max-width: 800px) {
+  .auth-corner {
+    top: 6px;
+    right: 1px;
+    width: 100px;
+    height: 82px;
+  }
+  .auth-corner .pow,
+  .capacitor-native .auth-corner .pow {
+    inset: 9px 9px auto auto;
+    width: 65px;
+    height: 47px;
+    border-width: 3px;
+    border-radius: 8px 2px 7px 3px;
+    box-shadow: 5px 5px 0 var(--red);
+    font-size: 29px;
+  }
+  .auth-corner > span {
+    border-width: 2px;
+    font-size: 15px;
+  }
+  .auth-corner-plus {
+    width: 27px;
+    height: 27px;
+  }
+  .auth-corner-check {
+    width: 25px;
+    height: 25px;
+  }
+  .auth-corner-ledger {
+    left: 18px;
+    width: 30px;
+    height: 23px;
+  }
+}
+
+html.capacitor-native:before {
+  height: max(16px, var(--safe-area-inset-top, env(safe-area-inset-top)));
+  border-bottom: 3px solid var(--ink);
+  background: #fff;
+  box-sizing: border-box;
 }
 @media (prefers-reduced-motion: reduce) {
   .startup-spinner i {
