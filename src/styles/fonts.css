@@ -1,7 +1,7 @@
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 600;
   src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2')
     format('woff2');
@@ -10,7 +10,7 @@
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 700;
   src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2')
     format('woff2');
@@ -19,7 +19,7 @@
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 800;
   src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-800-normal.woff2')
     format('woff2');
@@ -28,7 +28,7 @@
 @font-face {
   font-family: 'Barlow Condensed';
   font-style: italic;
-  font-display: swap;
+  font-display: block;
   font-weight: 800;
   src: url('@fontsource/barlow-condensed/files/barlow-condensed-latin-800-italic.woff2')
     format('woff2');
@@ -46,7 +46,7 @@
 @font-face {
   font-family: 'DM Mono';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 400;
   src: url('@fontsource/dm-mono/files/dm-mono-latin-400-normal.woff2') format('woff2');
 }
@@ -62,7 +62,7 @@
 @font-face {
   font-family: 'Permanent Marker';
   font-style: normal;
-  font-display: swap;
+  font-display: block;
   font-weight: 400;
   src: url('@fontsource/permanent-marker/files/permanent-marker-latin-400-normal.woff2')
     format('woff2');
