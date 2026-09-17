@@ -4789,7 +4789,7 @@ html body {
   z-index: 250;
   overflow: hidden;
   isolation: isolate;
-  background: var(--paper);
+  background: #fff;
 }
 
 /* Fund cards are one complete target; management controls remain layered above the link. */
