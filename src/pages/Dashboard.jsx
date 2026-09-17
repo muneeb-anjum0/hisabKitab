@@ -22,7 +22,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useData } from '../contexts/data';
 import { useAuth } from '../contexts/auth';
 import {
-  collapseTransferPairs,
   fundCardState,
   ledgerMonths,
   moneyLotSummary,
@@ -31,8 +30,8 @@ import {
   monthlyExportRows,
   portfolioTotals,
   sortFunds,
-  timestampMillis,
 } from '../lib/calculations';
+import { recentTransactions as selectRecentTransactions } from '../lib/ledgerItems';
 import { money } from '../lib/currency';
 import { friendlyDate, monthKey } from '../lib/dates';
 import { exportXlsxFile } from '../lib/fileExport';
@@ -156,17 +155,7 @@ export default function Dashboard({ onAction }) {
     [activeFunds, data.categories, data.remittances, data.transactions, months],
   );
   const recentTransactions = useMemo(
-    () =>
-      collapseTransferPairs(data.transactions)
-        .sort((a, b) => {
-          const byDate = String(b.date || '').localeCompare(String(a.date || ''));
-          if (byDate) return byDate;
-          return (
-            timestampMillis(b.createdAt) - timestampMillis(a.createdAt) ||
-            String(b.id).localeCompare(String(a.id))
-          );
-        })
-        .slice(0, 5),
+    () => selectRecentTransactions(data.transactions, 5),
     [data.transactions],
   );
   const lotsByFund = useMemo(

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth, firebaseConfigured } from '../lib/firebase';
-import * as authService from '../services/authService';
+import { auth } from '../lib/firebaseAuth';
+import { firebaseConfigured } from '../lib/firebaseApp';
 
 import { AuthContext } from './auth';
 
@@ -23,12 +23,15 @@ export function AuthProvider({ children }) {
       user,
       loading,
       configured: firebaseConfigured,
-      emailLogin: authService.emailLogin,
-      emailSignup: authService.emailSignup,
-      googleLogin: authService.googleLogin,
-      resetPassword: authService.resetPassword,
-      changeDisplayName: (name) => authService.changeDisplayName(user, name),
-      logout: authService.logout,
+      emailLogin: async (...args) => (await import('../services/authService')).emailLogin(...args),
+      emailSignup: async (...args) =>
+        (await import('../services/authService')).emailSignup(...args),
+      googleLogin: async () => (await import('../services/authService')).googleLogin(),
+      resetPassword: async (email) =>
+        (await import('../services/authService')).resetPassword(email),
+      changeDisplayName: async (name) =>
+        (await import('../services/authService')).changeDisplayName(user, name),
+      logout: async () => (await import('../services/authService')).logout(),
     }),
     [user, loading],
   );

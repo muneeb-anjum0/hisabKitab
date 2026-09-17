@@ -6,13 +6,8 @@ import QuickAdd from '../components/forms/QuickAdd';
 import { Button, ComicDatePicker, ComicSelect, Empty, Modal } from '../components/comic/Comic';
 import { friendlyDate } from '../lib/dates';
 import { money } from '../lib/currency';
-import {
-  collapseTransferPairs,
-  moneyLotSummary,
-  moneyLotUsageLabel,
-  timestampMillis,
-  transferFundIds,
-} from '../lib/calculations';
+import { moneyLotSummary, moneyLotUsageLabel, transferFundIds } from '../lib/calculations';
+import { activityItems } from '../lib/ledgerItems';
 
 export default function Activity() {
   const data = useData();
@@ -54,39 +49,19 @@ export default function Activity() {
   );
   const items = useMemo(() => {
     const search = deferredSearch.toLowerCase();
-    const transactionItems = collapseTransferPairs(data.transactions).map((item) => ({
-      ...item,
-      activityDate: item.date,
-    }));
-    const remittanceItems = data.remittances.map((item) => ({
-      ...item,
-      id: `remittance-${item.id}`,
-      sourceId: item.id,
-      type: 'income',
-      description: `Money from ${item.sender}`,
-      amount: item.totalAmount,
-      activityDate: item.receivedAt,
-    }));
-    return [...transactionItems, ...remittanceItems]
-      .filter((item) => {
-        const text = `${item.description || ''} ${item.note || ''}`.toLowerCase();
-        return (
-          (fundFilter === 'all' ||
-            item.fundId === fundFilter ||
-            (item.type === 'transfer' &&
-              Object.values(transferFundIds(item)).includes(fundFilter))) &&
-          (categoryFilter === 'all' || item.categoryId === categoryFilter) &&
-          (typeFilter === 'all' || item.type === typeFilter) &&
-          (!month || item.activityDate?.startsWith(month)) &&
-          text.includes(search)
-        );
-      })
-      .sort(
-        (a, b) =>
-          String(b.activityDate || '').localeCompare(String(a.activityDate || '')) ||
-          timestampMillis(b.createdAt) - timestampMillis(a.createdAt) ||
-          String(b.id).localeCompare(String(a.id)),
+    return activityItems(data.transactions, data.remittances).filter((item) => {
+      const text = `${item.description || ''} ${item.note || ''}`.toLowerCase();
+      return (
+        (fundFilter === 'all' ||
+          item.fundId === fundFilter ||
+          (item.type === 'transfer' &&
+            Object.values(transferFundIds(item)).includes(fundFilter))) &&
+        (categoryFilter === 'all' || item.categoryId === categoryFilter) &&
+        (typeFilter === 'all' || item.type === typeFilter) &&
+        (!month || item.activityDate?.startsWith(month)) &&
+        text.includes(search)
       );
+    });
   }, [
     categoryFilter,
     data.transactions,

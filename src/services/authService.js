@@ -11,7 +11,8 @@ import {
 import { Capacitor } from '@capacitor/core';
 import { FirebaseAuthentication } from '@capacitor-firebase/authentication';
 import { doc, getDoc, serverTimestamp, writeBatch } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth } from '../lib/firebaseAuth';
+import { db } from '../lib/firebaseDb';
 
 const PROFILE_SYNC_TTL = 24 * 60 * 60 * 1000;
 const profileSyncKey = (uid) => `hk-profile-synced:${uid}`;

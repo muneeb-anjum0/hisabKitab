@@ -3,7 +3,6 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import './styles/fonts.css';
 import { AuthProvider } from './contexts/AuthContext';
-import { DataProvider } from './contexts/DataContext';
 import App from './App';
 import './styles/global.css';
 const nativeApp = Boolean(window.Capacitor?.isNativePlatform?.());
@@ -14,9 +13,7 @@ const renderApp = () =>
     <React.StrictMode>
       <BrowserRouter>
         <AuthProvider>
-          <DataProvider>
-            <App />
-          </DataProvider>
+          <App />
         </AuthProvider>
       </BrowserRouter>
     </React.StrictMode>,
