@@ -5225,19 +5225,37 @@ html body {
     font-size: 20px;
   }
   .fund-detail-hero {
-    padding: 18px;
+    gap: 12px;
+    padding: 14px;
+    border-width: 3px;
+    box-shadow: 6px 6px 0 var(--ink);
   }
   .fund-detail-hero h1 {
-    font-size: 49px;
+    margin: 4px 0;
+    font-size: 39px;
+    line-height: 0.95;
+  }
+  .fund-detail-hero > div:last-child {
+    padding-top: 12px;
   }
   .fund-detail-hero strong {
-    font-size: 38px;
+    font-size: 31px;
+  }
+  .fund-hero-stats {
+    gap: 15px;
+    margin-top: 6px;
+  }
+  .fund-hero-stats b {
+    font-size: 15px;
+  }
+  .fund-detail-hero .progress-wrap {
+    margin-top: 10px;
   }
   .detail-actions {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 19px 0;
-    gap: 10px;
+    margin: 14px 0 20px;
+    gap: 7px;
   }
   .detail-actions .fund-header-controls {
     display: contents;
@@ -5246,32 +5264,51 @@ html body {
   .detail-actions .ink-button {
     width: 100%;
     min-width: 0;
-    min-height: 44px;
-    font-size: 14px;
-    padding: 9px 12px;
+    min-height: 36px;
+    font-size: 12px;
+    padding: 6px 8px;
   }
   .detail-actions > .ink-button + .ink-button {
     grid-column: 1 / -1;
   }
   .money-lots {
-    padding: 12px;
-    gap: 13px;
+    padding: 9px;
+    gap: 10px;
+    box-shadow: 4px 4px 0 #111;
   }
   .money-lot {
-    min-width: min(74vw, 330px);
-    min-height: 225px;
-    padding: 17px 16px 23px;
+    min-width: min(68vw, 290px);
+    min-height: 184px;
+    padding: 13px 13px 17px;
+    border-width: 3px;
+    box-shadow: 5px 5px 0 #111;
+    background: linear-gradient(#f4d431 0 9px, #fff 9px);
   }
   .money-lot > strong {
-    font-size: 38px;
+    margin: 3px 0 5px;
+    font-size: 31px;
   }
   .money-lot header span,
   .money-lot header b {
-    font-size: 16px;
+    font-size: 14px;
+  }
+  .money-lot header {
+    padding: 2px 0 7px;
+  }
+  .money-lot > small {
+    margin-top: 10px;
+    font-size: 8px;
   }
   .money-lot > div:not(.progress-wrap) {
-    margin-top: 13px;
-    padding: 9px 0;
+    gap: 8px;
+    margin-top: 9px;
+    padding: 6px 0;
+  }
+  .money-lot > div span b {
+    font-size: 11px;
+  }
+  .money-lot .progress-wrap {
+    margin-top: 9px;
   }
   .filter-bar {
     padding: 10px;
