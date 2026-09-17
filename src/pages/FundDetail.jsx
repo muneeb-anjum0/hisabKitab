@@ -169,33 +169,39 @@ export default function FundDetail() {
       </div>
       <section className="panel ledger-panel">
         {transactions.length ? (
-          transactions.map((item) => (
-            <div key={item.id} className="trace-row">
-              <TransactionRow
-                item={item}
-                funds={data.funds}
-                categories={data.categories}
-                memberships={data.memberships}
-                onEdit={canEdit && item.type === 'expense' ? setEditing : null}
-                onDelete={
-                  (item.type === 'expense' && canEdit) ||
-                  (item.type === 'transfer' &&
-                    editableFundIds.has(item.fundId) &&
-                    editableFundIds.has(item.counterpartyFundId))
-                    ? setDeleting
-                    : null
-                }
-              />
-              {item.lotUsages?.length > 0 && (
-                <small className="paid-from">
-                  PAID FROM{' '}
-                  {item.lotUsages.length === 1
+          transactions.map((item) => {
+            const paidFromLabel = item.lotUsages?.length
+              ? `PAID FROM ${
+                  item.lotUsages.length === 1
                     ? `LOT #${String(lotSummary.lots.find((lot) => lot.id === item.lotUsages[0].lotId)?.number || '?').padStart(2, '0')}`
-                    : `${item.lotUsages.length} MONEY LOTS`}
-                </small>
-              )}
-            </div>
-          ))
+                    : `${item.lotUsages.length} MONEY LOTS`
+                }`
+              : '';
+
+            return (
+              <div key={item.id} className="trace-row">
+                <TransactionRow
+                  item={item}
+                  funds={data.funds}
+                  categories={data.categories}
+                  memberships={data.memberships}
+                  paidFromLabel={paidFromLabel}
+                  onEdit={canEdit && item.type === 'expense' ? setEditing : null}
+                  onDelete={
+                    (item.type === 'expense' && canEdit) ||
+                    (item.type === 'transfer' &&
+                      editableFundIds.has(item.fundId) &&
+                      editableFundIds.has(item.counterpartyFundId))
+                      ? setDeleting
+                      : null
+                  }
+                />
+                {item.type !== 'transfer' && paidFromLabel && (
+                  <small className="paid-from">{paidFromLabel}</small>
+                )}
+              </div>
+            );
+          })
         ) : (
           <Empty>There are no transactions in this Fund yet.</Empty>
         )}

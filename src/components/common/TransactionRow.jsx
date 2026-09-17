@@ -3,7 +3,15 @@ import { money } from '../../lib/currency';
 import { friendlyDate } from '../../lib/dates';
 import { transferFundIds } from '../../lib/calculations';
 
-function TransactionRow({ item, funds, categories, memberships = [], onEdit, onDelete }) {
+function TransactionRow({
+  item,
+  funds,
+  categories,
+  memberships = [],
+  paidFromLabel,
+  onEdit,
+  onDelete,
+}) {
   const fund = funds.find((entry) => entry.id === item.fundId);
   const category = categories.find((entry) => entry.id === item.categoryId);
   const creator = memberships.find(
@@ -53,6 +61,9 @@ function TransactionRow({ item, funds, categories, memberships = [], onEdit, onD
       </div>
       <div className="ledger-main">
         <strong>{title}</strong>
+        {item.type === 'transfer' && paidFromLabel && (
+          <small className="paid-from transfer-paid-from">{paidFromLabel}</small>
+        )}
         <span className="ledger-meta">
           {item.type !== 'transfer' && (
             <b className={`ledger-fund-tag ${fund?.accent || ''}`}>

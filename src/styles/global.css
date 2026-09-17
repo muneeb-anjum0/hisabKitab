@@ -2399,6 +2399,14 @@ body {
   font-size: 7px;
   font-weight: bold;
 }
+.ledger-main .transfer-paid-from {
+  position: static;
+  align-self: flex-start;
+  width: fit-content;
+  margin-top: 1px;
+  color: var(--ink);
+  line-height: 1.1;
+}
 .route-loading {
   padding: 80px;
   text-align: center;
@@ -4261,7 +4269,7 @@ body {
   transform: translate(-1px, -1px);
   box-shadow: 3px 3px 0 #111;
 }
-.trace-row:has(.row-actions) .paid-from {
+.trace-row:has(.row-actions) > .paid-from {
   right: 92px;
 }
 @media (max-width: 800px) {
@@ -4365,11 +4373,11 @@ body {
   .trace-row .ledger-row.ledger-transfer .ledger-meta {
     display: none;
   }
-  .trace-row:has(.paid-from) .ledger-row {
+  .trace-row:has(> .paid-from) .ledger-row {
     min-height: 82px;
     padding-bottom: 18px;
   }
-  .trace-row:has(.row-actions) .paid-from {
+  .trace-row:has(.row-actions) > .paid-from {
     right: auto;
     left: 52px;
     bottom: 10px;
