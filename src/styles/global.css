@@ -6943,10 +6943,10 @@ html.capacitor-native:before {
   padding-right: 0;
   background: repeating-linear-gradient(
     -45deg,
-    rgba(31, 143, 76, 0.1) 0,
-    rgba(31, 143, 76, 0.1) 2px,
-    rgba(31, 143, 76, 0.018) 2px,
-    rgba(31, 143, 76, 0.018) 6px
+    rgba(31, 143, 76, 0.18) 0,
+    rgba(31, 143, 76, 0.18) 2px,
+    rgba(31, 143, 76, 0.025) 2px,
+    rgba(31, 143, 76, 0.025) 6px
   );
 }
 .activity-ledger .income-row > div:first-child,
