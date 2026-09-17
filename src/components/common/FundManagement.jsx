@@ -8,7 +8,7 @@ import { Button, ComicSelect, Field, Modal } from '../comic/Comic';
 
 const accents = ['blue', 'red', 'green', 'purple', 'yellow'];
 
-export default function FundManagement({ fund, owner, detail = false }) {
+export default function FundManagement({ fund, owner, detail = false, onChoose }) {
   const data = useData();
   const navigate = useNavigate();
   const [menu, setMenu] = useState(false);
@@ -39,6 +39,7 @@ export default function FundManagement({ fund, owner, detail = false }) {
   if (!owner) return null;
   const choose = (next) => {
     setMenu(false);
+    onChoose?.();
     setMode(next);
   };
   return (

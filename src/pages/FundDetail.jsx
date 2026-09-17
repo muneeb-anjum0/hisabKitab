@@ -22,6 +22,7 @@ export default function FundDetail() {
   const data = useData();
   const { user } = useAuth();
   const [showMembers, setShowMembers] = useState(false);
+  const [actionsOpen, setActionsOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deleting, setDeleting] = useState(null);
   const fund = data.funds.find((item) => item.id === id);
@@ -113,16 +114,38 @@ export default function FundDetail() {
           />
         </div>
       </section>
-      <div className="detail-actions">
-        <FundManagement fund={fund} owner={owner} detail />
-        <Button variant="paper" onClick={exportFund}>
-          ↓ EXPORT
-        </Button>
-        {fund.type === 'shared' && (
-          <Button variant="paper" onClick={() => setShowMembers(true)}>
-            MEMBERS ({members.length})
+      <div className={`detail-actions ${actionsOpen ? 'open' : ''}`}>
+        <button
+          className="detail-actions-toggle"
+          aria-expanded={actionsOpen}
+          onClick={() => setActionsOpen((current) => !current)}
+        >
+          <span>FUND ACTIONS</span>
+          <b>{actionsOpen ? 'CLOSE ×' : 'OPEN +'}</b>
+        </button>
+        <div className="detail-actions-menu">
+          <FundManagement fund={fund} owner={owner} detail onChoose={() => setActionsOpen(false)} />
+          <Button
+            variant="paper"
+            onClick={() => {
+              setActionsOpen(false);
+              exportFund();
+            }}
+          >
+            ↓ EXPORT
           </Button>
-        )}
+          {fund.type === 'shared' && (
+            <Button
+              variant="paper"
+              onClick={() => {
+                setActionsOpen(false);
+                setShowMembers(true);
+              }}
+            >
+              MEMBERS ({members.length})
+            </Button>
+          )}
+        </div>
       </div>
       <div className="section-heading lot-heading">
         <div>

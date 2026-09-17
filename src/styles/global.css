@@ -630,9 +630,14 @@ h3 {
   font: 900 clamp(40px, 6vw, 72px) var(--display);
 }
 .detail-actions {
+  margin: 28px 0;
+}
+.detail-actions-toggle {
+  display: none;
+}
+.detail-actions-menu {
   display: flex;
   gap: 15px;
-  margin: 28px 0;
 }
 .modal-backdrop {
   position: fixed;
@@ -5252,23 +5257,67 @@ html body {
     margin-top: 10px;
   }
   .detail-actions {
+    display: block;
+    margin: 14px 0 20px;
+  }
+  .detail-actions-toggle {
+    width: 100%;
+    min-height: 43px;
+    border: 3px solid var(--ink);
+    background: var(--yellow);
+    box-shadow: 4px 4px 0 var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 11px;
+    font: 900 15px/1 var(--display);
+    text-align: left;
+    transition:
+      transform var(--fast),
+      box-shadow var(--fast);
+  }
+  .detail-actions-toggle b {
+    font-size: 10px;
+  }
+  .detail-actions.open .detail-actions-toggle {
+    box-shadow: 2px 2px 0 var(--red);
+    transform: translate(2px, 2px);
+  }
+  .detail-actions-menu {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin: 14px 0 20px;
     gap: 7px;
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transform: translateY(-8px);
+    transition:
+      max-height 220ms ease,
+      margin-top 220ms ease,
+      opacity 140ms ease,
+      transform 220ms ease;
   }
-  .detail-actions .fund-header-controls {
+  .detail-actions.open .detail-actions-menu {
+    max-height: 180px;
+    margin-top: 9px;
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+  .detail-actions-menu .fund-header-controls {
     display: contents;
   }
-  .detail-actions .fund-header-controls button,
-  .detail-actions .ink-button {
+  .detail-actions-menu .fund-header-controls button,
+  .detail-actions-menu .ink-button {
     width: 100%;
     min-width: 0;
     min-height: 36px;
     font-size: 12px;
     padding: 6px 8px;
   }
-  .detail-actions > .ink-button + .ink-button {
+  .detail-actions-menu > .ink-button + .ink-button {
     grid-column: 1 / -1;
   }
   .money-lots {
