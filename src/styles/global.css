@@ -4324,9 +4324,9 @@ body {
   padding-bottom: 18px;
 }
 .recent-compact-ledger .trace-row > .paid-from {
-  right: auto;
+  right: 0;
   bottom: 6px;
-  left: 42px;
+  left: auto;
 }
 .recent-compact-ledger .ledger-row.ledger-transfer {
   grid-template-columns: 34px minmax(0, 1fr);
@@ -4338,16 +4338,20 @@ body {
 .recent-compact-ledger .transfer-title {
   align-items: flex-start;
   gap: 3px;
+  width: 100%;
   white-space: normal;
 }
 .recent-compact-ledger .transfer-lead {
   font-size: 14px;
 }
 .recent-compact-ledger .transfer-route {
+  justify-content: space-between;
+  width: 100%;
   max-width: 100%;
 }
 .recent-compact-ledger .transfer-route .ledger-fund-tag {
-  max-width: min(125px, 42%);
+  flex: 1 1 0;
+  max-width: calc(50% - 14px);
 }
 .recent-compact-ledger .transfer-note {
   overflow: hidden;
@@ -4355,6 +4359,9 @@ body {
   font-size: 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.recent-compact-ledger .transfer-paid-from {
+  align-self: flex-end;
 }
 @media (max-width: 800px) {
   .money-lots {
@@ -4479,9 +4486,9 @@ body {
     padding-bottom: 18px;
   }
   .recent-compact-ledger .trace-row > .paid-from {
-    right: auto;
+    right: 0;
     bottom: 6px;
-    left: 42px;
+    left: auto;
   }
   .recent-compact-ledger .trace-row .ledger-symbol {
     grid-column: 1;
