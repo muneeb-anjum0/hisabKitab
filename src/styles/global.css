@@ -6405,8 +6405,8 @@ body {
     font-size: 17px;
   }
   .mobile-nav a small {
-    font-size: 8px;
-    line-height: normal;
+    font-size: 11px;
+    line-height: 1;
     letter-spacing: normal;
   }
   .mobile-nav a.active {
