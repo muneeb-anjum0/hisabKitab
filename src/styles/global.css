@@ -4345,13 +4345,13 @@ body {
   font-size: 14px;
 }
 .recent-compact-ledger .transfer-route {
-  justify-content: space-between;
-  width: 100%;
+  justify-content: flex-start;
+  width: auto;
   max-width: 100%;
 }
 .recent-compact-ledger .transfer-route .ledger-fund-tag {
-  flex: 1 1 0;
-  max-width: calc(50% - 14px);
+  flex: 0 1 auto;
+  max-width: min(145px, calc(50% - 14px));
 }
 .recent-compact-ledger .transfer-note {
   overflow: hidden;
