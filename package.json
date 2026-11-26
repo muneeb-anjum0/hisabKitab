@@ -4,16 +4,16 @@
   "version": "1.0.2",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "build:android": "vite build --mode android",
-    "preview": "vite preview",
-    "test": "vitest run --root .",
-    "test:watch": "vitest --root .",
-    "lint": "eslint .",
-    "format": "prettier --write .",
+    "dev": "vite --config config/vite.config.js",
+    "build": "vite build --config config/vite.config.js",
+    "build:android": "vite build --mode android --config config/vite.config.js",
+    "preview": "vite preview --config config/vite.config.js",
+    "test": "vitest run --root . --config config/vite.config.js",
+    "test:watch": "vitest --root . --config config/vite.config.js",
+    "lint": "eslint . --config config/eslint.config.js",
+    "format": "prettier --write . --config config/.prettierrc.json --ignore-path config/.prettierignore",
     "check": "npm run lint && npm test && npm run build",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check . --config config/.prettierrc.json --ignore-path config/.prettierignore"
   },
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.5.1",

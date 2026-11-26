@@ -35,7 +35,7 @@ const landingSite = () => ({
 export default defineConfig(({ mode }) => ({
   root: resolve(mode === 'android' ? 'app' : 'website'),
   envDir: resolve('.'),
-  publicDir: resolve('public'),
+  publicDir: resolve('app/public'),
   plugins: [react(), mode === 'android' ? trimNativeBundle() : landingSite()],
   build: {
     outDir: resolve('dist'),

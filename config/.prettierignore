@@ -1,0 +1,8 @@
+../android/**
+../dist/**
+../node_modules/**
+../.firebase/**
+../releases/HisabKitab.apk
+../firebase-debug.log
+../package-lock.json
+../app/public/*.png

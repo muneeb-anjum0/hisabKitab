@@ -2,7 +2,7 @@ node_modules
 dist
 .env
 .env.*
-!.env.example
+!config/.env.example
 .firebase
 firebase-debug.log
 *.log

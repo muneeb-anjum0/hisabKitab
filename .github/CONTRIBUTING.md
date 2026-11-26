@@ -21,8 +21,11 @@ comic experience, and avoid mixing unrelated cleanup with product work.
 - `app/src/contexts/` owns authenticated application state and optimistic updates.
 - `android/` contains the native Capacitor project and widgets.
 - `firebase/` contains Firestore rules and indexes; `firebase.json` connects them to deployment.
-- `public/` contains shared static artwork and app assets.
+- `app/public/` contains shared static artwork and app assets.
 - `releases/` holds the committed stable APK for archival use.
+- `config/` holds Vite, ESLint, and Prettier configuration.
+
+Copy `config/.env.example` to a root `.env.local` for local Firebase settings.
 
 The repository root keeps the build, Capacitor, Firebase, and quality-tool configuration.
 Run `npm run build` for the website or `npm run build:android` before syncing Capacitor.

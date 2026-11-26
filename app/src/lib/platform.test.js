@@ -4,7 +4,7 @@ import capacitor from '../../../capacitor.config.json';
 import firebase from '../../../firebase.json';
 
 const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
-const manifest = JSON.parse(read('public/manifest.webmanifest'));
+const manifest = JSON.parse(read('app/public/manifest.webmanifest'));
 
 describe('application contracts', () => {
   it('keeps the web manifest branded and installable', () => {
@@ -27,7 +27,7 @@ describe('application contracts', () => {
       ]),
     );
     manifest.icons.forEach((icon) =>
-      expect(existsSync(new URL(`../../../public${icon.src}`, import.meta.url))).toBe(true),
+      expect(existsSync(new URL(`../../../app/public${icon.src}`, import.meta.url))).toBe(true),
     );
   });
 
@@ -115,7 +115,7 @@ describe('application contracts', () => {
   });
 
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
-    const worker = read('public/sw.js');
+    const worker = read('app/public/sw.js');
     const service = read('app/src/services/dataService.js');
     expect(worker).toContain("caches.match('/index.html')");
     expect(worker).toContain('fetch(event.request)');
@@ -143,7 +143,7 @@ describe('application contracts', () => {
   });
 
   it('documents every required public Firebase environment key', () => {
-    const keys = [...read('.env.example').matchAll(/^VITE_FIREBASE_[A-Z_]+(?==)/gm)].map(
+    const keys = [...read('config/.env.example').matchAll(/^VITE_FIREBASE_[A-Z_]+(?==)/gm)].map(
       ([key]) => key,
     );
     expect(keys).toEqual([
