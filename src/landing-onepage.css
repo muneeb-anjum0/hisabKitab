@@ -219,6 +219,14 @@ footer a:focus-visible {
   font-size: 30px;
   line-height: 0.7;
 }
+.download .download-label-desktop,
+.download .download-label-mobile {
+  font-size: inherit;
+  line-height: inherit;
+}
+.download-label-mobile {
+  display: none;
+}
 .download-note {
   display: block;
   font-size: 10px;
@@ -708,6 +716,12 @@ footer a:hover {
     min-height: 58px;
     font-size: 26px;
     padding: 13px 17px;
+  }
+  .download-label-desktop {
+    display: none !important;
+  }
+  .download-label-mobile {
+    display: inline !important;
   }
   .download-note {
     font-size: 10px;

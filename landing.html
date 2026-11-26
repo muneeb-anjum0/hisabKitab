@@ -26,7 +26,7 @@
     />
     <link rel="icon" href="/icon.svg" />
     <link rel="stylesheet" href="/src/landing-onepage.css" />
-    <title>HisabKitab — Every rupee has a job</title>
+    <title>حساب کتاب</title>
   </head>
   <body>
     <div class="page">
@@ -58,7 +58,10 @@
               <a
                 class="download"
                 href="https://github.com/muneeb-anjum0/hisabKitab/releases/latest/download/HisabKitab.apk"
-                ><span aria-hidden="true">↓</span> DOWNLOAD FOR ANDROID</a
+                target="apk-download"
+                ><span aria-hidden="true">↓</span
+                ><span class="download-label-desktop">DOWNLOAD FOR ANDROID</span
+                ><span class="download-label-mobile">DOWNLOAD NOW</span></a
               >
               <span class="download-note"
                 >FREE APK <span aria-hidden="true">◆</span> PKR FIRST
@@ -93,6 +96,7 @@
         >
       </footer>
     </div>
+    <iframe name="apk-download" title="APK download" hidden></iframe>
     <script>
       window.addEventListener(
         'load',
