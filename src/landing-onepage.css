@@ -669,3 +669,125 @@ footer a:hover {
     transition: none !important;
   }
 }
+
+@media (max-width: 800px) {
+  .site-header {
+    height: 66px;
+  }
+  .brand {
+    font-size: 26px;
+  }
+  .header-note {
+    display: none;
+  }
+  .hero {
+    width: 100%;
+    gap: 0;
+    padding: 34px 24px 54px;
+  }
+  .eyebrow {
+    font-size: 10px;
+    padding: 7px 9px;
+  }
+  h1 {
+    font-size: clamp(62px, 14vw, 90px);
+    line-height: 0.86;
+    margin: 24px 0 20px;
+  }
+  .intro {
+    max-width: 34ch;
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 0;
+  }
+  .hero-actions {
+    grid-row: 4;
+    margin: 25px 0 0;
+  }
+  .download {
+    min-height: 58px;
+    font-size: 26px;
+    padding: 13px 17px;
+  }
+  .download-note {
+    font-size: 10px;
+    margin-top: 13px;
+  }
+  .hero-art {
+    grid-row: 5;
+    width: 100%;
+    max-width: 380px;
+    min-height: 325px;
+    margin: 40px auto 36px;
+  }
+  .ledger-stack {
+    width: min(84%, 310px);
+  }
+  .ledger-card {
+    padding: 16px 18px;
+  }
+  .ledger-top,
+  .ledger-bottom {
+    font-size: 8px;
+  }
+  .ledger-heading {
+    font-size: clamp(48px, 12vw, 60px);
+    padding: 21px 0 16px;
+  }
+  .ledger-line {
+    font-size: 8px;
+    padding: 7px 9px;
+    margin-top: 6px;
+  }
+  .ledger-line strong {
+    font-size: 17px;
+  }
+  .ledger-bottom {
+    padding-top: 13px;
+  }
+  .burst-one {
+    width: 62px;
+    height: 62px;
+    font-size: 39px;
+  }
+  .burst-two {
+    width: 54px;
+    height: 54px;
+    font-size: 38px;
+  }
+  .feature-grid {
+    grid-row: 6;
+    width: 100%;
+    max-width: none;
+    gap: 12px;
+  }
+  .feature-grid span {
+    min-height: 76px;
+    padding: 10px;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .feature-grid b {
+    font-size: 27px;
+  }
+  footer {
+    min-height: 48px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  h1 {
+    font-size: 58px;
+  }
+  .feature-grid {
+    grid-template-columns: 1fr;
+  }
+  .feature-grid span {
+    min-height: 52px;
+    font-size: 12px;
+  }
+  .hero-art {
+    margin-top: 30px;
+  }
+}
