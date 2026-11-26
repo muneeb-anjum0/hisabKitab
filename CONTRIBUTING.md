@@ -12,11 +12,20 @@ comic experience, and avoid mixing unrelated cleanup with product work.
 
 ## Project map
 
-- `src/pages` contains screen-level composition.
-- `src/components` contains reusable interface pieces.
-- `src/lib` contains deterministic, tested ledger and platform utilities.
-- `src/services` is the only browser-to-Firebase boundary.
-- `src/contexts` owns authenticated application state and optimistic updates.
+- `website/` contains the public download landing page.
+- `app/` contains the React application bundled into the Android APK.
+- `app/src/pages/` contains screen-level composition.
+- `app/src/components/` contains reusable interface pieces.
+- `app/src/lib/` contains deterministic, tested ledger and platform utilities.
+- `app/src/services/` is the browser-to-Firebase boundary.
+- `app/src/contexts/` owns authenticated application state and optimistic updates.
+- `android/` contains the native Capacitor project and widgets.
+- `firebase/` contains Firestore rules and indexes; `firebase.json` connects them to deployment.
+- `public/` contains shared static artwork and app assets.
+- `releases/` holds the committed stable APK for archival use.
+
+The repository root keeps the build, Capacitor, Firebase, and quality-tool configuration.
+Run `npm run build` for the website or `npm run build:android` before syncing Capacitor.
 
 Do not commit private Firebase configuration, signing keys, generated build folders, or
 personal ledger data. The committed APK is the published stable artifact; use a GitHub

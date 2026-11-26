@@ -37,7 +37,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test -- src/lib/calculations.test.js
+      - run: npm test -- app/src/lib/calculations.test.js
 
   platform-tests:
     name: Dates, currency, and app configuration
@@ -50,7 +50,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm test -- src/lib/currency.test.js src/lib/dates.test.js src/lib/platform.test.js
+      - run: npm test -- app/src/lib/currency.test.js app/src/lib/dates.test.js app/src/lib/platform.test.js
 
   web-build:
     name: Production web build
@@ -83,7 +83,7 @@ jobs:
           java-version: 21
           cache: gradle
       - run: npm ci
-      - run: npm run build
+      - run: npm run build:android
       - run: npx cap sync android
       - name: Compile APK
         working-directory: android

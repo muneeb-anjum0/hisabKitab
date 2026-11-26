@@ -2,7 +2,7 @@ android/**
 dist/**
 node_modules/**
 .firebase/**
-HisabKitab.apk
+releases/HisabKitab.apk
 firebase-debug.log
 package-lock.json
 public/*.png

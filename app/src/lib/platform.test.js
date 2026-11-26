@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import capacitor from '../../capacitor.config.json';
-import firebase from '../../firebase.json';
+import capacitor from '../../../capacitor.config.json';
+import firebase from '../../../firebase.json';
 
-const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
+const read = (path) => readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8');
 const manifest = JSON.parse(read('public/manifest.webmanifest'));
 
 describe('application contracts', () => {
@@ -27,12 +27,12 @@ describe('application contracts', () => {
       ]),
     );
     manifest.icons.forEach((icon) =>
-      expect(existsSync(new URL(`../../public${icon.src}`, import.meta.url))).toBe(true),
+      expect(existsSync(new URL(`../../../public${icon.src}`, import.meta.url))).toBe(true),
     );
   });
 
   it('keeps the HTML viewport safe-area aware', () => {
-    const html = read('index.html');
+    const html = read('app/index.html');
     expect(html).toContain('viewport-fit=cover');
     expect(html).toContain('manifest.webmanifest');
     expect(html).toContain('<title>HisabKitab</title>');
@@ -66,12 +66,12 @@ describe('application contracts', () => {
       'android/app/src/main/res/xml/widget_square_info.xml',
       'android/app/src/main/res/xml/widget_wide_info.xml',
     ].forEach((path) => {
-      expect(existsSync(new URL(`../../${path}`, import.meta.url))).toBe(true);
+      expect(existsSync(new URL(`../../../${path}`, import.meta.url))).toBe(true);
     });
   });
 
   it('uses native file storage and sharing for Android XLSX exports', () => {
-    const exporter = read('src/lib/fileExport.js');
+    const exporter = read('app/src/lib/fileExport.js');
     expect(exporter).toContain("import('@capacitor/filesystem')");
     expect(exporter).toContain("import('@capacitor/share')");
     expect(exporter).toContain('Filesystem.writeFile');
@@ -107,7 +107,7 @@ describe('application contracts', () => {
   });
 
   it('uses a thin black page scrollbar on the desktop website', () => {
-    const styles = read('src/styles/global.css');
+    const styles = read('app/src/styles/global.css');
     expect(styles).toContain('html::-webkit-scrollbar');
     expect(styles).toContain('width: 3px');
     expect(styles).toContain('scrollbar-color: var(--ink) transparent');
@@ -116,7 +116,7 @@ describe('application contracts', () => {
 
   it('keeps an offline-first shell and optimistic queued ledger writes', () => {
     const worker = read('public/sw.js');
-    const service = read('src/services/dataService.js');
+    const service = read('app/src/services/dataService.js');
     expect(worker).toContain("caches.match('/index.html')");
     expect(worker).toContain('fetch(event.request)');
     expect(worker).toContain(".catch(() => caches.match('/index.html'))");
@@ -125,8 +125,8 @@ describe('application contracts', () => {
   });
 
   it('reverses transfers as protected atomic pairs', () => {
-    const service = read('src/services/dataService.js');
-    const rules = read('firestore.rules');
+    const service = read('app/src/services/dataService.js');
+    const rules = read('firebase/firestore.rules');
     expect(service).toContain('export function removeTransfer(transaction)');
     expect(service).toContain("batch.delete(doc(db, 'transactions', transaction.counterpartyId))");
     expect(rules).toContain('function validTransferDeletion(data, transactionId)');
@@ -137,8 +137,8 @@ describe('application contracts', () => {
     expect(firebase.hosting.public).toBe('dist');
     expect(firebase.hosting.rewrites).toContainEqual({ source: '**', destination: '/index.html' });
     expect(firebase.firestore).toEqual({
-      rules: 'firestore.rules',
-      indexes: 'firestore.indexes.json',
+      rules: 'firebase/firestore.rules',
+      indexes: 'firebase/firestore.indexes.json',
     });
   });
 
@@ -157,8 +157,12 @@ describe('application contracts', () => {
   });
 
   it('keeps Firebase policy files and the stable APK present', () => {
-    ['firestore.rules', 'firestore.indexes.json', 'HisabKitab.apk'].forEach((path) =>
-      expect(existsSync(new URL(`../../${path}`, import.meta.url))).toBe(true),
+    [
+      'firebase/firestore.rules',
+      'firebase/firestore.indexes.json',
+      'releases/HisabKitab.apk',
+    ].forEach((path) =>
+      expect(existsSync(new URL(`../../../${path}`, import.meta.url))).toBe(true),
     );
   });
 });
