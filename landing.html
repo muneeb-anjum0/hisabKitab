@@ -10,6 +10,14 @@
     />
     <link rel="icon" href="/icon.svg" />
     <link rel="stylesheet" href="/src/landing-onepage.css" />
+    <script>
+      document.documentElement.classList.add('js-fonts');
+    </script>
+    <style>
+      html.js-fonts:not(.fonts-ready) body {
+        visibility: hidden;
+      }
+    </style>
     <title>HisabKitab — Every rupee has a job</title>
   </head>
   <body>
@@ -53,9 +61,6 @@
 
           <div class="hero-art" aria-label="Illustration of a HisabKitab money ledger">
             <div class="burst burst-one" aria-hidden="true">+₨</div>
-            <div class="art-scribble" aria-hidden="true">
-              YOUR BOOK<br />YOUR RULES <span>↘</span>
-            </div>
             <div class="ledger-card">
               <div class="ledger-top"><span>HK! / THE MONEY BOOK</span><span>01—04</span></div>
               <div class="ledger-heading">MAKE IT<br /><em>MAKE SENSE.</em></div>
@@ -67,9 +72,6 @@
               </div>
             </div>
             <div class="burst burst-two" aria-hidden="true">✓</div>
-            <div class="art-caption" aria-hidden="true">
-              A PLACE FOR EVERY RUPEE. A RECORD FOR EVERY MOVE.
-            </div>
           </div>
         </section>
       </main>
@@ -82,6 +84,15 @@
       </footer>
     </div>
     <script>
+      const criticalFonts = document.fonts?.load
+        ? Promise.all([
+            document.fonts.load('900 100px Barlow'),
+            document.fonts.load('700 24px Barlow'),
+            document.fonts.load('400 16px Mono'),
+          ])
+        : Promise.resolve();
+      const showPage = () => document.documentElement.classList.add('fonts-ready');
+      criticalFonts.then(showPage, showPage);
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker
           .getRegistrations()
