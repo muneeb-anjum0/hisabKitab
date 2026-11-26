@@ -65,7 +65,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Verify deployable output
-        run: test -f dist/index.html && test -f dist/manifest.webmanifest && test -f dist/sw.js
+        run: test -f dist/index.html && ! test -f dist/sw.js
 
   android-build:
     name: Android APK build

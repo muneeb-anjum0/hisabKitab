@@ -1,6 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import { rmSync } from 'node:fs';
+import { renameSync, rmSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const nativeOnlyAssets = [
@@ -23,12 +23,23 @@ const trimNativeBundle = () => ({
   },
 });
 
+const landingSite = () => ({
+  name: 'landing-site',
+  closeBundle() {
+    renameSync(resolve('dist', 'landing.html'), resolve('dist', 'index.html'));
+    ['manifest.webmanifest', 'sw.js'].forEach((asset) =>
+      rmSync(resolve('dist', asset), { force: true }),
+    );
+  },
+});
+
 export default defineConfig(({ mode }) => ({
-  plugins: [react(), mode === 'android' && trimNativeBundle()].filter(Boolean),
+  plugins: [react(), mode === 'android' ? trimNativeBundle() : landingSite()],
   build: {
     target: 'es2020',
     sourcemap: false,
     rollupOptions: {
+      input: mode === 'android' ? 'index.html' : 'landing.html',
       output: {
         manualChunks(id) {
           if (!id.includes('node_modules')) return undefined;

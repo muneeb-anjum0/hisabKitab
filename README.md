@@ -3,7 +3,7 @@
 > Every rupee has a job.
 
 [![Latest release](https://img.shields.io/github/v/release/muneeb-anjum0/hisabKitab?style=flat-square&color=f4d431)](https://github.com/muneeb-anjum0/hisabKitab/releases/latest)
-[![Web app](https://img.shields.io/badge/web-live-2d75e8?style=flat-square)](https://hisabkitab-a0c26.web.app)
+[![Website](https://img.shields.io/badge/website-visit-2d75e8?style=flat-square)](https://hisabkitab-a0c26.web.app)
 [![Checks](https://img.shields.io/github/actions/workflow/status/muneeb-anjum0/hisabKitab/quality.yml?branch=main&style=flat-square)](https://github.com/muneeb-anjum0/hisabKitab/actions/workflows/quality.yml)
 
 HisabKitab is a comic-styled money manager built around one simple rule: give every
@@ -12,8 +12,8 @@ where your money went without wrestling with a traditional spreadsheet.
 
 ## Get HisabKitab
 
-- [Open the web app](https://hisabkitab-a0c26.web.app)
-- [Download the latest Android APK](https://github.com/muneeb-anjum0/hisabKitab/releases/latest)
+- [Explore HisabKitab](https://hisabkitab-a0c26.web.app)
+- [Download the Android APK](https://github.com/muneeb-anjum0/hisabKitab/releases/latest/download/HisabKitab.apk)
 
 To install the APK, download `HisabKitab.apk`, open it on your Android phone, and
 approve installation from your browser or file manager when Android asks.

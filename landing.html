@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#f7f5ed" />
+    <meta
+      name="description"
+      content="HisabKitab helps you give every rupee a job. Download the Android app to track funds, expenses, transfers, and monthly books."
+    />
+    <link rel="icon" href="/icon.svg" />
+    <link rel="stylesheet" href="/src/landing.css" />
+    <title>HisabKitab — Every rupee has a job</title>
+  </head>
+  <body>
+    <div class="page">
+      <header class="site-header">
+        <a class="brand" href="/" aria-label="HisabKitab home"
+          ><img src="/icon.svg" alt="" /><span
+            >HISAB<span class="brand-accent">KITAB!</span></span
+          ></a
+        >
+        <a
+          class="header-link"
+          href="https://github.com/muneeb-anjum0/hisabKitab/releases/latest/download/HisabKitab.apk"
+          >GET THE APP <span aria-hidden="true">↗</span></a
+        >
+      </header>
+
+      <main>
+        <section class="hero" aria-labelledby="hero-title">
+          <div class="hero-copy">
+            <span class="eyebrow">YOUR MONEY. YOUR RULES. YOUR BOOK.</span>
+            <h1 id="hero-title">
+              EVERY <span>RUPEE</span><br />HAS A JOB<span class="period">.</span>
+            </h1>
+            <p class="intro">
+              Meet the comic-styled money manager made for real life in Pakistan. Give your money a
+              purpose, see where it goes, and keep the whole story in one place.
+            </p>
+            <div class="hero-actions">
+              <a
+                class="download"
+                href="https://github.com/muneeb-anjum0/hisabKitab/releases/latest/download/HisabKitab.apk"
+                ><span aria-hidden="true">↓</span> DOWNLOAD FOR ANDROID</a
+              >
+              <span class="download-note"
+                >FREE APK <span aria-hidden="true">◆</span> PKR FIRST
+                <span aria-hidden="true">◆</span> BUILT FOR ANDROID</span
+              >
+            </div>
+          </div>
+
+          <div class="hero-art" aria-label="Illustration of a HisabKitab money ledger">
+            <div class="burst burst-one" aria-hidden="true">+₨</div>
+            <div class="ledger-card">
+              <div class="ledger-top"><span>HK! / THE MONEY BOOK</span><span>01—04</span></div>
+              <div class="ledger-heading">MAKE IT<br /><em>MAKE SENSE.</em></div>
+              <div class="ledger-line"><span>MONEY IN</span><strong>Rs. 50,000</strong></div>
+              <div class="ledger-line"><span>GIVE IT A JOB</span><strong>4 FUNDS</strong></div>
+              <div class="ledger-line"><span>KNOW WHAT'S LEFT</span><strong>ALWAYS.</strong></div>
+              <div class="ledger-bottom">
+                <span>NO MYSTERY.</span><span>JUST YOUR MONEY, CLEARLY.</span>
+              </div>
+            </div>
+            <div class="burst burst-two" aria-hidden="true">✓</div>
+          </div>
+        </section>
+
+        <section class="features" aria-labelledby="features-title">
+          <div class="section-head">
+            <span class="eyebrow">THE WHOLE PICTURE</span>
+            <h2 id="features-title">MONEY, <em>SORTED.</em></h2>
+          </div>
+          <div class="feature-grid">
+            <article>
+              <span class="feature-number">01 /</span>
+              <h3>FUNDS WITH PURPOSE</h3>
+              <p>Keep personal and household money in separate, color-coded funds.</p>
+            </article>
+            <article>
+              <span class="feature-number">02 /</span>
+              <h3>EVERY MOVE RECORDED</h3>
+              <p>Log money received, expenses, and transfers without losing the trail.</p>
+            </article>
+            <article>
+              <span class="feature-number">03 /</span>
+              <h3>THE MONTHLY STORY</h3>
+              <p>See clear breakdowns and export your books as Excel files.</p>
+            </article>
+            <article>
+              <span class="feature-number">04 /</span>
+              <h3>TOGETHER, IF YOU WANT</h3>
+              <p>Share selected funds, work offline, and sync when you're connected.</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="closing" aria-labelledby="closing-title">
+          <div>
+            <span class="eyebrow">READY TO OPEN YOUR BOOK?</span>
+            <h2 id="closing-title">LET'S MAKE <em>EVERY RUPEE</em> COUNT.</h2>
+            <p>
+              Available as an Android APK. Download, install, and start giving your money a job.
+            </p>
+          </div>
+          <a
+            class="download download-light"
+            href="https://github.com/muneeb-anjum0/hisabKitab/releases/latest/download/HisabKitab.apk"
+            ><span aria-hidden="true">↓</span> DOWNLOAD HISABKITAB</a
+          >
+        </section>
+      </main>
+
+      <footer>
+        <span>© 2026 HISABKITAB</span><span>MADE FOR MONEY THAT MAKES SENSE.</span
+        ><a href="https://github.com/muneeb-anjum0/hisabKitab" target="_blank" rel="noreferrer"
+          >GITHUB ↗</a
+        >
+      </footer>
+    </div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker
+          .getRegistrations()
+          .then((registrations) =>
+            registrations.forEach((registration) => registration.unregister()),
+          );
+      }
+      if ('caches' in window) {
+        caches
+          .keys()
+          .then((keys) =>
+            keys
+              .filter((key) => key.startsWith('hisabkitab-'))
+              .forEach((key) => caches.delete(key)),
+          );
+      }
+    </script>
+  </body>
+</html>
