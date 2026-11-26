@@ -4,20 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#f7f5ed" />
+    <style>
+      html {
+        visibility: hidden;
+        background: #f7f5ed;
+      }
+      html.page-ready {
+        visibility: visible;
+      }
+    </style>
+    <noscript
+      ><style>
+        html {
+          visibility: visible;
+        }
+      </style></noscript
+    >
     <meta
       name="description"
       content="HisabKitab helps you give every rupee a job. Download the Android app to track funds, expenses, transfers, and monthly books."
     />
     <link rel="icon" href="/icon.svg" />
     <link rel="stylesheet" href="/src/landing-onepage.css" />
-    <script>
-      document.documentElement.classList.add('js-fonts');
-    </script>
-    <style>
-      html.js-fonts:not(.fonts-ready) body {
-        visibility: hidden;
-      }
-    </style>
     <title>HisabKitab — Every rupee has a job</title>
   </head>
   <body>
@@ -84,15 +92,23 @@
       </footer>
     </div>
     <script>
-      const criticalFonts = document.fonts?.load
-        ? Promise.all([
-            document.fonts.load('900 100px Barlow'),
-            document.fonts.load('700 24px Barlow'),
-            document.fonts.load('400 16px Mono'),
-          ])
-        : Promise.resolve();
-      const showPage = () => document.documentElement.classList.add('fonts-ready');
-      criticalFonts.then(showPage, showPage);
+      window.addEventListener(
+        'load',
+        async () => {
+          if (document.fonts?.load) {
+            await Promise.allSettled([
+              document.fonts.load('900 100px Barlow'),
+              document.fonts.load('700 24px Barlow'),
+              document.fonts.load('400 16px Mono'),
+            ]);
+            await document.fonts.ready;
+          }
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => document.documentElement.classList.add('page-ready')),
+          );
+        },
+        { once: true },
+      );
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker
           .getRegistrations()
