@@ -17,7 +17,7 @@ export default function BookOpeningLoader() {
 
       <div className="startup-scene">
         <div className="startup-logo" aria-hidden="true">
-          <img src="/icon.svg" alt="" />
+          <img src="/brand-emblem.png" alt="" />
         </div>
 
         <div className="startup-title">

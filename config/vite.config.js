@@ -26,7 +26,7 @@ const trimNativeBundle = () => ({
 const landingSite = () => ({
   name: 'landing-site',
   closeBundle() {
-    ['manifest.webmanifest', 'sw.js'].forEach((asset) =>
+    ['manifest.webmanifest', 'sw.js', 'brand-emblem.png'].forEach((asset) =>
       rmSync(resolve('dist', asset), { force: true }),
     );
   },

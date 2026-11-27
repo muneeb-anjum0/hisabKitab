@@ -1,4 +1,4 @@
-const VERSION = 'v17';
+const VERSION = 'v18';
 const SHELL_CACHE = `hisabkitab-shell-${VERSION}`;
 const ASSET_CACHE = `hisabkitab-assets-${VERSION}`;
 const OWNED_CACHES = [SHELL_CACHE, ASSET_CACHE];
@@ -6,7 +6,7 @@ const SHELL = [
   '/',
   '/index.html',
   '/manifest.webmanifest',
-  '/icon.svg',
+  '/brand-emblem.png',
   '/icon-192.png',
   '/icon-512.png',
   '/icon-maskable-512.png',

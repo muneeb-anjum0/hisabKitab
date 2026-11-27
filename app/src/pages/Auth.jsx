@@ -14,7 +14,7 @@ export function FirebaseSetup() {
   return (
     <main className="setup-page">
       <section className="setup-masthead">
-        <img src="/icon.svg" alt="HisabKitab" />
+        <img src="/brand-emblem.png" alt="HisabKitab" />
       </section>
       <section className="setup-card panel">
         <span className="kicker red">CONFIGURATION REQUIRED</span>
@@ -103,7 +103,7 @@ export default function Auth() {
     <main className="auth-page">
       <section className="auth-art">
         <div className="auth-logo">
-          <img src="/icon.svg" alt="HisabKitab" />
+          <img src="/brand-emblem.png" alt="HisabKitab" />
         </div>
         <div className="auth-corner" aria-hidden="true">
           <div className="pow">Rs.</div>
