@@ -2,6 +2,7 @@ name: Quality
 
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -104,7 +105,18 @@ jobs:
       - run: npx cap sync android
       - name: Compile APK
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: |
+          for attempt in 1 2 3; do
+            if ./gradlew assembleDebug --max-workers=2 > gradle-build.log 2>&1; then
+              cat gradle-build.log
+              exit 0
+            fi
+            cat gradle-build.log
+            if ! grep -q 'Received status code 429' gradle-build.log || [ "$attempt" -eq 3 ]; then
+              exit 1
+            fi
+            sleep $((attempt * 20))
+          done
       - name: Preserve APK from this run
         uses: actions/upload-artifact@v4
         with:
