@@ -4,6 +4,7 @@ import { DataContext } from './data';
 import * as api from '../services/dataService';
 import { fundDeletionAssessment, patchFund } from '../lib/calculations';
 import { readLedgerCacheEntry, writeLedgerCache } from '../lib/ledgerCache';
+import { localISO } from '../lib/dates';
 
 const EMPTY_DATA = {
   funds: [],
@@ -12,6 +13,7 @@ const EMPTY_DATA = {
   allocations: [],
   transactions: [],
   categories: [],
+  recurringRules: [],
 };
 const SYSTEM_CATEGORIES = [
   ['food', 'Food', '●'],
@@ -58,6 +60,7 @@ export function DataProvider({ children }) {
   const reorderVersion = useRef(0);
   const refreshInFlight = useRef(null);
   const remoteSyncedAt = useRef(0);
+  const lastRecurringCheck = useRef('');
 
   const refresh = useCallback(
     async (options = {}) => {
@@ -68,6 +71,7 @@ export function DataProvider({ children }) {
         setLoadedUserId(null);
         loadedUserIdRef.current = null;
         remoteSyncedAt.current = 0;
+        lastRecurringCheck.current = '';
         return;
       }
       const cacheEntry = readLedgerCacheEntry(user.uid);
@@ -101,7 +105,22 @@ export function DataProvider({ children }) {
       const request = withTimeout(api.loadUserData(user.uid));
       refreshInFlight.current = request;
       try {
-        const freshData = await request;
+        let freshData = await request;
+        const today = localISO();
+        if (lastRecurringCheck.current !== today && freshData.recurringRules?.length) {
+          lastRecurringCheck.current = today;
+          try {
+            const created = await api.processDueRecurring(
+              user.uid,
+              freshData.recurringRules,
+              today,
+            );
+            if (created) freshData = await api.loadUserData(user.uid);
+          } catch (recurringError) {
+            console.error('Recurring entries could not be recorded:', recurringError);
+            setToast({ type: 'error', message: 'RECURRING ENTRIES NEED ATTENTION.' });
+          }
+        }
         remoteSyncedAt.current = Date.now();
         setData(freshData);
         writeLedgerCache(user.uid, freshData, remoteSyncedAt.current);
@@ -162,6 +181,12 @@ export function DataProvider({ children }) {
     document.addEventListener('visibilitychange', resume);
     return () => document.removeEventListener('visibilitychange', resume);
   }, [refresh]);
+  useEffect(() => {
+    if (!user || loadedUserId !== user.uid) return;
+    void import('../lib/reminders').then(({ syncRecurringReminders }) =>
+      syncRecurringReminders(data.recurringRules || []).catch(console.warn),
+    );
+  }, [data.recurringRules, loadedUserId, user]);
   useEffect(() => {
     if (!toast) return undefined;
     const timer = window.setTimeout(() => setToast(null), 2400);
@@ -405,6 +430,35 @@ export function DataProvider({ children }) {
         }),
         'CATEGORY DELETED.',
       ),
+    createRecurringRule: async (values) => {
+      const result = await api.createRecurringRule(user.uid, values);
+      setData((current) => ({
+        ...current,
+        recurringRules: [...(current.recurringRules || []), result],
+      }));
+      lastRecurringCheck.current = '';
+      await refresh({ forceServer: true });
+    },
+    updateRecurringRule: async (id, values) => {
+      await api.updateRecurringRule(id, values);
+      setData((current) => ({
+        ...current,
+        recurringRules: current.recurringRules.map((item) =>
+          item.id === id ? { ...item, ...values } : item,
+        ),
+      }));
+      if (values.active) {
+        lastRecurringCheck.current = '';
+        await refresh({ forceServer: true });
+      }
+    },
+    removeRecurringRule: async (id) => {
+      await api.removeRecurringRule(id);
+      setData((current) => ({
+        ...current,
+        recurringRules: current.recurringRules.filter((item) => item.id !== id),
+      }));
+    },
     addMember: async (fundId, email, role) => {
       await api.addMember(fundId, email, role);
       await refresh({ forceServer: true });

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import BookOpeningLoader from '../common/BookOpeningLoader';
 import Nav from '../navigation/Nav';
@@ -30,13 +30,23 @@ export default function LedgerApp() {
   useMobileNavigationGestures();
   useNativeAppNavigation({ location, navigate, quickAction, setQuickAction });
 
+  useEffect(() => {
+    if (data.loading || !performance.getEntriesByName('hk-app-start').length) return;
+    performance.mark('hk-ledger-ready');
+    performance.measure('hk-ledger-startup', 'hk-app-start', 'hk-ledger-ready');
+    performance.clearMarks('hk-app-start');
+  }, [data.loading]);
+
   if (data.loading) return <BookOpeningLoader />;
 
   return (
     <div className="app-shell">
+      <a className="skip-link" href="#main-content">
+        SKIP TO CONTENT
+      </a>
       {networkNotice && <NetworkBanner state={networkNotice} />}
       <Nav onQuick={() => setQuickAction('menu')} />
-      <main className="content">
+      <main className="content" id="main-content" tabIndex={-1}>
         {data.error && <DataError message={data.error} onRetry={data.refresh} />}
         <Suspense fallback={<div className="route-loading">INKING THE NEXT PAGE…</div>}>
           <AnimatedRoutes>

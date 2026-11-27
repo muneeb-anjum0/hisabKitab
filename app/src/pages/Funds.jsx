@@ -41,6 +41,11 @@ export default function Funds() {
             <span>
               SPENT <b>{money(totals.spent)}</b>
             </span>
+            {Number(fund.monthlyBudget) > 0 && (
+              <span>
+                MONTHLY LIMIT <b>{money(fund.monthlyBudget)}</b>
+              </span>
+            )}
           </div>
           <strong>
             {money(totals.remaining)}
@@ -97,7 +102,12 @@ export default function Funds() {
 }
 
 function NewFund({ onClose, onSave }) {
-  const [values, setValues] = useState({ name: '', type: 'personal', accent: 'blue' });
+  const [values, setValues] = useState({
+    name: '',
+    type: 'personal',
+    accent: 'blue',
+    monthlyBudget: 0,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const submit = async (event) => {
@@ -123,6 +133,18 @@ function NewFund({ onClose, onSave }) {
             value={values.name}
             onChange={(event) => setValues({ ...values, name: event.target.value })}
             placeholder="Personal, House…"
+          />
+        </Field>
+        <Field label="MONTHLY SPENDING LIMIT (RS., OPTIONAL)">
+          <input
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            value={values.monthlyBudget}
+            onChange={(event) =>
+              setValues({ ...values, monthlyBudget: Number(event.target.value) || 0 })
+            }
           />
         </Field>
         <ComicSelect

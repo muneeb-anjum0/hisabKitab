@@ -18,15 +18,15 @@ export default function Nav({ onQuick }) {
           <span>HISAB</span>
           <b>KITAB!</b>
         </NavLink>
-        <nav>
+        <nav aria-label="Main navigation">
           {links.map(([to, icon, label]) => (
             <NavLink key={to} to={to} end={to === '/'}>
-              <i>{icon}</i>
+              <i aria-hidden="true">{icon}</i>
               <span>{label}</span>
             </NavLink>
           ))}
         </nav>
-        <button className="rail-add" onClick={onQuick}>
+        <button className="rail-add" onClick={onQuick} aria-label="Add money or expense">
           + ADD
         </button>
         <p className="rail-note">
@@ -37,7 +37,7 @@ export default function Nav({ onQuick }) {
           <em>MYSTERY.</em>
         </p>
       </aside>
-      <nav className="mobile-nav">
+      <nav className="mobile-nav" aria-label="Mobile navigation">
         {mobileLinks.map(([to, icon, label], index) => (
           <span key={to}>
             {index === 2 && (
@@ -46,7 +46,7 @@ export default function Nav({ onQuick }) {
               </button>
             )}
             <NavLink to={to} end={to === '/'}>
-              <i>{icon}</i>
+              <i aria-hidden="true">{icon}</i>
               <small>{label}</small>
             </NavLink>
           </span>

@@ -1,13 +1,52 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useAuth } from '../contexts/auth';
 import { useData } from '../contexts/data';
 import { Button, Modal } from '../components/comic/Comic';
+import { exportAccountBackup, restoreAccountBackup } from '../services/dataService';
+import { parseAccountBackup } from '../lib/accountBackup';
+import { exportJsonFile } from '../lib/fileExport';
+import RecurringSettings from '../components/common/RecurringSettings';
 
 export default function Profile() {
   const auth = useAuth();
   const data = useData();
   const [category, setCategory] = useState('');
   const [deletingCategory, setDeletingCategory] = useState(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupError, setBackupError] = useState('');
+  const [restoreFile, setRestoreFile] = useState(null);
+  const restoreInput = useRef(null);
+  const downloadBackup = async () => {
+    setBackupBusy(true);
+    setBackupError('');
+    try {
+      const backup = await exportAccountBackup(auth.user.uid);
+      await exportJsonFile(
+        `HisabKitab-backup-${new Date().toISOString().slice(0, 10)}.json`,
+        backup,
+      );
+    } catch (error) {
+      setBackupError(error.message);
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+  const restoreBackup = async () => {
+    if (!restoreFile) return;
+    setBackupBusy(true);
+    setBackupError('');
+    try {
+      const backup = parseAccountBackup(await restoreFile.text(), auth.user.uid);
+      await restoreAccountBackup(auth.user.uid, backup);
+      await data.refresh({ forceServer: true });
+      setRestoreFile(null);
+      data.setToast({ type: 'success', message: 'ACCOUNT RESTORED.' });
+    } catch (error) {
+      setBackupError(error.message);
+    } finally {
+      setBackupBusy(false);
+    }
+  };
   return (
     <>
       <div className="page-title compact">
@@ -71,6 +110,41 @@ export default function Profile() {
             </div>
           </details>
         </div>
+        <div className="panel settings account-backup">
+          <h2>BACKUP &amp; RESTORE</h2>
+          <p>
+            Save your Funds, income, spending, and recurring entries. Shared contributions are
+            reconstructed under your account during restore.
+          </p>
+          <Button type="button" onClick={downloadBackup} disabled={backupBusy || !navigator.onLine}>
+            EXPORT ACCOUNT BACKUP
+          </Button>
+          <p>
+            Restore accepts a backup from this same account only. Start with an empty account; if a
+            restore is interrupted, choose the same file to resume.
+          </p>
+          <input
+            ref={restoreInput}
+            type="file"
+            accept=".json,application/json"
+            aria-label="Choose HisabKitab backup"
+            onChange={(event) => setRestoreFile(event.target.files?.[0] || null)}
+          />
+          <Button
+            type="button"
+            variant="paper"
+            disabled={!restoreFile || backupBusy || !navigator.onLine}
+            onClick={restoreBackup}
+          >
+            RESTORE BACKUP
+          </Button>
+          {backupError && (
+            <p className="form-error" role="alert">
+              {backupError}
+            </p>
+          )}
+        </div>
+        <RecurringSettings />
         <div className="panel pwa-note web-install-note">
           <b>PUT IT IN YOUR POCKET</b>
           <p>

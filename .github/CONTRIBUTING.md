@@ -33,3 +33,16 @@ Run `npm run build` for the website or `npm run build:android` before syncing Ca
 Do not commit private Firebase configuration, signing keys, generated build folders, or
 personal ledger data. The committed APK is the published stable artifact; use a GitHub
 release for new distributable builds.
+
+# Quality checks
+
+Run `npm run lint`, `npm test`, `npm run test:rules`, and `npm run build:android`
+before changing the Android app. The rules test starts the local Firestore emulator;
+it requires Java 21. No production Firebase data is used by that test.
+
+To compare Android startup across builds, install each build on the same device,
+connect it through `adb`, and run `bash scripts/benchmark-android.sh 10`. The script
+reports Android activity launch time. Chrome remote debugging also exposes the
+`hk-ledger-startup` Performance entry, which measures from JavaScript boot to the
+ledger becoming ready. Record the device, Android version, build, and median when
+comparing results. Activity launch time does not include the complete ledger load.

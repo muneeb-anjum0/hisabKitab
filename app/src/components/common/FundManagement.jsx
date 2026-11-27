@@ -134,6 +134,7 @@ export function EditFund({ fund, onClose, onSave }) {
     name: fund.name,
     type: fund.type || 'personal',
     accent: fund.accent || 'blue',
+    monthlyBudget: Number(fund.monthlyBudget) || 0,
   });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -159,6 +160,18 @@ export function EditFund({ fund, onClose, onSave }) {
             maxLength="35"
             value={values.name}
             onChange={(event) => setValues({ ...values, name: event.target.value })}
+          />
+        </Field>
+        <Field label="MONTHLY SPENDING LIMIT (RS., OPTIONAL)">
+          <input
+            type="number"
+            min="0"
+            step="1"
+            inputMode="numeric"
+            value={values.monthlyBudget}
+            onChange={(event) =>
+              setValues({ ...values, monthlyBudget: Number(event.target.value) || 0 })
+            }
           />
         </Field>
         <ComicSelect

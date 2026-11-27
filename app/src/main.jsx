@@ -5,6 +5,7 @@ import './styles/fonts.css';
 import { AuthProvider } from './contexts/AuthContext';
 import App from './App';
 import './styles/global.css';
+performance.mark?.('hk-app-start');
 const nativeApp = Boolean(window.Capacitor?.isNativePlatform?.());
 if (nativeApp) document.documentElement.classList.add('capacitor-native');
 

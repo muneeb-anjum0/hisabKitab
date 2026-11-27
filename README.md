@@ -18,8 +18,9 @@ where your money went without wrestling with a traditional spreadsheet.
 To install the APK, download `HisabKitab.apk`, open it on your Android phone, and
 approve installation from your browser or file manager when Android asks.
 
-Version 1.0.3 uses a new signing key. If you have 1.0.2 installed, sync or export your
-data first, then uninstall 1.0.2 before installing 1.0.3. Future releases can update 1.0.3 normally.
+Versions 1.0.3 and newer use the same signing key and can update one another. If you
+have 1.0.2 installed, sync or export your data first, then uninstall it before installing
+the latest version.
 
 ## Highlights
 
@@ -31,6 +32,9 @@ data first, then uninstall 1.0.2 before installing 1.0.3. Future releases can up
 - Share selected Funds with other registered users.
 - Add, edit, reorder, archive, and remove Funds and categories.
 - Use square and rectangular Android home-screen widgets for quick actions.
+- Set monthly Fund limits and review spending by Fund and category.
+- Schedule monthly income and expenses, with optional Android reminders.
+- Export an account backup and restore it to the same empty account.
 
 ## Your data
 
@@ -38,7 +42,16 @@ Your ledger is tied to your account and synchronized through Firebase. Offline
 changes are cached on your device and queued for synchronization. Shared Funds are
 visible only to the members added to them.
 
-For safety, keep a copy of important records using the Excel export option.
+For safety, keep an account backup from Profile. It contains Funds you own and their
+money lots. When restoring a shared Fund, contributions from other people are
+reconstructed under your account because their private income records are not in
+your backup. Excel exports remain available for reports.
+
+## Project quality
+
+Automated checks cover money calculations, backup validation, recurring dates, and
+Firestore access rules. Android launch timing can be measured on a connected phone
+with `scripts/benchmark-android.sh`; results depend on the device and its state.
 
 ## Planned enhancements
 
@@ -46,15 +59,13 @@ The goal is to keep HisabKitab focused and easy to use while making it more help
 for everyday Pakistani personal and household finance. These are planned ideas, not
 promises or release dates.
 
-- Recurring income, bills, subscriptions, and reminder notifications.
-- Fund budgets, spending limits, and friendly “you are close to the limit” alerts.
-- Clearer spending insights: category trends, monthly comparisons, and cash-flow views.
+- More flexible recurrence schedules and background reminders.
+- Richer spending insights and cash-flow views.
 - Receipt and bill attachments for important transactions.
 - Faster shared-Fund collaboration, member roles, and an easier way to settle up.
 - Search improvements, saved filters, tags, and smarter transaction suggestions.
 - Better onboarding with sample data and a guided first-budget setup.
 - Optional biometric/PIN app lock for an extra layer of privacy on a shared phone.
-- Backup, restore, and account-data export options that are easy to understand.
 - Home-screen widgets, quick-add shortcuts, and notification actions that make daily
   logging quicker.
 - Accessibility improvements, including stronger contrast choices and larger-text support.

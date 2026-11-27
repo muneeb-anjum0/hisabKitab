@@ -96,3 +96,29 @@ export async function exportXlsxFile(filename, rows, title = 'HisabKitab ledger'
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   return 'downloaded';
 }
+
+export async function exportJsonFile(filename, value) {
+  const file = new File([JSON.stringify(value, null, 2)], filename, { type: 'application/json' });
+  if (isNativeApp()) {
+    const [{ Directory, Filesystem }, { Share }] = await Promise.all([
+      import('@capacitor/filesystem'),
+      import('@capacitor/share'),
+    ]);
+    const saved = await Filesystem.writeFile({
+      path: `exports/${filename}`,
+      data: await toBase64(file),
+      directory: Directory.Cache,
+      recursive: true,
+    });
+    await Share.share({ title: 'HisabKitab backup', files: [saved.uri] });
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

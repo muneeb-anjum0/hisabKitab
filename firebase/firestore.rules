@@ -18,6 +18,8 @@ service cloud.firestore {
       return shortText(data.name, 35)
         && data.type in ['personal', 'shared']
         && data.accent in ['blue', 'red', 'green', 'purple', 'yellow']
+        && (!('monthlyBudget' in data) || (data.monthlyBudget is number
+          && data.monthlyBudget >= 0 && data.monthlyBudget < 1000000000000))
         && data.archived is bool;
     }
     function validExpense(data) {
@@ -96,7 +98,7 @@ service cloud.firestore {
       allow update: if isOwner(fid)
         && request.resource.data.ownerId == resource.data.ownerId
         && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['name', 'type', 'accent', 'archived', 'sortOrder', 'updatedAt'])
+          .hasOnly(['name', 'type', 'accent', 'archived', 'sortOrder', 'monthlyBudget', 'updatedAt'])
         && validFund(request.resource.data);
       allow delete: if isOwner(fid) && !existsAfter(memberPath(fid));
     }
@@ -170,6 +172,20 @@ service cloud.firestore {
         && shortText(request.resource.data.name, 40)
         && shortText(request.resource.data.symbol, 4);
       allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+    match /recurringRules/{id} {
+      allow read, delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+      allow create, update: if signedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && (resource == null || resource.data.ownerId == request.auth.uid)
+        && canEdit(request.resource.data.fundId)
+        && request.resource.data.type in ['expense', 'income']
+        && positiveMoney(request.resource.data.amount)
+        && shortText(request.resource.data.description, 80)
+        && shortText(request.resource.data.startDate, 10)
+        && request.resource.data.day is int
+        && request.resource.data.day >= 1 && request.resource.data.day <= 28
+        && request.resource.data.active is bool;
     }
 
     match /{document=**} {

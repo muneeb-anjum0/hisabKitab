@@ -3,6 +3,7 @@ import {
   deleteDoc,
   doc,
   documentId,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -15,6 +16,8 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { db } from '../lib/firebaseDb';
+import { BACKUP_COLLECTIONS, BACKUP_VERSION, receiptsForOwnedFunds } from '../lib/accountBackup';
+import { dueOccurrences } from '../lib/recurring';
 
 const withTimestamps = (values) => ({
   ...values,
@@ -54,6 +57,143 @@ const queueWrite = (promise) => {
 
 export const finishQueuedWrites = () => waitForPendingWrites(db);
 
+export async function exportAccountBackup(uid) {
+  await finishQueuedWrites();
+  const memberships = documents(
+    await getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid))),
+  );
+  const ownedIds = memberships.filter((item) => item.role === 'owner').map((item) => item.fundId);
+  const [remittances, categories, recurringRules] = await Promise.all([
+    getDocs(query(collection(db, 'remittances'), where('ownerId', '==', uid))).then(documents),
+    getDocs(query(collection(db, 'categories'), where('userId', '==', uid))).then(documents),
+    getDocs(query(collection(db, 'recurringRules'), where('ownerId', '==', uid))).then(documents),
+  ]);
+  const funds = [];
+  const allocations = [];
+  const transactions = [];
+  await Promise.all(
+    ownedIds.map(async (fundId) => {
+      const [fund, fundAllocations, fundTransactions] = await Promise.all([
+        getDocs(query(collection(db, 'funds'), where(documentId(), '==', fundId))).then(documents),
+        getDocs(query(collection(db, 'allocations'), where('fundId', '==', fundId))).then(
+          documents,
+        ),
+        getDocs(query(collection(db, 'transactions'), where('fundId', '==', fundId))).then(
+          documents,
+        ),
+      ]);
+      funds.push(...fund);
+      allocations.push(...fundAllocations);
+      transactions.push(
+        ...fundTransactions.filter(
+          (item) => item.type !== 'transfer' || ownedIds.includes(item.counterpartyFundId),
+        ),
+      );
+    }),
+  );
+  return {
+    format: 'hisabkitab-account',
+    version: BACKUP_VERSION,
+    userId: uid,
+    exportedAt: localNow(),
+    funds,
+    allocations,
+    transactions,
+    remittances: receiptsForOwnedFunds(remittances, allocations, uid),
+    categories,
+    recurringRules: recurringRules.filter((item) => ownedIds.includes(item.fundId)),
+  };
+}
+
+export async function restoreAccountBackup(uid, backup) {
+  await finishQueuedWrites();
+  const restoreKey = `hk-restore-in-progress:${uid}`;
+  const digest = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(JSON.stringify(backup)),
+  );
+  const backupToken = Array.from(new Uint8Array(digest), (byte) =>
+    byte.toString(16).padStart(2, '0'),
+  ).join('');
+  const resuming = localStorage.getItem(restoreKey) === backupToken;
+  const current = await Promise.all([
+    getDocs(query(collection(db, 'fundMembers'), where('userId', '==', uid), limit(1))),
+    getDocs(query(collection(db, 'remittances'), where('ownerId', '==', uid), limit(1))),
+    getDocs(query(collection(db, 'categories'), where('userId', '==', uid), limit(1))),
+    getDocs(query(collection(db, 'recurringRules'), where('ownerId', '==', uid), limit(1))),
+  ]);
+  if (current.some((snapshot) => !snapshot.empty) && !resuming)
+    throw new Error('Restore requires an empty account so existing records cannot be overwritten.');
+  localStorage.setItem(restoreKey, backupToken);
+
+  const clean = ({ id, createdAt, updatedAt, pendingSync, ...fields }) => {
+    void id;
+    void createdAt;
+    void updatedAt;
+    void pendingSync;
+    return { ...fields, createdAt: serverTimestamp(), updatedAt: serverTimestamp() };
+  };
+  const cleanTransaction = (item) => {
+    const fields = clean(item);
+    if (fields.userId !== uid) {
+      fields.originalUserId = fields.userId;
+      fields.userId = uid;
+    }
+    return fields;
+  };
+  const commitRows = async (rows) => {
+    for (let offset = 0; offset < rows.length; offset += 400) {
+      const batch = writeBatch(db);
+      const chunk = rows.slice(offset, offset + 400);
+      const missing = resuming
+        ? (
+            await Promise.all(
+              chunk.map(async (row) => ({
+                ...row,
+                exists: (await getDoc(doc(db, row.path))).exists(),
+              })),
+            )
+          ).filter((row) => !row.exists)
+        : chunk;
+      missing.forEach(({ path, fields }) => batch.set(doc(db, path), fields));
+      if (missing.length) await batch.commit();
+    }
+  };
+  await commitRows(
+    backup.funds.flatMap((fund) => [
+      { path: `funds/${fund.id}`, fields: clean(fund) },
+      {
+        path: `fundMembers/${fund.id}_${uid}`,
+        fields: { fundId: fund.id, userId: uid, role: 'owner', createdAt: serverTimestamp() },
+      },
+    ]),
+  );
+  for (const name of ['remittances', 'allocations', 'categories', 'recurringRules'])
+    await commitRows(
+      backup[name].map((item) => ({ path: `${name}/${item.id}`, fields: clean(item) })),
+    );
+  const expenses = backup.transactions.filter((item) => item.type !== 'transfer');
+  await commitRows(
+    expenses.map((item) => ({ path: `transactions/${item.id}`, fields: cleanTransaction(item) })),
+  );
+  const transfers = backup.transactions.filter((item) => item.type === 'transfer');
+  const pairs = new Map();
+  transfers.forEach((item) => pairs.set(item.linkId, [...(pairs.get(item.linkId) || []), item]));
+  for (const pair of pairs.values()) {
+    if (
+      pair.length !== 2 ||
+      pair[0].counterpartyId !== pair[1].id ||
+      pair[1].counterpartyId !== pair[0].id
+    )
+      throw new Error('Backup contains an incomplete transfer.');
+    await commitRows(
+      pair.map((item) => ({ path: `transactions/${item.id}`, fields: cleanTransaction(item) })),
+    );
+  }
+  localStorage.removeItem(restoreKey);
+  return BACKUP_COLLECTIONS.reduce((count, name) => count + backup[name].length, 0);
+}
+
 export async function loadUserData(uid) {
   const membershipRequest = getDocs(
     query(collection(db, 'fundMembers'), where('userId', '==', uid)),
@@ -62,6 +202,9 @@ export async function loadUserData(uid) {
     query(collection(db, 'remittances'), where('ownerId', '==', uid), limit(150)),
   );
   const categoryRequest = getDocs(query(collection(db, 'categories'), where('userId', '==', uid)));
+  const recurringRequest = getDocs(
+    query(collection(db, 'recurringRules'), where('ownerId', '==', uid)),
+  );
   const membershipSnapshot = await membershipRequest;
   const memberships = documents(membershipSnapshot);
   const fundIds = memberships.map((membership) => membership.fundId);
@@ -99,9 +242,10 @@ export async function loadUserData(uid) {
     transactions.push(...result.transactions);
   });
 
-  const [remittanceSnapshot, categorySnapshot] = await Promise.all([
+  const [remittanceSnapshot, categorySnapshot, recurringSnapshot] = await Promise.all([
     remittanceRequest,
     categoryRequest,
+    recurringRequest,
   ]);
   return {
     funds,
@@ -110,7 +254,76 @@ export async function loadUserData(uid) {
     transactions,
     remittances: documents(remittanceSnapshot),
     categories: documents(categorySnapshot),
+    recurringRules: documents(recurringSnapshot),
   };
+}
+
+export async function createRecurringRule(uid, values) {
+  const ref = doc(collection(db, 'recurringRules'));
+  const rule = { ...values, ownerId: uid, active: true };
+  await setDoc(ref, withTimestamps(rule));
+  return { id: ref.id, ...rule };
+}
+export async function updateRecurringRule(id, values) {
+  await updateDoc(doc(db, 'recurringRules', id), { ...values, updatedAt: serverTimestamp() });
+  return { id, ...values };
+}
+export async function removeRecurringRule(id) {
+  await deleteDoc(doc(db, 'recurringRules', id));
+}
+
+export async function processDueRecurring(uid, rules, today) {
+  let created = 0;
+  for (const rule of rules.filter((item) => item.active)) {
+    for (const date of dueOccurrences(rule, today)) {
+      const occurrenceId = `recurring_${rule.id}_${date}`;
+      if (rule.type === 'expense') {
+        const ref = doc(db, 'transactions', occurrenceId);
+        if ((await getDoc(ref)).exists()) continue;
+        await setDoc(
+          ref,
+          withTimestamps({
+            type: 'expense',
+            userId: uid,
+            fundId: rule.fundId,
+            amount: Number(rule.amount),
+            description: rule.description,
+            note: 'Recurring entry',
+            date,
+            categoryId: rule.categoryId || 'other',
+            recurringRuleId: rule.id,
+          }),
+        );
+      } else {
+        const ref = doc(db, 'remittances', occurrenceId);
+        if ((await getDoc(ref)).exists()) continue;
+        const batch = writeBatch(db);
+        batch.set(
+          ref,
+          withTimestamps({
+            ownerId: uid,
+            totalAmount: Number(rule.amount),
+            sender: rule.description,
+            note: 'Recurring income',
+            receivedAt: date,
+            currency: 'PKR',
+            recurringRuleId: rule.id,
+          }),
+        );
+        batch.set(doc(db, 'allocations', `${occurrenceId}_allocation`), {
+          remittanceId: occurrenceId,
+          fundId: rule.fundId,
+          amount: Number(rule.amount),
+          source: rule.description,
+          receivedAt: date,
+          createdAt: serverTimestamp(),
+        });
+        await batch.commit();
+      }
+      created += 1;
+    }
+  }
+  return created;
 }
 
 export function createFund(uid, values) {
