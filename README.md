@@ -18,6 +18,9 @@ where your money went without wrestling with a traditional spreadsheet.
 To install the APK, download `HisabKitab.apk`, open it on your Android phone, and
 approve installation from your browser or file manager when Android asks.
 
+Version 1.0.3 uses a new signing key. If you have 1.0.2 installed, sync or export your
+data first, then uninstall 1.0.2 before installing 1.0.3. Future releases can update 1.0.3 normally.
+
 ## Highlights
 
 - Separate money into color-coded Funds.

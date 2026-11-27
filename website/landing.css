@@ -237,6 +237,14 @@ footer a:focus-visible {
   color: #e84a36;
   margin: 0 4px;
 }
+.install-note {
+  display: block;
+  max-width: 42ch;
+  margin-top: 7px;
+  font-size: 10px;
+  line-height: 1.35;
+  font-weight: 700;
+}
 .hero-art {
   position: relative;
   min-height: 480px;
