@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "775251774755-91bsapcnno49i7cnp0qbalsltgefk0uj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.muneebanjum.hisabkitab",
+            "certificate_hash": "fa1d1120dc6a66a541903d8507f1524f927aaf56"
+          }
+        },
+        {
           "client_id": "775251774755-gu40ct3ij6j0ed4u65lei46trvmrmbv6.apps.googleusercontent.com",
           "client_type": 3
         }
